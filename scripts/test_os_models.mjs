@@ -3,14 +3,14 @@ import { buildSync } from 'esbuild';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { placeChild, renameEntry, requestTransition, selectWvt, weightedCharge } from '../src/components/playgrounds/osLabModels.mjs';
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
 // The playgrounds keep their deterministic models beside the visual treatment.
 // Bundle those exports for a model-only test; this does not start React or a browser.
-const temp = mkdtempSync(join(tmpdir(), 'libreuni-os-models-'));
+const temp = mkdtempSync(join(tmpdir(), 'os models #'));
 const modules = {};
 try {
   for (const name of [
@@ -33,7 +33,8 @@ try {
   ]) {
     const outfile = join(temp, `${name}.mjs`);
     buildSync({ entryPoints: [join(repositoryRoot, 'src/components/playgrounds', `${name}.tsx`)], bundle: true, format: 'esm', platform: 'node', outfile });
-    modules[name] = await import(outfile);
+    // Windows absolute paths are not valid ESM specifiers, and the temp dir name has a space and a # on purpose: import via a file:// URL so those are escaped
+    modules[name] = await import(pathToFileURL(outfile).href);
   }
 
   const scheduler = modules.SchedulerPlayground.scheduleJobs;
