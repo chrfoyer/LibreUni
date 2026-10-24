@@ -74,9 +74,11 @@ def verify_lesson(path, check_links=False):
         warnings.append("Missing or empty 'description' in frontmatter")
 
     # 2. Banned Phrases Check
+    # Typographic apostrophes would otherwise slip past "let's ..." phrases
+    plain_body = body.replace("’", "'")
     for phrase in BANNED_PHRASES:
         # Match as whole phrase (case insensitive)
-        if re.search(r'\b' + re.escape(phrase) + r'\b', body, re.IGNORECASE):
+        if re.search(r'\b' + re.escape(phrase) + r'\b', plain_body, re.IGNORECASE):
             errors.append(f"Contains banned filler phrase: '{phrase}'")
 
     # 3. Pedagogical Structure: Theory -> Example -> Exercise

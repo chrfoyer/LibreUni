@@ -43,6 +43,8 @@ npm run test:report      # open last Playwright HTML report
 python3 scripts/course_stats.py                     # lesson stats & quality
 python3 scripts/course_stats.py --write-quality     # regenerate catalog badges
 python3 scripts/course_stats.py <course-id>         # stats for one course
+python3 scripts/check_references.py [course-id]     # DOIs match their Crossref record
+python3 -m unittest discover -s scripts/tests       # unit tests for content scripts
 npm run build:all && npm run test:e2e:run           # quick e2e after build
 npm run build:all && npm run test:ux:run            # quick ux after build
 ```

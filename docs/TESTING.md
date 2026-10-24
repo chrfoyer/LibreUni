@@ -57,6 +57,16 @@ The Lighthouse CI run writes reports to `reports/lighthouse` and enforces access
 
 The visual capture test writes PNG files to `reports/visual/`. It is a review aid rather than a pixel-diff gate: agents must inspect its output when their work changes the interface.
 
+## Content Checks
+
+```bash
+python3 -m unittest discover -s scripts/tests   # unit tests for the content scripts
+python3 scripts/verify_lessons.py               # frontmatter, banned phrases, component props, sourcing
+python3 scripts/check_references.py [course]    # DOIs match their Crossref record
+```
+
+`check_references.py` reads each lesson's References section and compares every DOI's Crossref record (title, first author, year) with the reference text. A DOI can resolve and still name a different paper, so resolving alone is not enough. A mismatched title or author, a year off by more than one, or a DOI unknown to Crossref is an error. A year off by one (online-first versus print dates) and a failed lookup are warnings. Results are cached in `.cache/crossref.json`.
+
 ## CI
 
 The GitHub Actions workflow in `.github/workflows/quality.yml` runs `npm test` on pushes and pull requests, then uploads `reports/` and `test-results/` as artifacts even when a check fails.

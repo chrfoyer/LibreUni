@@ -13,7 +13,7 @@ jobs:
   validate-content:
     name: Validate content
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,10 +21,23 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Script unit tests
+        run: python3 -m unittest discover -s scripts/tests
       - name: Lesson structure check
         run: python3 scripts/verify_lessons.py
       - name: Course stats check
         run: python3 scripts/course_stats.py
+      # Run even if an earlier content check failed, so wrong DOIs are always reported
+      - name: Restore Crossref cache
+        if: ${{ !cancelled() }}
+        uses: actions/cache@v4
+        with:
+          path: .cache/crossref.json
+          key: crossref-${{ github.run_id }}
+          restore-keys: crossref-
+      - name: Reference DOI check
+        if: ${{ !cancelled() }}
+        run: python3 scripts/check_references.py
 
   build-and-test:
     name: Build and test

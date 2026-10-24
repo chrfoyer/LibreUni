@@ -16,6 +16,9 @@ puml-cache/
 tikz-cache/
 python-diagram-cache/
 
+# Crossref lookup cache (scripts/check_references.py)
+.cache/
+
 # Temp files
 .temp/
 *.log
