@@ -1,33 +1,112 @@
 ---
 title: Motivation and Human Behavior
 course: team-dynamics
-description: Theories of motivation and how they apply to creative knowledge work.
+description: Herzberg's two-factor theory, self-determination theory, and the research on rewards explain why pay, autonomy, and incentive design shape the motivation of engineering teams.
 ---
-# Why We Work: Theory into Practice
 
-In high-complexity engineering, traditional "carrot and stick" (Extrinsic) motivation often fails or even damages performance.
+import CaseStudy from '../../../components/CaseStudy';
+import Quiz from '../../../components/Quiz';
 
-### 1. Herzberg's Two-Factor Theory
-Herzberg distinguished between factors that cause satisfaction and those that prevent dissatisfaction.
-- **Hygiene Factors**: Salary, job security, working conditions, company policy. Improving these *won't* make people love their job, but their absence will cause bridge-burning resentment.
-- **Motivators**: Achievement, recognition, the work itself, responsibility, advancement. These are the factors that actually drive engagement.
-- *Key Takeaway*: You cannot "motivate" someone for long by just giving them a raise if the work is miserable.
+# Why We Work: Motivation Theory
 
-### 2. Self-Determination Theory (SDT)
-Developed by Deci and Ryan, this focuses on three innate psychological needs:
-- **Autonomy**: The need to feel in control of one’s own behavior and goals.
-- **Competence**: The need to gain mastery of tasks and learn different skills.
-- **Relatedness**: The need to experience a sense of belonging and attachment to other people.
+A manager who wants more output from an engineering team has to decide what to change: pay, the work itself, the way performance is measured, or the degree of freedom people have. Motivation theories answer this by separating what people want from work into different kinds, and a meta-analysis of rewards (Cerasoli, Nicklin & Ford, 2014) found that the role of intrinsic motivation in performance depends on how incentives are tied to performance. Three bodies of work are compared here: Herzberg's two-factor theory, self-determination theory, and meta-analyses of rewards.
 
-### 3. Daniel Pink's "Drive" (AMP)
-Synthesizing modern social science for knowledge workers:
-- **Autonomy**: Our desire to be self-directed.
-- **Mastery**: The urge to get better and better at something that matters.
-- **Purpose**: The yearning to do what we do in the service of something larger than ourselves.
+## Two-Factor Theory
 
-### Leadership Application
-If you want a high-performing engineering team:
-1. Fix the hygiene factors (pay people well, get out of their way).
-2. Create clear paths for **Mastery** (learning budgets, tech talks).
-3. Connect the code to a **Purpose** (show the impact on users).
-4. Relinquish control to foster **Autonomy**.
+{/* Source tracking: Herzberg, Mausner & Snyderman (1959), two-factor theory as summarized in secondary sources; House & Wigdor (1967), title-level only. */}
+
+Herzberg, Mausner and Snyderman (1959) proposed that one set of job characteristics leads to satisfaction while a separate set leads to dissatisfaction, so the two are not opposite ends of one scale. In the usual summary, **hygiene factors** include company policy and administration, supervision, interpersonal relations, working conditions, and salary. When they are absent they cause dissatisfaction, but their presence does not produce satisfaction. **Motivators** include recognition, achievement, responsibility, advancement, growth opportunities, and the work itself.
+
+Salary is therefore classed as a hygiene factor. A common inference is that a raise will not make miserable work satisfying for long. That inference is not a finding of the theory's tests.
+
+The evidence is contested. House and Wigdor (1967) published a review of the evidence for the theory and a criticism of it.  The theory is influential, but it is better treated as a prompt for questions about a team's work than as a settled law.
+
+## Self-Determination Theory
+
+{/* Source tracking: Ryan & Deci (2000), abstract and sections on needs and autonomy. */}
+
+Ryan and Deci (2000) describe self-determination theory as proposing three basic psychological needs, for autonomy, competence, and relatedness. Satisfying them supports intrinsic motivation and well-being, and thwarting them is linked to diminished motivation and well-being.
+
+- **Autonomy** is the sense of acting by one's own volition, whether the act is dependent on others or independent. Ryan and Deci (2000) state that it is not independence: a person can act with volition while depending on others.
+- **Competence** concerns feeling competent. The authors report that optimal challenges and effectance-promoting feedback facilitate intrinsic motivation.
+- **Relatedness** is the need to feel belongingness and connectedness with others (Ryan & Deci, 2000).
+
+Ryan and Deci (2000) also report that Baard, Deci and Ryan (1998) found workers' need satisfaction predicted performance and well-being at work. This comes from a review by the theory's own authors, so it shows a broad research programme, not a universal law.
+
+## Rewards and Intrinsic Motivation
+
+{/* Source tracking: Deci, Koestner & Ryan (1999), abstract; Cerasoli, Nicklin & Ford (2014), abstract; Kerr (1975), abstract; Ryan & Deci (2000), full text on intrinsic interest. */}
+
+Intrinsic motivation, in this theory, applies to activities that hold interest through novelty, challenge, or aesthetic value (Ryan & Deci, 2000). Deci, Koestner and Ryan (1999) meta-analysed 128 experiments on extrinsic rewards. Rewards contingent on engagement, completion, or performance each lowered intrinsic motivation as measured by free choice (effect sizes of d = -0.40 for engagement, -0.36 for completion, and -0.28 for performance), and so did all tangible and all expected rewards. Positive feedback enhanced it (d = 0.33). This is the **undermining effect**, and its outcome is intrinsic motivation, not job performance.
+
+Cerasoli, Nicklin and Ford (2014) pooled 183 samples (N = 212,468) from school, work, and physical domains to ask how intrinsic motivation and incentives relate to performance itself. Quality of performance was better explained by intrinsic motivation, while quantity was better explained by incentives. How the incentive was attached also mattered: when pay was directly tied to performance, intrinsic motivation counted for less (crowding out), and when it was tied indirectly, it counted for more. Incentives and intrinsic motivation, the authors write, are "not necessarily antagonistic". Neither meta-analysis tested engineering work specifically.
+
+Kerr (1975) described organizations whose rewards go to one behavior while the rewarder hopes for a different one. This suggests that a measure chosen for convenience, such as tickets closed, may shape behavior more than the quality the team actually wants.
+
+## Pink's Drive
+
+{/* Source tracking: Pink (2009), Open Library table of contents and secondary summary; Cerasoli, Nicklin & Ford (2014), abstract. */}
+
+Pink (2009) organises motivation as autonomy, mastery, and purpose. The book is a popularization, not a peer-reviewed study. Its three elements are not the three needs of self-determination theory: purpose is not one of SDT's needs, and the shared word autonomy should not hide that the framings differ. Pink's claim that bonuses help only with basic mechanical tasks comes from a popular book. Cerasoli et al. (2014) did not compare simple and complex tasks, but found incentives were the better predictor of quantity of performance.
+
+## Example: A Bonus per Ticket
+
+This scenario is hypothetical. In week 1, a team lead named Dana announces a bonus for each support ticket an engineer closes. By week 3, closed tickets have risen, but Priya, a senior engineer who used to spend time on thorough fixes, now closes the quickest tickets first. By week 6, reviewers such as Marcus report more reopened tickets and shallower fixes.
+
+The scheme paid off quantity while the team hoped for quality, the pattern Kerr (1975) described, and the bonus was tied directly to performance, the condition under which Cerasoli et al. (2014) found intrinsic motivation mattered less. Dana drops the per-ticket bonus and instead asks the engineers to choose which recurring ticket causes to remove. This suggests the lead restored volition and a challenge to the work. By week 10, reopened tickets fall, though the team now closes fewer tickets in total.
+
+## Exercise
+
+List six factors from a job or team project you know, for example salary, a clear roadmap, code review feedback, or ownership of a component. Classify each as a hygiene factor or a motivator, and name which SDT need (autonomy, competence, or relatedness) it most plausibly affects. A good answer gives a one-sentence reason for each classification, flags any factor where Herzberg's classification is contested, and marks the SDT link as your inference.
+
+<Quiz client:load
+  title="Classifying Motivation Factors"
+  questions={[
+    {
+      question: "In Herzberg's classification, which factor is a hygiene factor?",
+      options: [
+        "Salary",
+        "Achievement",
+        "The work itself",
+        "The possibility for growth"
+      ],
+      correctIndex: 0,
+      explanation: "Herzberg classed salary with the hygiene factors, whose absence causes dissatisfaction. Achievement, the work itself, and growth are motivators. Critics contest the classification, so it is a model and not a measured fact."
+    },
+    {
+      question: "A meta-analysis finds that expected tangible rewards lower free-choice intrinsic motivation for an engaging puzzle. What does this show?",
+      options: [
+        "Paying engineers always lowers their job performance.",
+        "Incentives never raise the quantity of work produced.",
+        "Rewards are harmless when they are announced before the task.",
+        "Expected tangible rewards can undermine intrinsic motivation for interesting activities."
+      ],
+      correctIndex: 3,
+      explanation: "Deci, Koestner and Ryan (1999) measured intrinsic motivation, not job performance, so the first option overreaches. Cerasoli et al. (2014) found incentives predicted quantity, which contradicts the second. Expected rewards undermined intrinsic motivation, which contradicts the third."
+    }
+  ]}
+/>
+
+<CaseStudy client:load
+  title="The Per-Ticket Bonus"
+  scenario="An invented support team pays a monthly bonus per closed ticket. After two months, closed tickets are up and the reopen rate has also risen. The lead wants the team to care about fix quality."
+  question="Which interpretation is best supported by the studies of rewards and motivation?"
+  options={[
+    "Intrinsic motivation is irrelevant, so the bonus per ticket should be doubled.",
+    "The incentive rewards quantity while quality is hoped for, so the lead might add a measure of quality or change how incentives are tied.",
+    "The bonus proves that salary is a motivator in Herzberg's theory.",
+    "Autonomy means independence, so each engineer should work alone."
+  ]}
+  correctIndex={1}
+  explanation="Cerasoli et al. (2014) found that incentives predict quantity and intrinsic motivation predicts quality, and Kerr (1975) described rewarding one behavior while hoping for another. Adjusting what is rewarded is an inference from those findings. Autonomy in SDT is volition, not independence."
+/>
+
+## References
+
+- Herzberg, F., Mausner, B., & Snyderman, B. B. (1959). *The Motivation to Work*. John Wiley & Sons.
+- House, R. J., & Wigdor, L. A. (1967). Herzberg's dual-factor theory of job satisfaction and motivation: A review of the evidence and a criticism. *Personnel Psychology*, 20(4), 369–390. [https://doi.org/10.1111/j.1744-6570.1967.tb02440.x](https://doi.org/10.1111/j.1744-6570.1967.tb02440.x)
+- Deci, E. L., Koestner, R., & Ryan, R. M. (1999). A meta-analytic review of experiments examining the effects of extrinsic rewards on intrinsic motivation. *Psychological Bulletin*, 125(6), 627–668. [https://doi.org/10.1037/0033-2909.125.6.627](https://doi.org/10.1037/0033-2909.125.6.627)
+- Cerasoli, C. P., Nicklin, J. M., & Ford, M. T. (2014). Intrinsic motivation and extrinsic incentives jointly predict performance: A 40-year meta-analysis. *Psychological Bulletin*, 140(4), 980–1008. [https://doi.org/10.1037/a0035661](https://doi.org/10.1037/a0035661)
+- Ryan, R. M., & Deci, E. L. (2000). Self-determination theory and the facilitation of intrinsic motivation, social development, and well-being. *American Psychologist*, 55(1), 68–78. [https://doi.org/10.1037/0003-066X.55.1.68](https://doi.org/10.1037/0003-066X.55.1.68)
+- Kerr, S. (1975). On the folly of rewarding A, while hoping for B. *Academy of Management Journal*, 18(4), 769–783. [https://doi.org/10.2307/255378](https://doi.org/10.2307/255378)
+- Pink, D. H. (2009). *Drive: The Surprising Truth About What Motivates Us*. Riverhead Books.

@@ -1,33 +1,117 @@
 ---
 title: Decision-Making and Groupthink
 course: team-dynamics
-description: Formalizing how teams decide and avoiding the pitfalls of conformity.
+description: How decision regimes, role frameworks, and structured dissent shape team choices, and why groupthink and the Challenger launch decision remain contested.
 ---
-# The Mechanics of Choice
 
-How a team makes decisions determines its agility and the quality of its output.
+import CaseStudy from '../../../components/CaseStudy';
+import Quiz from '../../../components/Quiz';
 
-### 1. Decision Regimes
-Not every decision needs the same process.
-- **Autocratic**: One person decides. Best for emergency, low-stakes, or very specialized domains.
-- **Consultative**: One person decides *after* seeking input. High efficiency, moderate buy-in.
-- **Consensus**: Everyone must agree. Highest buy-in, but very slow and prone to "watering down" ideas.
-- **Consent (Sociocracy)**: Decision is made when there are "no paramount objections." Faster than consensus, ensures safety without requiring unanimous love for an idea.
+# How Teams Decide
 
-### 2. Groupthink: The Silent Killer
-Groupthink occurs when the desire for harmony or conformity in the group results in an irrational or dysfunctional decision-making outcome.
-- **Symptoms**: Illusion of invulnerability, collective rationalization, pressure on dissenters, and self-censorship.
-- **Historical Examples**: The Challenger disaster (NASA) - where technical warnings were suppressed by organizational pressure to conform.
+A team decision has two parts: who holds the authority to decide, and how the group surfaces information and objections first. Both can fail.
 
-### 3. Mitigating Groupthink
-- **The "Devil's Advocate"**: Assign one person to intentionally find flaws in the proposal.
-- **Silent Brainstorming**: Review ideas in writing before meeting to prevent the "loudest voice" from anchoring the discussion.
-- **Second-Chance Meetings**: After reaching a preliminary consensus, hold a short meeting later to express any remaining doubts.
-- **Leader Anonymity**: The leader should speak last to avoid influencing the team's opinions prematurely.
+## Decision Regimes
 
-### DACI/RAPID Frameworks
-For large organizations, use a framework to clarify roles:
-- **D**river: The person herding the cats.
-- **A**pprover: The one with the final "Yes/No."
-- **C**ontributor: Experts whose input is sought.
-- **I**nformed: Those who need to know the result.
+{/* Source tracking: Vroom & Yetton (1973) and Vroom & Jago (1988), overview of the five styles and the question set, read through a secondary summary. */}
+
+Vroom and Yetton (1973) proposed a normative model, later developed with Jago (Vroom & Jago, 1988), that matches the way a leader involves a team to the situation. It names five styles, ranging from autocratic (AI, AII) through consultative (CI, CII) to group-based (GII). The leader chooses among them by answering yes/no questions about the decision, covering decision quality, the information available, and how much the team's commitment matters to carrying it out. The model is prescriptive, and this lesson cites no validation of its prescriptions.
+
+Sociocracy 3.0 describes a different regime, consent. A proposal is accepted when it is "good enough for now and safe enough to try until the next review" (Bockelbrink, Priest & David, 2026). The pattern separates two kinds of reaction. An objection is a reasoned argument that reveals consequences or risks worth avoiding, or a worthwhile improvement, and it stops a proposal from becoming policy. A concern is an assumption that cannot yet be backed by reasoning or evidence, and it does not stop the proposal.
+
+## Groupthink
+
+{/* Source tracking: Janis (1982), concept and symptoms, read through a secondary summary; Esser (1998), abstract. */}
+
+Groupthink is Janis's term for a mode of thinking in cohesive groups in which the drive for agreement overrides realistic appraisal of alternatives (Janis, 1982). Janis's listed symptoms include direct pressure on members who question the group and self-appointed mindguards, who shield the group from dissenting information.
+
+The evidence for the model is incomplete. In a review of the research, Esser (1998) concluded that groupthink research has had considerable heuristic value, that the empirical literature is small but growing, and that most of the theoretical ideas it stimulated have yet to be tested. This suggests treating groupthink as a useful lens for diagnosing a meeting, not as a settled law of group behaviour.
+
+## Counteracting Groupthink
+
+{/* Source tracking: Janis (1982), prevention measures, read through a secondary summary; Nemeth, Brown & Rogers (2001), abstract; Diehl & Stroebe (1987), abstract. */}
+
+Janis (1982) proposed several safeguards. The leader withholds a personal opinion when assigning the task, which is leader impartiality. Each member acts as a critical evaluator. A devil's advocate is assigned, a different person each meeting. Independent groups can tackle the same problem, and outside experts can be consulted.
+
+The assigned devil's advocate has a weakness. Nemeth, Brown and Rogers (2001) compared three forms of devil's advocate, differing in whether the advocate's position was known and consistent, known and inconsistent, or unknown, with an authentic minority, and found the authentic minority superior to all three. They also report that an earlier study found the devil's advocate fostered thinking aimed at bolstering the initial viewpoint. The evidence is one line of experiments, so it is suggestive: it implies that making room for people who actually disagree beats a rotating role.
+
+Diehl and Stroebe (1987) ran four experiments and found that production blocking, in which only one person can speak at a time, explained most of the lower output of real brainstorming groups. That finding covers idea generation, not decision meetings, so applying it to decisions, for example by collecting written ideas first, is an inference.
+
+## Role Frameworks: DACI and RAPID
+
+{/* Source tracking: Atlassian (n.d.), DACI play; Rogers & Blenko (2006), Bain page. */}
+
+Role frameworks answer the first question, who decides. Atlassian (n.d.) publishes DACI as a Team Playbook play with four roles. The Driver collects stakeholders and information, sets the scope, and gets a decision made by the agreed date. The Approver is one person, and only that person makes the decision. Contributors have subject knowledge and a voice but not a vote. The Informed are told the result.
+
+RAPID, from Rogers and Blenko (2006), names five roles: Recommend, Agree, Perform, Input, and Decide. The authors note that the roles are not carried out in that order. Agree differs from anything in DACI, because those who agree must accept a recommendation before it moves forward, and a person who vetoes must offer an alternative or escalate to the person with the Decide role. Both come from practitioners, and this lesson cites no controlled evaluation of either.
+
+## Example: The Challenger Launch Decision
+
+{/* Source tracking: Rogers Commission (1986), Vol. 1, Ch. V; Esser & Lindoerfer (1989), abstract; Vaughan (1996), chapter contents. */}
+
+The primary source for this case is the report of the Rogers Commission. Published in 1986, it concluded that the contractor Thiokol's management changed course and backed launching flight 51-L at the urging of NASA's Marshall center, against what its engineers thought. In testimony, a manager asked an engineer for a change of role: "take off his engineering hat and put on his management hat" (Rogers Commission, 1986). One engineer testified that no engineer spoke in favour of launching. The Commission found "a serious flaw in the decision making process" (Rogers Commission, 1986).
+
+Whether to call that flaw groupthink is contested. Esser and Lindoerfer (1989) coded statements from the Commission's report as instances of groupthink antecedents and consequences. Positive instances were twice as frequent as negative ones, and the ratio rose in the 24 hours before launch, which they describe as consistent with groupthink. Because the coding rests on the same report, it is not independent evidence. Vaughan (1996) gives a different account, normalization of deviance, in which departures from proper practice become culturally accepted. She treats Challenger as her original example.
+
+On the groupthink reading, the dissent was pressured away and the recommendation flipped from no-launch to launch. This suggests that a structure protecting objections, such as a Contributor or Input role that the Approver must hear, would at least have kept the engineers' view on the record.
+
+## Exercise
+
+Choose a go/no-go decision, such as releasing a risky change on a Friday. Write a one-page decision record that does four things: names the Vroom and Yetton style you would use and justifies it with two of their question types; assigns DACI roles to named people and maps each to a RAPID role, marking where RAPID's Agree or Perform has no DACI counterpart; states one Janis safeguard and how it would be run; and says how an objection would be recorded and answered. A good answer has exactly one Approver, keeps Contributors separate from the Approver, and defines objections as reasoned arguments.
+
+<CaseStudy client:load
+  title="Reading the Challenger Evidence"
+  scenario="A colleague summarizes the Challenger launch decision. Thiokol management reversed its position at Marshall's urging, contrary to its engineers. Esser and Lindoerfer coded the Rogers Commission report and found positive groupthink instances twice as frequent as negative ones. Vaughan's book offers normalization of deviance as an account of the same events."
+  question="Which conclusion about the evidence is best supported?"
+  options={[
+    "Esser and Lindoerfer's coding proves that groupthink caused the launch, so rival accounts such as normalization of deviance are unnecessary.",
+    "Vaughan's account shows that no group-process failure occurred, so the case leaves the groupthink debate entirely.",
+    "The coding fits groupthink but rests on the Commission's report, and Vaughan differs.",
+    "Management's reversal means the report cannot support any reading based on group processes."
+  ]}
+  correctIndex={2}
+  explanation="Esser and Lindoerfer describe their results as consistent with groupthink, and they coded the Commission's own report, so the result is not independent confirmation. Vaughan offers a different account instead of a verdict that nothing went wrong in the decision process, so the second option misstates her position. The case therefore remains contested."
+/>
+
+<Quiz client:load
+  title="Consent and Dissent"
+  questions={[
+    {
+      question: "A team proposes a new log format. Dev A says it would break a nightly parser, so jobs would fail. Dev B says it might feel slower but has no measurements. Under Sociocracy 3.0 consent, how are the two reactions treated?",
+      options: [
+        "A raised an objection that blocks the proposal; B raised a concern that does not.",
+        "Both raised objections, because any reservation said aloud stops the proposal from moving forward.",
+        "Both raised concerns, because neither person holds authority over the decision.",
+        "B raised an objection, because a felt risk counts as stronger than any technical argument offered."
+      ],
+      correctIndex: 0,
+      explanation: "S3 defines an objection by a reasoned argument about consequences or risks, which stops a proposal from becoming policy. A concern is an assumption not yet backed by reasoning or evidence, so it does not. Treating every reservation as blocking confuses consent with a veto for any discomfort."
+    },
+    {
+      question: "A lead wants to test a plan for flaws. Which approach is better supported by Nemeth, Brown and Rogers (2001)?",
+      options: [
+        "Rotate an assigned devil's advocate, since the role stimulates divergent thought more than real disagreement.",
+        "Let the most senior person critique the plan, since status improves the quality of solutions.",
+        "Make room for a colleague who actually holds the minority view, since the authentic minority was superior in that study.",
+        "Skip dissent and hold a vote, since voting avoids bolstering of the initial viewpoint."
+      ],
+      correctIndex: 2,
+      explanation: "In that study the authentic minority was superior to all three forms of devil's advocate. The study is one line of experiments, so the finding is suggestive. The first option reverses the result: an earlier study found the devil's advocate fostered bolstering of the initial viewpoint instead."
+    }
+  ]}
+/>
+
+## References
+
+- Janis, I. L. (1982). *Groupthink: Psychological Studies of Policy Decisions and Fiascoes* (2nd ed.). Houghton Mifflin. ISBN 0-395-31704-5.
+- Esser, J. K. (1998). Alive and well after 25 years: A review of groupthink research. *Organizational Behavior and Human Decision Processes*, 73(2–3), 116–141. [https://doi.org/10.1006/obhd.1998.2758](https://doi.org/10.1006/obhd.1998.2758)
+- Esser, J. K., & Lindoerfer, J. S. (1989). Groupthink and the space shuttle Challenger accident: Toward a quantitative case analysis. *Journal of Behavioral Decision Making*, 2(3), 167–177. [https://doi.org/10.1002/bdm.3960020304](https://doi.org/10.1002/bdm.3960020304)
+- Vaughan, D. (1996). *The Challenger Launch Decision: Risky Technology, Culture, and Deviance at NASA*. University of Chicago Press. ISBN 0-226-85175-3.
+- Rogers Commission. (1986). *Report of the Presidential Commission on the Space Shuttle Challenger Accident* (Vol. 1, Ch. V). NASA. Public domain (US government work). [https://history.nasa.gov/rogersrep/v1ch5.htm](https://history.nasa.gov/rogersrep/v1ch5.htm)
+- Nemeth, C., Brown, K., & Rogers, J. (2001). Devil's advocate versus authentic dissent: Stimulating quantity and quality. *European Journal of Social Psychology*, 31(6), 707–720. [https://doi.org/10.1002/ejsp.58](https://doi.org/10.1002/ejsp.58)
+- Diehl, M., & Stroebe, W. (1987). Productivity loss in brainstorming groups: Toward the solution of a riddle. *Journal of Personality and Social Psychology*, 53(3), 497–509. [https://doi.org/10.1037/0022-3514.53.3.497](https://doi.org/10.1037/0022-3514.53.3.497)
+- Vroom, V. H., & Yetton, P. W. (1973). *Leadership and Decision-Making*. University of Pittsburgh Press. ISBN 0-8229-3266-0.
+- Vroom, V. H., & Jago, A. G. (1988). *The New Leadership: Managing Participation in Organizations*. Prentice Hall. ISBN 0-13-615030-6.
+- Rogers, P., & Blenko, M. (2006). Who has the "D"? How clear decision roles enhance organizational performance. *Harvard Business Review*, 84(1). [https://www.bain.com/insights/who-has-the-d/](https://www.bain.com/insights/who-has-the-d/)
+- Atlassian. (n.d.). *DACI: A decision-making framework*. Atlassian Team Playbook. [https://www.atlassian.com/team-playbook/plays/daci](https://www.atlassian.com/team-playbook/plays/daci)
+- Bockelbrink, B., Priest, J., & David, L. (2026). *Consent decision-making*. Sociocracy 3.0 (version 2026-01-26). Licensed under CC BY-SA 4.0. [https://patterns.sociocracy30.org/consent-decision-making.html](https://patterns.sociocracy30.org/consent-decision-making.html)

@@ -4,79 +4,92 @@ course: team-dynamics
 description: The processes a team uses to plan and deliver work, the trade-offs of Scrum, Kanban, and Shape Up, and how retrospectives turn process into an improvement loop.
 ---
 
+import CaseStudy from '../../../components/CaseStudy';
+import Quiz from '../../../components/Quiz';
+
 # Designing Your Team Operating System
 
 "Ways of working" is the set of practices a team uses to plan, coordinate, and deliver work. It includes how work is split, how priorities are set, how progress is seen, and how decisions about process itself are made. Every team has ways of working, whether or not it has chosen them. The useful question is whether the practices were designed to fit the team's work or inherited without examination.
 
 ## Three Common Frameworks
 
+{/* Source tracking: Schwaber & Sutherland (2020), Sprints and events; Singer (2019), chapters 1, 8, 13; Wikipedia contributors, Kanban (development) and Little's law (CC BY-SA 4.0); Little (1961). */}
+
 Frameworks package a set of practices with a rationale. Each one optimizes for different properties of delivery.
 
-- **Scrum** organizes work into fixed-length sprints with a defined goal, a backlog, a daily synchronization meeting, and a sprint review and retrospective. The Scrum Guide (Schwaber & Sutherland, 2020) defines three accountabilities and five events. Scrum emphasizes predictability and regular inspection of progress, which suits work with clear goals that can be divided into increments.
-- **Kanban** visualizes work on a board and limits the amount of work in progress at each stage. David Anderson (2010) developed it as a way to evolve existing processes gradually. Its main property is flow: a limit on work in progress exposes bottlenecks, and throughput becomes measurable. Kanban does not prescribe time-boxes, so it suits teams with unpredictable or interrupt-driven work, such as operations.
-- **Shape Up** is described by Ryan Singer (2019). It replaces continuous backlog grooming with six-week cycles. Before a cycle starts, a small group shapes a problem into a bounded solution, identifying the risks and leaving out details the builders should decide. The team then works within a fixed time. Shape Up de-risks work before it starts, and it avoids the daily status ritual that some teams find unhelpful.
+- **Scrum** organizes work into Sprints, a backlog, and regular inspection. The Scrum Guide (Schwaber & Sutherland, 2020) defines three accountabilities (Developers, Product Owner, Scrum Master) and five events, and describes Sprints as fixed-length events of one month or less. Two weeks is a choice, not a rule. Scrum uses an iterative, incremental approach to optimize predictability (Schwaber & Sutherland, 2020), which suits work with clear goals that can be divided into increments.
+- **Kanban** has two layers. The kanban mechanism comes from the Toyota Production System (Ohno, 1988). Anderson (2010) adapted it into the Kanban Method for knowledge work, whose two primary practices are to visualize work and to limit work in progress (Wikipedia contributors, 2026). The approach aims to improve the handling of system-level bottlenecks (Wikipedia contributors, 2026). Practitioners treat it as a fit for teams with interrupt-driven work, such as operations.
+- **Shape Up** is described by Singer (2019). Work runs in six-week cycles, each followed by a two-week cool-down with no scheduled work, during which stakeholders decide which shaped pitches to bet on next. A small senior group works alongside the cycle teams, defining a solution's key elements before a project is considered ready for a bet (Singer, 2019). Singer reports that there are no daily meetings; progress is instead shown on hill charts, which separate the uphill phase of figuring out an approach from the downhill phase of execution. Singer (2019) reports that Basecamp found a two-week cycle too short for meaningful work, which is one team's view, not a general result.
 
-None of these is correct in general. Scrum's sprint boundaries fit work that can be finished in two weeks. Kanban's flow measures fit a support queue. Shape Up's upfront shaping fits product work where scope is the main uncertainty. A team that adopts a framework without understanding its assumptions often keeps the ceremonies and loses the purpose behind them.
+The fit of each framework is a design heuristic from practitioners, not a tested finding, and no empirical comparison of the three is cited here. The heuristics are these: Scrum fits work with clear goals, Kanban's flow measures fit a support queue, and Shape Up's upfront shaping fits product work where scope is the main uncertainty.
 
-## Example: Choosing Between Sprints and Flow
-
-A platform team maintains internal tooling and also responds to incidents from other teams. Its sprints are repeatedly disrupted, and two of every five planned items are carried over. The team is not failing at Scrum. Its work arrives unpredictably, so fixed-length commitments are the wrong unit of planning.
-
-A better response is to keep the team's planning cadence but use a board with a work-in-progress limit for the unplanned queue, and reserve a fixed share of capacity for incidents. The team then measures how long items take from start to finish, which gives it evidence for future planning. The change came from examining the work, not from switching to the most popular framework.
-
-## The Retrospective
-
-Every framework above includes some form of reflection, and the retrospective is its most important form. A team that does not examine its own process cannot improve it. Derby and Larsen (2006) describe retrospectives as structured conversations that surface what happened, why, and what to change.
-
-A simple structure is enough.
-
-1. **What went well?** Name practices to keep.
-2. **What did not go well?** Describe specific events, not general complaints.
-3. **What will we change?** Choose one or two actions, assign an owner, and check the result in the next retrospective.
-
-The third question is where most retrospectives fail. A list of ten improvements that nobody owns produces no change. Actionable items should be specific enough that a team member could tell, at the next meeting, whether they were done.
+Work in progress links these frameworks through Little's law (Little, 1961). In a stable system, average work in progress equals average throughput multiplied by average time in system (Wikipedia contributors, 2026). At constant throughput, more work in progress therefore means a longer average cycle time. This suggests that a team whose items take ever longer to finish should look at how much it has started before it looks at how fast it works.
 
 ## Continuous Improvement
 
-Taiichi Ohno's Toyota Production System and the idea of kaizen, popularized outside Japan by Masaaki Imai (1986), treat small, continuous improvement as the responsibility of everyone in the process, not only of managers. Applied to a team, this means that a meeting that does not help should be changed, a review process that is too slow should be automated where possible, and the team should treat its own process as something it designs and revises.
+{/* Source tracking: Wikipedia contributors, Kaizen (CC BY-SA 4.0), definition; Imai (1986), bibliographic record. */}
 
-A useful rule follows: the team owns the process, and the process should not own the team. When a practice starts to cost more than it gives, the team should be willing to change it.
+Wikipedia contributors (2026) define kaizen as "a concept in business studies which asserts that significant positive results may be achieved due to the cumulative effect of many, often small (and even trivial) improvements to all aspects of a company's operations" (CC BY-SA 4.0). Imai (1986) is a book on kaizen. In a team, the idea is that the process is itself an object of work: a meeting that no longer helps is changed, a slow review step is simplified, and the team treats its own process as something it designs and revises.
+
+The retrospective is the routine mechanism by which a team revises its process.
+
+## The Retrospective
+
+{/* Source tracking: Derby & Larsen (2012), five phases, as described by Nettleton (2018); Schwaber & Sutherland (2020). */}
+
+Derby and Larsen (2012), as summarized by Nettleton (2018), describe a retrospective in five phases: Set the Stage, Gather Data, Generate Insights, Decide What to Do, and Close. The three-question format (what went well, what did not, what will we change) is not their five phases.
+
+In the Decide What to Do phase the group selects one or two action items (Nettleton, 2018). This suggests that an action item should be specific enough that a team member could tell, at the next retrospective, whether it was done.
+
+## Example: Choosing Flow and Reviewing It
+
+This is a hypothetical case. A platform team has a lead and four engineers. It maintains internal tooling and also responds to incidents from other teams. In week 3, its Sprints are repeatedly disrupted, and two of the five planned items are carried over.
+
+In the retrospective, the lead sets the stage by asking everyone to describe the Sprint in one word. The team gathers data: two items carried over, both displaced by incidents. It generates an insight: the work arrives unpredictably, so fixed-length commitments are the wrong unit of planning. For the decision phase, it chooses one action. An engineer named Sam owns a trial of a board with a work-in-progress limit for the unplanned queue, and the team will reserve a fixed share of capacity for incidents. The team closes by agreeing to review the cycle time of finished items in week 7.
+
+By week 7, the unplanned queue shows shorter start-to-finish times and fewer items are carried over, consistent with Little's law at constant throughput: less work is started at once. The change came from examining the work and assigning an owner.
 
 ## Exercise
 
-Pick one practice your team uses, such as a standup, a review rule, or a planning meeting. Write down its purpose, the outcome the team currently gets from it, and one change that would improve the outcome. State how you would know, in four weeks, whether the change worked.
+Pick one practice your team uses, such as a standup, a review rule, or a planning meeting. Write down its purpose, the outcome the team currently gets from it, and one change that would improve the outcome, with a named owner. A good answer states how you would know, in four weeks, whether the change worked.
 
 <CaseStudy client:load
   title="The Ceremony That Stopped Helping"
-  scenario="A four-person team holds a fifteen-minute daily standup in which each member lists yesterday's work. Two members are on different projects and rarely depend on each other. The meeting has grown to thirty minutes because people explain details that only one listener needs."
+  scenario="A four-person Scrum team holds a fifteen-minute daily standup in which each member lists yesterday's work. Two members are on different projects and rarely depend on each other. The meeting has grown to thirty minutes because people explain details that only one listener needs."
   question="Which change best preserves the purpose of the standup while reducing its cost?"
   options={[
     "Cancel the standup and rely on the sprint review at the end of each cycle.",
-    "Keep the standup, but focus it on blockers and dependencies between members, and move detailed discussion to a separate thread.",
     "Keep the same format and add a second standup for the members who work on different projects.",
+    "Keep the standup, but focus it on progress toward the Sprint Goal and any adjustment to the Sprint Backlog, and move detail to a separate thread.",
     "Require each member to write a longer status report before the meeting."
   ]}
-  correctIndex={1}
-  explanation="The purpose of a standup is to surface blockers and dependencies. Focusing on those and moving detail to a thread keeps the coordination benefit while removing the time spent on information only a few people need. Cancelling the standup removes the coordination, and a second meeting or longer reports add cost without addressing the cause."
+  correctIndex={2}
+  explanation="The Scrum Guide gives the purpose of the Daily Scrum as to inspect progress toward the Sprint Goal and adapt the Sprint Backlog as necessary (Schwaber & Sutherland, 2020). Focusing on that and moving detail to a thread keeps the purpose while removing the time spent on information only a few people need. Cancelling the standup removes the coordination, and a second meeting or longer reports add cost without addressing the cause."
 />
 
 <Quiz client:load
   title="Work in Progress"
-  question="Why does Kanban limit the amount of work in progress at each stage?"
+  question="A team's items take longer and longer to finish, while the number of items it finishes each week stays the same. What does Little's law suggest is the most likely cause?"
   options={[
-    "To make sure every team member is always busy with a single task.",
-    "To expose bottlenecks and keep work flowing, because excess work in progress lengthens the time each item takes to finish.",
-    "To reduce the number of meetings the team has to attend.",
-    "To make estimates unnecessary by fixing the length of every task."
+    "The team has started too many items at once.",
+    "Team members are working too slowly on each item and need closer supervision.",
+    "The team lacks time-boxes, so it needs fixed-length Sprints to restore predictability.",
+    "Estimates are inaccurate, so the team should estimate each item in more detail."
   ]}
-  correctIndex={1}
-  explanation="Limiting work in progress makes queues visible and forces the team to finish items before starting new ones. Without limits, work accumulates, cycle time grows, and bottlenecks remain hidden."
+  correctIndex={0}
+  explanation="In a stable system, average work in progress equals average throughput multiplied by average time in system. At constant throughput, more work in progress therefore means a longer average cycle time, so rising cycle time with flat throughput points to excess work in progress. Supervising individuals or refining estimates does not change that relationship."
 />
 
 ## References
 
-- Schwaber, K., & Sutherland, J. (2020). *The Scrum Guide*. [https://scrumguides.org/](https://scrumguides.org/)
+- Schwaber, K., & Sutherland, J. (2020). *The Scrum Guide*. [https://scrumguides.org/](https://scrumguides.org/) Licensed under CC BY-SA 4.0.
+- Wikipedia contributors (2026). Kanban (development). [https://en.wikipedia.org/wiki/Kanban_%28development%29](https://en.wikipedia.org/wiki/Kanban_%28development%29) Licensed under CC BY-SA 4.0.
+- Wikipedia contributors (2026). Little's law. [https://en.wikipedia.org/wiki/Little%27s_law](https://en.wikipedia.org/wiki/Little%27s_law) Licensed under CC BY-SA 4.0.
+- Wikipedia contributors (2026). Kaizen. [https://en.wikipedia.org/wiki/Kaizen](https://en.wikipedia.org/wiki/Kaizen) Licensed under CC BY-SA 4.0.
+- Nettleton, C. (2018). Agile retrospective framework in five steps. Applied Frameworks blog. [https://agile.appliedframeworks.com/applied-frameworks-agile-blog/agile-retrospective-framework-in-five-steps](https://agile.appliedframeworks.com/applied-frameworks-agile-blog/agile-retrospective-framework-in-five-steps)
 - Anderson, D. J. (2010). *Kanban: Successful Evolutionary Change for Your Technology Business*. Blue Hole Press.
+- Ohno, T. (1988). *Toyota Production System*. Productivity Press.
 - Singer, R. (2019). *Shape Up: Stop Running in Circles and Ship Work that Matters*. Basecamp. [https://basecamp.com/shapeup](https://basecamp.com/shapeup)
-- Derby, E., & Larsen, D. (2006). *Agile Retrospectives: Making Good Teams Great*. Pragmatic Bookshelf.
-- Imai, M. (1986). *Kaizen: The Key to Japan's Competitive Success*. McGraw-Hill.
+- Derby, E., & Larsen, D. (2012). *Agile Retrospectives: Making Good Teams Great*. Pragmatic Bookshelf.
+- Imai, M. (1986). *Kaizen: The Key to Japan's Competitive Success*. Random House.
+- Little, J. D. C. (1961). A proof for the queuing formula: L = λW. *Operations Research*, 9(3), 383–387. [https://doi.org/10.1287/opre.9.3.383](https://doi.org/10.1287/opre.9.3.383)

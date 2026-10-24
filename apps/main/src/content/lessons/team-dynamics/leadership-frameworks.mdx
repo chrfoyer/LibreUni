@@ -1,28 +1,95 @@
 ---
 title: Leadership Frameworks
 course: team-dynamics
-description: Beyond the "Manager" - understanding situational and servant leadership.
+description: Four frameworks for leading a team, situational, servant, transformational versus transactional, and shared leadership, with what the evidence does and does not support for each.
 ---
-# Styles of Leadership
 
-Leadership is a role, not a job title. In a healthy team, leadership is often "fluid" and situational.
+import CaseStudy from '../../../components/CaseStudy';
+import Quiz from '../../../components/Quiz';
 
-### 1. Situational Leadership (Hersey-Blanchard)
-There is no "best" style. The effective leader adapts based on the **Competence** and **Commitment** of the individual they are leading.
-- **Directing (S1)**: High directive, low supportive. Use for beginners with high commitment but low competence.
-- **Coaching (S2)**: High directive, high supportive. Use for those with some competence but low commitment (the "disillusioned learner").
-- **Supporting (S3)**: Low directive, high supportive. Use for those with high competence but variable commitment.
-- **Delegating (S4)**: Low directive, low supportive. Use for the high-competence, high-commitment expert.
+# Frameworks for Leading a Team
 
-### 2. Servant Leadership
-Coined by Robert K. Greenleaf, this flips the traditional hierarchy.
-- The leader's primary goal is to **serve** the team.
-- Characteristics: Empathy, healing, awareness, persuasion, stewardship, and commitment to the growth of others.
-- *In Engineering*: The lead's job is to unblock the team, protect them from outside distractions, and provide the resources they need to succeed.
+A new lead has to decide how much to direct, how much to serve, how to motivate, and how much leadership to share. Four frameworks answer these questions, and they differ a great deal in the strength of their evidence.
 
-### 3. Transformational vs. Transactional
-- **Transactional**: Focuses on exchange. "Do this task, get this reward." Works for simple, repetitive tasks.
-- **Transformational**: Inspires followers to transcend their self-interest for the sake of the team/mission. Focuses on vision, intellectual stimulation, and individual consideration.
+## Situational Leadership
 
-### The "Technical Lead" Trap
-A common failure in engineering is promoting the best coder to a lead role without shifting their leadership style. Transitioning from "Maker" to "Multiplier" requires moving from Transactional/Directing styles to Coaching/Transformational styles.
+{/* Source tracking: Hersey & Blanchard (1969), pp. 26–34; Blanchard, Zigarmi & Zigarmi (1985); Thompson & Vecchio (2009), abstract. */}
+
+Hersey and Blanchard (1969) presented the Life Cycle Theory of Leadership. It describes four quadrants of leader behaviour, defined by high or low task behaviour and high or low relationships behaviour, and matches them to the follower's "maturity". The article reports that empirical studies point to no one best style of leadership, and that as followers mature the appropriate leader behaviour needs less structure and later less socio-emotional support. The quadrants are numbered one to four and carry no style names in the 1969 text.
+
+The labels Directing, Coaching, Supporting and Delegating belong to a later variant, SLII, introduced by Blanchard, Zigarmi and Zigarmi (1985). SLII replaces maturity with development levels described by competence (ability, knowledge and skill) and commitment (confidence and motivation).
+
+The evidence is weak. Thompson and Vecchio (2009) tested three versions of the theory on survey data from 357 banking employees and 80 supervisors in ten Norwegian financial institutions. The revised 2007 version predicted subordinate performance and attitudes less well than the original 1972 statement, and an alternative version did not add substantially to the variance explained. This is one sample from one industry, so the result does not show that the idea of adapting to the follower is wrong. It shows that the specific matching prescriptions are not well supported.
+
+## Servant Leadership
+
+{/* Source tracking: Greenleaf (2002), p. 27; Spears (1998), pp. 3–6; van Dierendonck (2011), abstract. */}
+
+Greenleaf popularized the phrase in his essay "The Servant as Leader" (1970). His own criterion is a question about the people being served: do they "grow as persons", and do they become "healthier, wiser, freer, more autonomous" and more likely themselves to become servants (Greenleaf, 2002, p. 27). The familiar list of ten characteristics, including listening, empathy, stewardship and building community, is a distillation by Spears (1998), not Greenleaf's own list.
+
+van Dierendonck (2011) reviewed the field and proposed that servant leadership shows in leaders who join a drive to lead with a wish to serve, through empowering and developing people, humility, authenticity, interpersonal acceptance, stewardship and providing direction. The evidence is still emerging: the review expects a high-quality leader-follower relationship, trust and fairness to be the key mediating processes, but it proposes them rather than demonstrating them.
+
+## Transformational and Transactional Leadership
+
+{/* Source tracking: Burns (1978); Judge & Piccolo (2004), abstract. */}
+
+Burns (1978) distinguished transactional leadership, an exchange between leader and follower, from transformational leadership. In Judge and Piccolo's (2004) meta-analysis, transactional leadership was measured as contingent reward and management by exception.
+
+Judge and Piccolo (2004) combined 626 correlations from 87 sources. Transformational leadership had an overall validity of .44. Contingent reward (.39) and laissez-faire leadership (-.37) had the next highest overall relations, and management by exception was inconsistent. For several criteria contingent reward had stronger relations than transformational leadership. The two correlated .80, so the behaviours overlap in practice. The common claim that transactional leadership suits only simple, repetitive tasks is not supported by this abstract. Contingent reward was second strongest overall, and nothing in it concerns task simplicity. The meta-analysis is correlational, so it cannot show that leaders caused the outcomes.
+
+## Shared Leadership
+
+{/* Source tracking: Wang, Waldman & Zhang (2014), abstract. */}
+
+Shared leadership, also called collective or distributed leadership, treats leadership as a process spread across team members. Wang, Waldman and Zhang (2014) cumulated 42 independent samples and found an overall relationship with team effectiveness of rho = .34. Shared traditional leadership (initiating structure and consideration) showed a lower relationship (.18) than shared new-genre leadership such as charismatic and transformational (.34). The effects were stronger when the work of team members was more complex, and shared leadership showed effects beyond those of vertical leadership. This suggests that, on complex work, a lead who spreads leadership across members can add to the team's effectiveness.
+
+## Example: A New Tech Lead (Hypothetical)
+
+Priya is promoted to tech lead in week 1. Dev, a new hire, has little experience with the codebase but is keen. Sam is a senior engineer who has begun to disengage after a reorganisation.
+
+In SLII terms, Dev has low competence and high commitment, and Sam has high competence and wavering commitment. These readings are Priya's own hypotheses. She plans to give Dev specific guidance and frequent feedback, and to ask Sam what is behind the change before agreeing on goals. The caveat from Thompson and Vecchio (2009) applies: Priya treats these matches as hypotheses to check in conversation, not as rules.
+
+By week 6 Priya applies Greenleaf's test as a question. Is Dev growing? Is Sam more autonomous? When Sam has taken the lead on the migration and Dev on the test tooling, the team has begun to share leadership. Because the migration is complex work, this fits the pattern Wang, Waldman and Zhang (2014) report.
+
+## Exercise
+
+Choose a team you have worked in. Write a short plan, about 150 words, for one named member. State which SLII development level (competence and commitment) you would assign and what evidence you have for it. Add one question based on Greenleaf's test that you could ask that person. Name one piece of leadership you would hand to someone else and say why the work is complex enough to justify it. A good answer separates your observation from your interpretation, treats the match as a hypothesis, and names what would change your mind.
+
+<CaseStudy client:load
+  title="A Mixed Team"
+  scenario="Ana becomes lead of five engineers. Two are new graduates who are enthusiastic but unfamiliar with the system. One senior engineer is highly skilled but has stopped volunteering ideas. Ana is tempted to apply one style, a strict reward scheme for every task, to everyone."
+  question="Which approach is best supported by the evidence cited above?"
+  options={[
+    "Use one fixed style for everyone, because the evidence shows that a single best style exists.",
+    "Use contingent rewards only, because transactional leadership beat transformational leadership on every criterion.",
+    "Treat the Situational Leadership matches as proven rules and apply them without checking.",
+    "Adapt to each person as a hypothesis to check, and pair contingent rewards with transformational behaviour."
+  ]}
+  correctIndex={3}
+  explanation="Hersey and Blanchard (1969) argued that no single style is best, and Judge and Piccolo (2004) found contingent reward positively related to outcomes (.39) alongside transformational leadership (.44). Thompson and Vecchio (2009) found weak support for the specific matching prescriptions, so the matches are hypotheses. Treating them as proven rules, the third option, goes beyond that evidence."
+/>
+
+<Quiz client:load
+  title="Reward and Vision"
+  question="According to Judge and Piccolo's (2004) meta-analysis, which statement about contingent reward is accurate?"
+  options={[
+    "It was the weakest predictor and added nothing beyond laissez-faire leadership.",
+    "It had an overall validity of .39 and beat transformational leadership on several criteria.",
+    "It worked only for simple, repetitive tasks and is useless for complex work.",
+    "It was unrelated to transformational leadership, with a correlation near zero across the studies."
+  ]}
+  correctIndex={1}
+  explanation="The abstract reports contingent reward at .39, second to transformational leadership (.44) overall, and stronger on several criteria. Laissez-faire was negative (-.37), and contingent reward correlated .80 with transformational leadership, so the claim of no relationship is wrong. The abstract says nothing about simple tasks."
+/>
+
+## References
+
+- Hersey, P., & Blanchard, K. H. (1969). Life cycle theory of leadership. *Training and Development Journal*, 23(5), 26–34. [https://assets.td.org/m/59759d86d1ed4390/original/LIFE-CYCLE-THEORY-OF-LEADERSHIP.pdf](https://assets.td.org/m/59759d86d1ed4390/original/LIFE-CYCLE-THEORY-OF-LEADERSHIP.pdf)
+- Blanchard, K. H., Zigarmi, P., & Zigarmi, D. (1985). *Leadership and the One Minute Manager*. William Morrow. ISBN 0-688-03969-3.
+- Thompson, G., & Vecchio, R. P. (2009). Situational leadership theory: A test of three versions. *The Leadership Quarterly*, 20(5), 837–848. [https://doi.org/10.1016/j.leaqua.2009.06.014](https://doi.org/10.1016/j.leaqua.2009.06.014)
+- Greenleaf, R. K. (2002). *Servant leadership: A journey into the nature of legitimate power and greatness*. Paulist Press. ISBN 0-8091-0554-3.
+- Spears, L. C. (Ed.). (1998). *Insights on leadership*. Wiley. ISBN 0-471-17634-6.
+- van Dierendonck, D. (2011). Servant leadership: A review and synthesis. *Journal of Management*, 37(4), 1228–1261. [https://doi.org/10.1177/0149206310380462](https://doi.org/10.1177/0149206310380462)
+- Burns, J. M. (1978). *Leadership*. Harper & Row. ISBN 0-06-010588-7.
+- Judge, T. A., & Piccolo, R. F. (2004). Transformational and transactional leadership: A meta-analytic test of their relative validity. *Journal of Applied Psychology*, 89(5), 755–768. [https://doi.org/10.1037/0021-9010.89.5.755](https://doi.org/10.1037/0021-9010.89.5.755)
+- Wang, D., Waldman, D. A., & Zhang, Z. (2014). A meta-analysis of shared leadership and team effectiveness. *Journal of Applied Psychology*, 99(2), 181–198. [https://doi.org/10.1037/a0034531](https://doi.org/10.1037/a0034531)

@@ -1,82 +1,96 @@
 ---
 title: Effective Communication
 course: team-dynamics
-description: How engineers choose between synchronous and asynchronous channels, give feedback in code review, and confirm that a message has been understood.
+description: How engineers choose communication channels by the grounding work each demands, give code review feedback that people can act on, and check that a message was understood.
 ---
 
-# High-Bandwidth Communication
+import CaseStudy from '../../../components/CaseStudy';
+import Quiz from '../../../components/Quiz';
 
-Communication in engineering transfers mental models. When one engineer describes a design, the goal is not only that the listener hears the words but that the listener builds a model of the system that matches the speaker's. Most communication failures are mismatches between those models. Each party believes the other agrees, and the disagreement appears later, usually in code or in production.
+# Effective Communication
 
-Herbert Clark and Susan Brennan (1991) describe communication as a process of *grounding*: speakers and listeners jointly establish that a message has been understood. Grounding takes effort, and the channel determines how much effort it costs. Face-to-face conversation provides immediate feedback through facial expression, pauses, and interruptions. A written comment provides almost none, so the author has to anticipate misreadings.
+Communication in engineering transfers mental models. When one engineer describes a design, the goal is that the listener builds a model of the system that matches the speaker's. Mismatches between those models surface later, usually in code or production.
+
+## Grounding and Media Constraints
+
+{/* Source tracking: Clark & Brennan (1991), grounding and the eight media constraints. */}
+
+Clark and Brennan (1991) describe communication as a process of *grounding*: the collective process by which participants try to reach mutual belief that the partners understood what was meant, well enough for the current purposes. They also propose a principle of least collaborative effort: participants try to minimize the work both do until a contribution is mutually accepted.
+
+The medium decides what grounding costs, because it determines which techniques are available. Clark and Brennan (1991) list eight constraints a medium may impose: copresence (sharing a physical environment), visibility (seeing each other), audibility (communicating by speaking), cotemporality (the receiver gets a message at roughly the time the sender produces it; letters and email lack it), simultaneity (sending and receiving at once), sequentiality (turns cannot get out of sequence), reviewability (the receiver can reread messages; speech fades quickly), and revisability (the sender can edit privately before sending, as email allows).
+
+Grounding techniques include acknowledgments such as head nods, try markers that present a provisional utterance and ask for confirmation, and installments that cut a difficult utterance into pieces checked one at a time. In keyboard teleconferencing, timing an acknowledgment precisely is difficult, so its cost is higher.
+
+These constraints are a taxonomy from psycholinguistics, not a tested quantitative result, so they work as a model for reasoning about channels. A pull request comment, by the same reasoning, lacks cotemporality but gains reviewability and revisability. The author must anticipate misreadings.
 
 ## Choosing a Channel
 
-Synchronous and asynchronous communication suit different purposes.
+{/* Source tracking: Dennis, Fuller & Valacich (2008), media synchronicity theory, abstract. */}
 
-- **Synchronous** channels include meetings, pair programming, and instant messaging. They provide fast feedback and are appropriate when a topic is ambiguous, urgent, or emotionally sensitive. A disagreement about a team's priorities usually needs a live conversation, because the nuance is hard to convey in text.
-- **Asynchronous** channels include email, pull request comments, and design documents. They allow careful thought, create a record, and do not interrupt anyone. They suit deep technical work, documentation, and updates that do not require an immediate response.
+Dennis, Fuller, and Valacich (2008) propose media synchronicity theory. They define synchronicity as "a shared pattern of coordinated behavior among individuals as they work together" and name five media capabilities, among them symbol sets and rehearsability, that influence its development. Their propositions refer to media supporting lower or higher synchronicity, which treats synchronicity as a matter of degree. This lesson's own inference is that a chat thread can behave almost like a conversation or almost like a mailbox, depending on use.
 
-A common error is to use a synchronous channel for an asynchronous purpose. A design question sent as a chat message and answered in three quick exchanges leaves no record and often produces an answer that the wider team never sees.
+The theory separates two communication processes, conveyance and convergence. It proposes that lower-synchronicity media should support conveyance better and higher-synchronicity media should support convergence better, and that performance improves when people use a variety of media rather than one. Dennis et al. (2008) state these as propositions ("should result in"), so the theory is a model awaiting testing in each setting, not an established effect. This suggests a working rule: announce a non-urgent change in writing, and settle a contested design in a live conversation followed by a written record.
 
 ## Giving Feedback in Code Review
 
-Code review is a social interaction before it is a technical one. Sadowski and colleagues (2018), describing code review practice at Google, note that the process serves knowledge sharing and team cohesion as well as defect detection. A reviewer who sounds dismissive can discourage a colleague even when every comment is correct.
+{/* Source tracking: Sadowski et al. (2018), Section 4 themes; Egelman et al. (2020), abstract. */}
 
-Several practices reduce this risk.
+Sadowski et al. (2018) studied code review at Google through 12 interviews, a survey of 44 respondents, and review logs for 9 million reviewed changes. Interviewees expected four things from review: education, maintaining norms, gatekeeping, and accident prevention, plus tracking history. Finding defects matters, but it is not the only aim. The data come from one company, so they describe a practice and do not establish a general law.
+
+Review is also an interpersonal exchange. Egelman et al. (2020) surveyed 1,317 developers at one company and cross-referenced the answers with review logs. They call negative interpersonal experiences in review *pushback* and report that such interactions may ultimately lead developers to abandon projects. Their finding is that pushback is relatively rare but has negative repercussions when it occurs. The evidence is correlational and limited to one organization. It suggests that a review comment deserves the same care as the code it addresses.
+
+Four habits follow from the grounding model, framed here as inferences, not findings:
 
 - **Describe the code, not the person.** "This function mixes parsing and validation" is more useful than "You made this hard to follow."
-- **Explain the reason.** A comment that says "use a map here, because lookups happen in a hot loop" gives the author something to evaluate. A bare instruction gives them only something to obey.
-- **Separate blocking issues from suggestions.** Mark which comments must be addressed before merging and which are optional. Authors who cannot tell the difference tend to either over-correct or ignore everything.
-- **Ask before asserting.** "Is there a reason this handles only the first element?" invites an explanation. It may reveal a context the reviewer lacked.
+- **Explain the reason.** "Use a map here, because lookups happen in a hot loop" gives the author something to evaluate.
+- **Mark blocking issues.** Authors who cannot tell required changes from suggestions must guess.
+- **Ask before asserting.** "Is there a reason this handles only the first element?" may reveal context the reviewer lacked.
 
 ## Active Listening
 
-Listening is the other half of communication, and it is harder to observe. Three techniques make it deliberate.
+{/* Source tracking: Wikipedia (2026), Active listening (CC BY-SA 4.0), techniques section. */}
 
-- **Mirroring.** Restate what you heard in your own words. "So the concern is that the cache can return stale data during deployment?" lets the speaker correct a misunderstanding before it becomes a design decision.
-- **Open questions.** Ask questions that require an explanation rather than a yes or no. "How does this path behave when the upstream service times out?" reveals more than "Does this handle timeouts?"
-- **Acknowledging the other view.** You can recognize a person's point without agreeing with it. "That tradeoff matters for the on-call team, and I think it is outweighed by the latency cost" shows that the point was heard and weighed.
+Wikipedia (2026) names three basic techniques: paraphrasing, reflecting emotion, and open-ended questions. Paraphrasing puts the speaker's message into the listener's own words to show understanding and continue the discussion. This lesson makes no claim about how well the techniques work. In engineering, a paraphrase such as "So the concern is that the cache can return stale data during deployment?" is a grounding move: it lets the speaker correct a misunderstanding before it becomes a design decision.
 
-## Example: A Design Disagreement Resolved in Writing
+## Example: A Terse Review Comment (Hypothetical)
 
-Two engineers disagree about whether a service should use a relational database or a document store. In a chat thread, each restates a position, and the disagreement grows. The team lead asks both to write a one-page comparison that lists the query patterns, the consistency requirements, and the operational costs of each option. Once the document exists, the disagreement narrows to two specific questions about query patterns, which the team can test.
-
-The written artifact did not remove the disagreement. It made the models explicit enough to compare. That is the purpose of high-bandwidth communication: not more messages, but messages that let two people's models converge.
+In week 2, Priya opens a pull request and her reviewer Tomas comments, "Rewrite this." Priya replies twice in the thread, each time guessing at his objection, and neither message is grounded, because Tomas's comment gives no reason. In week 3 Tomas proposes a ten-minute call, a higher-synchronicity medium suited to convergence. He paraphrases, "You are worried that the retry loop hides failures?" and Priya corrects him: her worry is latency. Tomas then rewrites the comment in the thread: "Blocking: this retry loop swallows errors. Suggestion, not blocking: use exponential backoff." The comment now carries a reason and marks what blocks merging. The call converged the models, and the written comment conveyed the result to the rest of the team.
 
 ## Exercise
 
-Choose a recent technical disagreement you were part of or observed. Identify where the models diverged: what each person assumed about requirements, constraints, or the system. Write a three-sentence summary that a neutral reader could accept as both parties' positions. If you cannot write it, that is evidence that grounding did not happen.
+Pick one channel your team uses, such as pull request comments, a chat channel, or a stand-up. Write a short table that maps it onto the eight constraints, marking each as present, absent, or partial. Then name one grounding technique (acknowledgments, try markers, or installments) that becomes costly in that channel and one practice that offsets the cost. A good answer covers all eight constraints, justifies each partial mark with a concrete behavior, and links the costly technique to a specific missing constraint.
 
 <Quiz client:load
   title="Choosing the Channel"
-  question="A team member needs to tell the group that a shared dependency is being deprecated next quarter, and that the change has no urgent impact. Which channel is most appropriate?"
+  question="A team member must tell the group that a shared dependency will be deprecated next quarter, with no urgent impact. According to media synchronicity theory, which approach fits this conveyance task best?"
   options={[
-    "A thirty-minute meeting, so that everyone can ask questions immediately.",
-    "A written announcement in the team's documentation or channel, with a link to the migration guide and a deadline.",
-    "A private message to the two engineers who use the dependency most.",
-    "A comment on an unrelated pull request, so that it is seen by the people who read reviews."
+    "Hold a live meeting so that everyone can negotiate the details of the schedule together.",
+    "Send a private message to the two heaviest users of the dependency and ask them to pass it on.",
+    "Mention it briefly at the next stand-up so that everyone hears it at once.",
+    "Write an announcement with the deadline and migration guide that readers can reread."
   ]}
-  correctIndex={1}
-  explanation="The update is non-urgent and informational, so an asynchronous written announcement is suitable. It creates a durable record, reaches everyone, and lets readers respond when they have time. The other options either interrupt unnecessarily, exclude people, or hide the message."
+  correctIndex={3}
+  explanation="Conveyance is proposed to suit lower-synchronicity media, and a written announcement is reviewable by every reader. The live meeting suits convergence, not a plain announcement. A private message to two engineers leaves the rest of the group uninformed."
 />
 
 <CaseStudy client:load
   title="The Terse Review"
-  scenario="A senior engineer reviews a junior colleague's pull request. Their only comments are 'Wrong approach' on the first change and 'Rewrite this' on the second. The junior engineer does not reply and quietly closes the pull request the next day."
-  question="Which response best improves the communication in this review?"
+  scenario="A senior engineer reviews a colleague's pull request. The only comments are 'Wrong approach' on one change and 'Rewrite this' on another. The author does not reply and closes the pull request the next day."
+  question="Which response best repairs the communication problem?"
   options={[
-    "Ask the senior engineer to apologize and resubmit the same review.",
-    "Explain what problem the approach causes, suggest an alternative with its reasoning, and mark which comments are blocking.",
-    "Merge the pull request without changes to avoid further friction.",
-    "Escalate the disagreement to the team lead so that the junior engineer is not reviewed by the same person again."
+    "Ask the senior engineer to resubmit the same two comments with an apology.",
+    "Merge the pull request unchanged to avoid further friction.",
+    "Give the problem the approach causes, an alternative with its reasoning, and a mark for which comments block merging.",
+    "Move the reviewer off this author's pull requests without discussing the comments."
   ]}
-  correctIndex={1}
-  explanation="Specific comments that explain the reasoning and distinguish blocking issues from suggestions give the author something to act on. Escalation or merging without changes avoids the communication problem rather than solving it."
+  correctIndex={2}
+  explanation="A comment with a reason and a blocking mark lets the author ground the message without guessing; a reason and a blocking mark address the ambiguity that made the original comments read as pushback. Merging unchanged or reassigning the reviewer avoids the problem and leaves the comments as ambiguous as before."
 />
 
 ## References
 
-- Clark, H. H., & Brennan, S. E. (1991). Grounding in communication. In L. B. Resnick, J. M. Levine, & S. D. Teasley (Eds.), *Perspectives on Socially Shared Cognition* (pp. 127–149). American Psychological Association.
-- Sadowski, C., Söderberg, E., Church, L., Sipko, M., & Bacchelli, A. (2018). Modern code review: A case study at Google. In *Proceedings of the 40th International Conference on Software Engineering: Software Engineering in Practice*, 181–190.
-- Hinds, P. J., & Mortensen, M. (2005). Understanding conflict in geographically distributed teams: The moderating effects of shared identity, shared context, and spontaneous communication. *Organization Science*, 16(3), 290–307. [https://doi.org/10.1287/orsc.1050.0133](https://doi.org/10.1287/orsc.1050.0133)
+- Clark, H. H., & Brennan, S. E. (1991). Grounding in communication. In L. B. Resnick, J. M. Levine, & S. D. Teasley (Eds.), *Perspectives on Socially Shared Cognition* (pp. 127–149). American Psychological Association. [https://doi.org/10.1037/10096-006](https://doi.org/10.1037/10096-006)
+- Sadowski, C., Söderberg, E., Church, L., Sipko, M., & Bacchelli, A. (2018). Modern code review: A case study at Google. In *Proceedings of the 40th International Conference on Software Engineering: Software Engineering in Practice* (pp. 181–190). [https://doi.org/10.1145/3183519.3183525](https://doi.org/10.1145/3183519.3183525)
+- Egelman, C. D., Murphy-Hill, E., Kammer, E., Hodges, M. M., Green, C., Jaspan, C., & Lin, J. (2020). Predicting developers' negative feelings about code review. In *Proceedings of the ACM/IEEE 42nd International Conference on Software Engineering* (pp. 174–185). [https://doi.org/10.1145/3377811.3380414](https://doi.org/10.1145/3377811.3380414)
+- Dennis, A. R., Fuller, R. M., & Valacich, J. S. (2008). Media, tasks, and communication processes: A theory of media synchronicity. *MIS Quarterly, 32*(3), 575–600. [https://doi.org/10.2307/25148857](https://doi.org/10.2307/25148857)
+- Wikipedia (2026). Active listening. *Wikipedia*. Retrieved 2026. [https://en.wikipedia.org/wiki/Active_listening](https://en.wikipedia.org/wiki/Active_listening). Licensed CC BY-SA 4.0.

@@ -1,63 +1,91 @@
 ---
 title: The Remote Work Landscape
 course: team-dynamics
-description: How distributed and hybrid teams coordinate across time zones, and which practices reduce the visibility and isolation problems that remote work creates.
+description: How distributed and hybrid teams coordinate across space and time, what research shows about conflict, interruptions, and productivity, and which practices make work visible.
 ---
+
+import CaseStudy from '../../../components/CaseStudy';
+import Quiz from '../../../components/Quiz';
 
 # Remote Work: Beyond Video Calls
 
-Remote work changes how a team coordinates effort across space and time. Moving a meeting from a room to a video call does not change those mechanics. The team still has to decide who knows what, when decisions are made, and how a colleague finds out that a dependency has slipped. Remote and hybrid teams fail when they copy the rituals of co-located work without replacing the informal signals that made those rituals unnecessary.
+Remote work moves some or all of a team's work away from a shared office. The team still has to decide who knows what, when decisions are made, and how a colleague learns a dependency has slipped. Copying co-located rituals without replacing their informal signals may cost a team the shared context that Hinds and Mortensen (2005) tie to lower task conflict.
 
+{/* Source tracking: Hinds & Mortensen (2005), abstract. */}
 ## What Co-location Provided Without Asking
 
-In an office, much coordination happens without a deliberate act. An engineer sees a teammate stuck at a whiteboard, overhears a conversation about a failing build, or notices that a colleague has not left their desk all day. These signals are weak individually, but together they keep work visible.
+In an office, much coordination happens without a deliberate act. An engineer overhears a conversation about a failing build, and such signals keep work visible.
 
-Distributed teams lose most of these signals. Research on distributed teams shows that when members lack shared context, they conflict more often and resolve conflicts less well. Hinds and Mortensen (2005) found that spontaneous communication and shared context reduced the difficulty of conflict in geographically distributed teams, and that shared identity by itself did not compensate for their absence.
+Hinds and Mortensen (2005) studied 43 teams in one multinational company, 22 collocated and 21 distributed. Distributed teams reported more task conflict and more interpersonal conflict than collocated teams. Distribution affected interpersonal conflict differently depending on shared identity, and task conflict differently depending on shared context. Spontaneous communication was associated with stronger shared identity and more shared context, and it moderated the relationship between distribution and conflict. The authors argue that spontaneous communication helps teams identify and handle conflict. The single-company, cross-sectional design shows associations, not cause.
 
-## Four Core Challenges
+{/* Source tracking: Olson & Olson (2000), abstract, section 5.2 and conclusions. */}
+## Common Ground and Coupling of Work
 
-1. **The visibility gap.** Without physical presence, a manager or teammate cannot easily tell whether work is progressing. The usual response is more status meetings, which consume time and add interruptions.
-2. **Context switching.** Chat tools and calendar invitations make every member reachable at all times. Each interruption breaks a chain of thought, and the cost of recovering focus is often larger than the interruption itself.
-3. **Social isolation.** Relationships formed through casual contact are harder to create remotely. Weak relationships make it harder to ask for help or disagree.
-4. **Time zone asymmetry.** When teammates are eight or more hours apart, a question asked in the morning may not get an answer until the next day. Handoffs become a source of delay and error.
+Olson and Olson (2000) reviewed over ten years of field and laboratory studies of collocated and noncollocated synchronous collaboration. They organised the findings around four concepts: common ground, how tightly work is coupled, and readiness for collaboration and for its technology. Common ground is the knowledge that participants have in common and know they have in common. They conclude that remote work has a chance of succeeding for groups with high common ground, loosely coupled work, and both kinds of readiness. Olson and Olson define tightly coupled work as nonroutine, even ambiguous work with highly interdependent components and frequent, complex communication. Routine work is loosely coupled even with dependencies: a travel voucher cannot be paid until it is approved, yet it is routine. They found tightly coupled work hard to do remotely. This suggests that a team with ambiguous, interdependent work must build common ground deliberately. The review is a narrative synthesis, so it offers a framework, not a measured rule.
 
+{/* Source tracking: Mark, Gudith & Klocke (2008), abstract and results. */}
+## Interruptions and Focus
+
+Chat tools make every member always reachable. In a laboratory experiment with 48 participants, mostly German university students, who handled an email task while receiving scripted interruptions, Mark, Gudith and Klocke (2008) found that interrupted tasks took less time, with quality unchanged. They paid for this speed: participants reported more stress, higher frustration, time pressure, and effort. The evidence is modest: one lab study with self-reported stress, not about remote teams. It does suggest that a quick reply to a message can look free to a manager while costing the person who gives it.
+
+{/* Source tracking: Bloom, Liang, Roberts & Ying (2015), abstract and full text. */}
+## Does Working from Home Work?
+
+Bloom et al. (2015) ran a randomised experiment at Ctrip, a Chinese travel agency. In the working-paper version (Bloom et al., 2014), staff of its Shanghai call centre who volunteered, with at least six months of tenure, broadband, and a private room at home, were randomly assigned to work from home four days a week or to stay in the office. Performance rose 13% at home. About 9 points came from more minutes worked per shift, through fewer breaks and sick days, and 4 points from more calls per minute. The promotion rate conditional on performance fell, though the cause was not tested.
+
+The working-paper version (Bloom et al., 2014) restricts the performance result to jobs of this type, with little teamwork, and participants were volunteers. The experiment therefore does not show that engineering or other collaborative work would gain.
+
+{/* Source tracking: Olson & Olson (2000), section 5.2 and conclusions; Hinds & Mortensen (2005), abstract; Mark et al. (2008), abstract. */}
 ## Practices That Address the Challenges
 
-Remote work is not inherently less productive. A randomized experiment at a Chinese travel agency found that employees who worked from home were more productive than office-based colleagues (Bloom et al., 2015). The gains depend on how the work is organized, which is why the practices below matter. Most effective remote practices reduce dependence on real-time communication without removing human contact.
+The research above suggests several practices, offered here as inferences rather than proven rules.
 
-- **Asynchronous first.** Default to written communication in a shared, searchable place such as an issue tracker, a design document, or a team chat channel with clear threading. A written update lets a teammate in another time zone act without waiting for a meeting.
-- **Intentional over-communication.** Narrate work in progress. A short note that says what is being attempted, what is blocked, and when the author expects to know more replaces the ambient signals of an office.
-- **Protected focus time and office hours.** Set specific periods for synchronous collaboration and encourage long stretches without meetings. Office hours concentrate interruptions into predictable windows.
-- **Written decisions.** Record decisions and their reasons in a durable place. A decision that exists only in a call is invisible to anyone who was not there.
-- **Explicit boundaries.** Publish working hours, response expectations, and out-of-office status so that people do not feel obliged to answer messages during rest.
+- **Asynchronous first.** Default to written communication in a shared, searchable place such as an issue tracker or a design document. Olson and Olson (2000) say round-the-clock work across time zones needs clear status communication, which suggests that written updates let a teammate in another time zone act without a meeting.
+- **Narrate work in progress.** A short note on what is being attempted, what is blocked, and when the author expects to know more replaces some ambient signals of an office. This suggests a way to rebuild shared context that Hinds and Mortensen (2005) link to lower task conflict.
+- **Protected focus time.** Concentrating synchronous collaboration into set windows reduces the interruptions that Mark et al. (2008) associate with stress.
+- **Written decisions.** Record decisions and their reasons in a durable place. This suggests a way to build the common ground that Olson and Olson (2000) describe, because a decision made only in a call is invisible to anyone who was absent.
 
-Tools support these practices but do not create them. A team with weak norms will struggle with any tool, and a team with strong norms can work well with a small set of simple tools.
+## Example: A Handoff Between Two Time Zones
 
-## Example: A Cross-Time-Zone Handoff
+This hypothetical case involves a payment team with a backend engineer in Lisbon and a reviewer in Toronto. In week 3, the Lisbon engineer finishes a database migration at the end of her day and leaves no written status. The Toronto reviewer starts the next morning, finds the migration half-applied, and spends three hours reconstructing its state from logs. The two engineers lack common ground about the state of the work, and the half-applied state is ambiguous, so the handoff needs the clarification that Olson and Olson (2000) associate with tightly coupled work.
 
-A payment service team has engineers in Lisbon and in Toronto. The Lisbon engineer finishes a migration at the end of the day and leaves no written status. The Toronto engineer starts work the next morning, finds the migration half-applied, and spends three hours reconstructing its state from logs before proceeding.
-
-A better handoff takes ten minutes. The Lisbon engineer writes a short note: what was applied, what remains, which checks passed, and what the next step is. The Toronto engineer continues within minutes. The technical work is identical in both cases. The difference is whether the team's communication norms made the state of the work visible without a synchronous conversation.
+In week 4 the team adopts a handoff note: what was applied, what remains, which checks passed, and the next step. Writing it takes ten minutes. The note creates common ground in writing and gives an unambiguous status, which turns the handoff into loosely coupled work that can cross a time-zone gap, as Olson and Olson (2000) require for round-the-clock work.
 
 ## Exercise
 
-Consider a team whose members work across three time zones. One engineer repeatedly reports that important decisions are made in a call they could not attend. Propose two changes to the team's practices that would give that engineer equal access to decisions without requiring them to attend every meeting. Explain which of the four challenges each change addresses.
+Consider a team whose members work across three time zones. One engineer repeatedly reports that important decisions are made in a call they could not attend. Write two practice changes that give that engineer equal access to decisions without attending every meeting. A good answer names the specific artefact each change produces (for example, who writes what, where, and by when) and explains which source above, Hinds and Mortensen (2005), Olson and Olson (2000), or Mark et al. (2008), supports the change as an inference.
 
 <CaseStudy client:load
   title="The Missed Architecture Decision"
-  scenario="A distributed team of six decides in a video call to replace a message queue. Two members in one time zone attended. The other four learn of the change when a pull request arrives that depends on it. The team has a shared chat channel, but no decision log."
-  question="Which change most directly addresses the visibility gap in this situation?"
+  scenario="A distributed team of six decides in a video call to replace a message queue. Two members attended. The other four learn of the change when a pull request arrives that depends on it. The team has a shared chat channel but no record of decisions."
+  question="Which change most directly gives absent members common ground about the decision?"
   options={[
-    "Schedule a longer weekly sync so that all members attend the architecture discussion.",
-    "Record each architecture decision, with its reasons and the people affected, in a shared decision log that the team reviews asynchronously.",
-    "Require every engineer to join every call by making attendance part of the performance review.",
-    "Move all discussion to a private chat between the two engineers who attended the call."
+    "Schedule a longer weekly sync so that all members attend architecture discussions.",
+    "Make attendance at every design call part of the performance review.",
+    "Record each decision, its reasons, and the people affected in a shared log that members read asynchronously.",
+    "Post the meeting recording in the chat channel."
   ]}
-  correctIndex={1}
-  explanation="A written decision log makes the outcome and its reasons available to everyone, including people in other time zones, without depending on a live meeting. Longer meetings and mandatory attendance increase the synchronous burden the team already struggles with."
+  correctIndex={2}
+  explanation="A written log gives everyone, including people in other time zones, the outcome and its reasons without a live meeting, which builds the common ground Olson and Olson (2000) describe. A longer sync or mandatory attendance adds synchronous load and excludes people who cannot join, and a posted recording leaves the decision and its reasons unsearchable, so absent members must watch it to find them."
+/>
+
+<Quiz client:load
+  title="What the Ctrip Experiment Shows"
+  question="Which conclusion is supported by Bloom et al. (2015)?"
+  options={[
+    "Volunteer call-centre staff working from home performed better, within limits.",
+    "Software teams that work from home are about 13% more productive than comparable co-located teams in similar companies.",
+    "Working from home raised promotion rates, because employees at home performed better than their office colleagues.",
+    "Remote work improves teamwork, because employees at home worked more minutes per shift and stayed longer."
+  ]}
+  correctIndex={0}
+  explanation="The experiment randomised volunteer call-centre staff and found a 13% performance rise, mostly from more minutes worked. Its authors confine the performance result to similar jobs with little teamwork, so it says nothing direct about engineering teams. The conditional promotion rate fell, and the study did not test why."
 />
 
 ## References
 
-- Hinds, P. J., & Mortensen, M. (2005). Understanding conflict in geographically distributed teams: The moderating effects of shared identity, shared context, and spontaneous communication. *Organization Science*, 16(3), 290–307. [https://doi.org/10.1287/orsc.1050.0133](https://doi.org/10.1287/orsc.1050.0133)
+- Hinds, P. J., & Mortensen, M. (2005). Understanding conflict in geographically distributed teams: The moderating effects of shared identity, shared context, and spontaneous communication. *Organization Science*, 16(3), 290–307. [https://doi.org/10.1287/orsc.1050.0122](https://doi.org/10.1287/orsc.1050.0122)
 - Bloom, N., Liang, J., Roberts, J., & Ying, Z. J. (2015). Does working from home work? Evidence from a Chinese experiment. *The Quarterly Journal of Economics*, 130(1), 165–218. [https://doi.org/10.1093/qje/qju032](https://doi.org/10.1093/qje/qju032)
+- Mark, G., Gudith, D., & Klocke, U. (2008). The cost of interrupted work: More speed and stress. In *Proceedings of the SIGCHI Conference on Human Factors in Computing Systems* (pp. 107–110). ACM. [https://doi.org/10.1145/1357054.1357072](https://doi.org/10.1145/1357054.1357072)
+- Olson, G. M., & Olson, J. S. (2000). Distance matters. *Human–Computer Interaction*, 15(2–3), 139–178. [https://doi.org/10.1207/s15327051hci1523_4](https://doi.org/10.1207/s15327051hci1523_4)
+- Bloom, N., Liang, J., Roberts, J., & Ying, Z. J. (2014, November 6). Does working from home work? Evidence from a Chinese experiment [Manuscript; J-PAL research paper]. [https://povertyactionlab.org/sites/default/files/research-paper/649%20Working%20from%20Home%20Nov2014.pdf](https://povertyactionlab.org/sites/default/files/research-paper/649%20Working%20from%20Home%20Nov2014.pdf)

@@ -1,26 +1,96 @@
 ---
 title: Group Development Models
 course: team-dynamics
-description: Understanding the temporal and behavioral stages of team evolution.
+description: Two competing accounts of how teams change over time, Tuckman's stage sequence and Gersick's punctuated equilibrium, and how strong the evidence for each is.
 ---
-# The Lifecycle of a Team
 
-Teams are dynamic organisms that evolve over time. Understanding the predictable stages of group development allows leaders to calibrate their support and expectations.
+import CaseStudy from '../../../components/CaseStudy';
+import Quiz from '../../../components/Quiz';
 
-### 1. Tuckman's Stages of Group Development
-The most widely recognized model, describing a linear progression:
-- **Forming**: High dependence on leader for guidance. Individual roles are unclear. High desire for acceptance.
-- **Storming**: Boundary-pushing. Conflict arises as different working styles clash. Power struggles may occur. Essential for authentic growth.
-- **Norming**: Agreement and consensus forms. Roles and responsibilities are clear. Big decisions are made by group agreement.
-- **Performing**: The team is strategically aware and knows exactly what it's doing. High degree of autonomy and peak efficiency.
-- **Adjourning**: The break-up of the group, focusing on task completion and celebration of achievements.
+# Group Development Models
 
-### 2. Gersick's Punctuated Equilibrium
-A "university-level" alternative to Tuckman, specifically for project teams under deadlines:
-- **Phase 1**: The first meeting sets the direction. The team then remains in a state of "inertia" (doing work but not changing direction) for half of the project's lifespan.
-- **The Midpoint Transition**: Exactly halfway to the deadline, the team experiences a "wake-up call." They drop old patterns and adopt a new urgency.
-- **Phase 2**: A second period of inertia, but at a higher level of productivity followed by a final burst of activity before completion.
+Teams change as they work together. Two influential accounts describe that change in different ways. One proposes a sequence of stages that groups pass through. The other proposes long periods of settled routine, broken by a major transition that is tied to the clock rather than to the amount of work finished.
 
-### Implications for Engineering
-- **Don't suppress "Storming"**: Attempting to skip conflict leads to shallow "Norming" where underlying issues remain hidden.
-- **Leverage the Midpoint**: If you are a project manager, use the midpoint as a strategic pivot point to realign the team.
+## Tuckman's Stage Sequence
+
+{/* Source tracking: Tuckman (1965), abstract; Tuckman and Jensen (1977), abstract. */}
+
+Tuckman (1965) reviewed 50 articles on how groups develop over time. The articles came from three kinds of setting: therapy groups, T-groups (training groups), and natural and laboratory groups. From that review he proposed four stages: forming, storming, norming, and performing. Tuckman and Jensen (1977) described this proposal as a hypothesis and added a fifth stage, adjourning, in which the group comes to an end.
+
+The stage names work as a shorthand for what a group is mainly occupied with. The glosses below paraphrase the Wikipedia article "Tuckman's stages of group development" (Wikipedia, 2026), which is licensed CC BY-SA 4.0. They are that article's account, not Tuckman's own wording:
+
+- **Forming.** The team meets, learns what opportunities and challenges lie ahead, agrees on goals, and starts on its tasks.
+- **Storming.** Members voice opinions, and conflict may arise as power and status are assigned.
+- **Norming.** Disagreements are resolved, and members take responsibility for the team's goals.
+- **Performing.** Members are competent and autonomous, and they can handle decisions without supervision.
+- **Adjourning.** The task is completed and the team breaks up.
+
+A sequence of stages is a claim about order: in this account, storming follows forming and comes before norming.
+
+## Example: A Hypothetical Platform Team
+
+A platform team of four engineers and a product owner starts a twelve-week project. In week 1 the engineers ask the product owner to rank every request, and nobody challenges the ranking. This is a forming pattern: members orient to the task and to each other.
+
+In week 3 two engineers argue over whether reviews should block a release. The product owner reads the argument as a sign that the team is failing. A colleague who knows the stage sequence points out that conflict over power and status is what the storming description in Wikipedia (2026) leads one to expect at this point. Reading that conflict as a dispute over decision rights is an inference. The product owner then asks the team to write down a review rule instead of replacing either engineer. By week 5 the rule is in place, and later disputes are settled by pointing to it, which is a norming pattern. Naming the stage changed the product owner's response from intervention to structure.
+
+## Gersick's Punctuated Equilibrium
+
+{/* Source tracking: Gersick (1988), abstract; Gersick (1989), abstract. */}
+
+Gersick (1988) studied the complete life spans of eight naturally occurring teams. They did not move through universal stages. They progressed through punctuated equilibrium, which means alternating periods of inertia and revolution. During inertia, a team keeps working in the same pattern. In a revolution, the pattern is dropped and a new one adopted. Gersick (1988) reported that time awareness, more than the amount of work completed, set off a team's progress.
+
+Gersick (1989) tested the model in a laboratory study of task groups, and its results matched the field model and went beyond it. The groups made a major transition in their approach to the work around the midpoint of their allotted time. Not every transition succeeded. The midpoint matters because it is a clock event: a team that has used about half its time becomes aware of the deadline and changes course.
+
+This predicts a different set of events than Tuckman's sequence. A team may stay in a settled pattern, even a poor one, until the clock forces a change. This suggests that a manager could treat the midpoint of a project as a planned moment to review direction, since the cited findings tie change to time awareness.
+
+## Example: The Same Platform Team at Week 6
+
+Return to the hypothetical platform team, now at week 6 of twelve. Output is steady but the team has built features nobody asked for, and the product owner has not revisited the original plan. The engineering lead notices that the calendar has crossed the halfway point and calls a half-day session to compare the work done so far against the goal. The team drops two planned features, reassigns one engineer, and sets a weekly demonstration. The change came from awareness of elapsed time, not from a conflict or from finishing a batch of work. That is the midpoint transition Gersick (1989) describes. Under a pure stage reading, nothing in week 6 would have predicted a shift.
+
+## Limitations of the Evidence
+
+{/* Source tracking: Tuckman and Jensen (1977), abstract; Gersick (1988), abstract; Chang, Bordia, and Duck (2003), abstract. */}
+
+Neither model is a tested law. Tuckman's stages came from a review of therapy-group, T-group, and natural and laboratory group studies (Tuckman, 1965). Of 22 studies in their later review, Tuckman and Jensen (1977) found that only one set out to test the hypothesis directly, and they recommended more empirical work. Gersick's field model rests on eight teams (Gersick, 1988), a small sample, and the 1989 study used laboratory groups.
+
+Chang, Bordia, and Duck (2003) coded the records of 25 simulated project teams. They compared the integrative (linear progression) model with punctuated equilibrium. Their results partially supported predictions for both models, and they argued that the two models are complementary rather than competing. This suggests treating steady progression and the midpoint shift as two lenses on one team, each describing something real in some groups, without assuming either one will fit a given team.
+
+## Exercise
+
+Pick a team project you have worked on, or invent one with a fixed deadline. Write a short timeline of five dated events. Mark each event as either a Tuckman-style pattern (name the stage) or a Gersick-style shift (a change triggered by the clock). A good answer names at least one event the other model cannot explain, and says what each model would have predicted for the week of the largest change.
+
+<CaseStudy client:load
+  title="A Quiet Team at the Halfway Point"
+  scenario="A hypothetical six-person team has a twelve-week deadline. For the first six weeks it works smoothly with no open disagreement, and it follows the plan agreed in week 1. In week 6 a team member says the plan no longer fits the goal, and the team rewrites its approach."
+  question="Which reading best fits what happened in week 6?"
+  options={[
+    "Storming arrived late, so the team skipped norming and should return to forming.",
+    "The team reached performing and the rewrite shows that peak efficiency was achieved.",
+    "A midpoint transition of the kind Gersick (1989) reports, triggered by awareness of elapsed time.",
+    "Adjourning began, because the team was ending its original way of working."
+  ]}
+  correctIndex={2}
+  explanation="Gersick (1989) reported a major transition in approach at about the midpoint of the allotted time, after a period of settled routine, which matches a rewrite at week 6 of 12. In the description by Wikipedia (2026), storming involves conflict as power and status are assigned, and none occurred. Adjourning means completing the task and breaking up the team, not changing the plan in the middle."
+/>
+
+<Quiz client:load
+  title="Reading the Evidence"
+  question="Which statement about the evidence is accurate?"
+  options={[
+    "Tuckman and Jensen (1977) found that most reviewed studies directly tested the stage hypothesis.",
+    "Gersick's field model was built from a large sample of work teams.",
+    "Chang, Bordia, and Duck (2003) found that the data fully confirmed the linear-progression model and rejected punctuated equilibrium.",
+    "Chang, Bordia, and Duck (2003) found partial support for both the integrative and punctuated equilibrium models."
+  ]}
+  correctIndex={3}
+  explanation="Chang, Bordia, and Duck (2003) examined 25 simulated project teams and compared the integrative (linear progression) model with punctuated equilibrium, reporting partial support for both and treating them as complementary. The 1977 review found that only one of 22 studies directly tested the hypothesis, and Gersick's field model rested on eight teams, so the first two options misstate the evidence."
+/>
+
+## References
+
+- Tuckman, B. W. (1965). Developmental sequence in small groups. *Psychological Bulletin*, 63(6), 384–399. [https://doi.org/10.1037/h0022100](https://doi.org/10.1037/h0022100)
+- Tuckman, B. W., & Jensen, M. A. C. (1977). Stages of small-group development revisited. *Group & Organization Studies*, 2(4), 419–427. [https://doi.org/10.1177/105960117700200404](https://doi.org/10.1177/105960117700200404)
+- Gersick, C. J. G. (1988). Time and transition in work teams: Toward a new model of group development. *Academy of Management Journal*, 31(1), 9–41. [https://doi.org/10.2307/256496](https://doi.org/10.2307/256496)
+- Gersick, C. J. G. (1989). Marking time: Predictable transitions in task groups. *Academy of Management Journal*, 32(2), 274–309. [https://doi.org/10.2307/256363](https://doi.org/10.2307/256363)
+- Wikipedia (2026). Tuckman\'s stages of group development. *Wikipedia*. Retrieved 2026. [https://en.wikipedia.org/wiki/Tuckman%27s_stages_of_group_development](https://en.wikipedia.org/wiki/Tuckman%27s_stages_of_group_development). Licensed CC BY-SA 4.0.
+- Chang, A., Bordia, P., & Duck, J. (2003). Punctuated equilibrium and linear progression: Toward a new understanding of group development. *Academy of Management Journal*, 46(1), 106–117. [https://doi.org/10.2307/30040680](https://doi.org/10.2307/30040680)

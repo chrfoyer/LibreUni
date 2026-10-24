@@ -1,31 +1,114 @@
 ---
 title: Cognitive Biases in Collaboration
 course: team-dynamics
-description: Identifying the mental shortcuts that lead to sub-optimal team outcomes.
+description: Anchoring, confirmation bias, and biased information sharing in groups, with the evidence for each and for the remedies teams commonly use.
 ---
-# The Biased Brain
 
-Our brains use heuristics (mental shortcuts) to process information quickly. In a team setting, these shortcuts often lead to predictable errors in judgment.
+import CaseStudy from '../../../components/CaseStudy';
+import Quiz from '../../../components/Quiz';
 
-### 1. The Anchoring Effect
-The first piece of information offered (the "anchor") heavily influences subsequent thoughts.
-- *In Engineering*: The first estimate given in a planning session often dictates the final number, regardless of its accuracy.
-- *Solution*: Use "Planning Poker" where estimates are revealed simultaneously.
+# Cognitive Biases in Collaboration
 
-### 2. Confirmation Bias
-The tendency to search for, interpret, and favor information that confirms our pre-existing beliefs.
-- *In Engineering*: If you believe a specific library is the best, you will ignore its performance flaws and over-index on its ease of use.
-- *Solution*: Build "Steel Man" arguments for the options you *don't* like.
+## Heuristics and Anchoring
 
-### 3. The Halo Effect
-Allowing our overall impression of a person ("They are a genius coder") to influence our evaluation of their traits in unrelated areas ("They must be a great architect/manager").
-- *Solution*: Evaluate technical proposals based on the document (RFC), ideally with names removed during initial review.
+{/* Source tracking: Tversky & Kahneman (1974), abstract; Aranda & Easterbrook (2005), software estimation experiment. */}
 
-### 4. False Consensus Effect
-Overestimating the extent to which others share our beliefs and behaviors.
-- *In Engineering*: "Of course everyone knows that we should use a microservices architecture here."
-- *Solution*: Explicitly state assumptions and ask for "objections" rather than "agreement."
+Tversky and Kahneman (1974) described three judgment heuristics: representativeness, availability, and adjustment from an anchor. They called these heuristics highly economical and usually effective, but the source of systematic and predictable errors. A cognitive bias, in this sense, is such a predictable error rather than random noise.
 
-### 5. Social Loafing (The Ringelmann Effect)
-The tendency for individuals to expend less effort when working in a group than when working alone.
-- *Solution*: Keep teams small (the 2-pizza rule) and ensure individual contributions are visible and valued.
+Anchoring is the third heuristic. When a relevant number is available, people start from it and adjust. The adjustment is frequently insufficient (Aranda and Easterbrook, 2005), so the final judgment stays closer to the starting value than it should. In software work the starting value is often a figure someone says aloud: a deadline, a budget, a colleague's guess.
+
+Aranda and Easterbrook (2005) tested this in software estimation. Participants estimated the same project after seeing different suggested figures, and a high anchor shifted the estimates upward compared with a control group. The sample was small, and the effect of the low anchor was not significant, so the finding supports "an anchor pulls estimates toward it", not "the first number decides the result". Field effects may also differ from laboratory ones.
+
+## Confirmation Bias
+
+{/* Source tracking: Nickerson (1998), abstract; Lord, Lepper & Preston (1984), abstract. */}
+
+Nickerson (1998) reviewed confirmation bias across many settings. The term denotes seeking or interpreting evidence in ways that favour existing beliefs, expectations, or a hypothesis already held. An engineer who prefers a library reads its benchmarks charitably, searches for success stories, and treats complaints as edge cases.
+
+Lord, Lepper and Preston (1984) compared two instructions. Asking people to consider the opposite corrected biased judgment more effectively than asking them to be fair and unbiased. This is one article reporting two laboratory experiments, and only its abstract was used here, so the result is encouraging but not a proven team practice. It suggests that a written list of reasons the favoured option might fail is a better prompt than a general call for objectivity.
+
+## Biased Information Sharing in Groups
+
+{/* Source tracking: Stasser & Titus (1985), abstract. */}
+
+Groups add a second problem: what members know does not automatically reach the discussion. Stasser and Titus (1985) gave members partial, deliberately skewed candidate descriptions to read alone before a group discussion. Groups tended to side with the candidate a plurality had favoured at the start, not the strongest one. The authors explained this with a biased sampling model: the conversation gravitates to commonly held facts and to facts that fit members' prior preferences, so talking tends to entrench the distorted picture rather than repair it. The evidence here is one simulation of a political caucus, so the lesson should not be stretched to every meeting.
+
+Social loafing, a drop in individual effort within a group, is sometimes listed beside these biases. It is an effort effect, not a judgment bias, and it falls outside the scope of this topic.
+
+## Example: A Hypothetical Estimation Meeting
+
+Week 3 of a hypothetical project. Tomás, the product owner, opens the estimation meeting by saying that the payment-retry feature "is about a two-week job". Amira, a developer, had privately reasoned the work was larger, but the first spoken figure now frames every discussion, and the team's numbers cluster near Tomás's. This is anchoring: adjustment from his number is insufficient.
+
+The team lead, Dana, changes the process. For the next feature she asks each developer to write an estimate privately and reveal all of them at once, as in planning poker, and the lowest and highest estimators explain their reasoning. Amira's higher figure now appears beside the others, and the explanation exposes a missing migration step that Tomás had not considered. The estimate rises, and the schedule is set on the revised number.
+
+## Evidence on Planning Poker
+
+{/* Source tracking: Molokken-Ostvold & Haugen (2007), abstract. */}
+
+Planning poker is a plausible mitigation, not a proven cure. Molokken-Ostvold and Haugen (2007) reported that tasks estimated with planning poker produced group estimates less optimistic and more accurate than a mechanical combination of individual estimates, while tasks estimated by individual experts reached similar accuracy. Their study does not isolate anchoring, so it does not show that simultaneous reveal removes it. The evidence is therefore weak to mixed. This suggests treating simultaneous reveal as one inexpensive safeguard and checking estimates against past actuals.
+
+## Exercise
+
+Choose one decision your team made recently, such as a technology choice or an estimate. Write one paragraph that names the bias most likely to have affected it (anchoring, confirmation bias, or biased information sharing), cites the observation that suggests it, and proposes one change to the process. A good answer states which evidence cited above supports the change and how strong that evidence is.
+
+<Quiz client:load
+  title="Spotting Biases in Practice"
+  questions={[
+    {
+      question: "Before estimates are collected, the engineering manager says the migration should take about a month. Every developer then proposes a figure within a few days of that. Which effect best describes this?",
+      options: [
+        "The team is choosing the optimistic option because it feels more comfortable to everyone than a realistic one would.",
+        "Anchoring: the spoken figure acts as a starting value and the adjustment away from it is insufficient.",
+        "Confirmation bias: the developers searched for evidence supporting the manager's guess.",
+        "Biased information sharing: the developers withheld facts that only one of them held."
+      ],
+      correctIndex: 1,
+      explanation: "Anchoring is adjustment from a starting value, and the adjustment is frequently insufficient (Aranda and Easterbrook, 2005). Confirmation bias concerns how evidence is sought and interpreted, and nothing in the vignette says information was withheld."
+    },
+    {
+      question: "An architect favours a particular library and collects only articles praising it. Which step has the support of Lord, Lepper and Preston (1984) in one article reporting two laboratory experiments?",
+      options: [
+        "Ask the architect to be as fair and unbiased as possible when reviewing the sources.",
+        "Let the team vote after the architect presents all collected articles.",
+        "Hire an outside reviewer to approve the final decision without discussion.",
+        "Ask the architect to write down reasons the favoured library might turn out worse than the alternatives."
+      ],
+      correctIndex: 3,
+      explanation: "The consider-the-opposite prompt corrected bias more effectively than an instruction to be fair and unbiased, so the first option is the weaker choice. The result comes from one article reporting two laboratory experiments and has not been shown to carry over to team practice."
+    },
+    {
+      question: "A team lead states that planning poker eliminates anchoring in estimates. Which reply is best supported by the evidence cited above?",
+      options: [
+        "Simultaneous reveal is a plausible mitigation, but the studies do not show that it removes anchoring and the evidence is modest.",
+        "The claim is correct, because group estimates under planning poker beat every other estimation method tested in the one study that was cited.",
+        "The claim is wrong, because planning poker was shown to increase anchoring.",
+        "The claim cannot be assessed, because no study has compared planning poker with anything."
+      ],
+      correctIndex: 0,
+      explanation: "Molokken-Ostvold and Haugen (2007) compared planning poker with a mechanical combination of individual estimates and found individual experts reached similar accuracy, and the study did not isolate anchoring. It neither proves elimination nor shows harm."
+    }
+  ]}
+/>
+
+<CaseStudy client:load
+  title="The Vendor Nobody Chose"
+  scenario="Four engineers evaluate three vendors. Every engineer has read the same two facts, both of which favour Vendor B. Each engineer also holds one separate fact that the others have not seen, and each of those facts favours Vendor A, the best option overall. In a 40-minute meeting the team discusses the shared facts at length and chooses Vendor B."
+  question="Which facilitation change is most likely to bring the unshared facts into the decision?"
+  options={[
+    "Extend the meeting so that the shared facts can be discussed in more depth.",
+    "Ask the most senior engineer to speak first so the group converges faster.",
+    "Hold a vote at the start of the meeting and discuss only the disagreement afterwards.",
+    "Have each engineer write down everything they know about each vendor before the meeting, then compile one list."
+  ]}
+  correctIndex={3}
+  explanation="Stasser and Titus (1985) found that discussion is dominated by commonly held information and information supporting existing preferences, so a longer discussion of the shared facts will not help. Collecting each member's knowledge before discussion is an inference from that finding, not a tested remedy, and it puts unshared facts on the table before the group's attention narrows."
+/>
+
+## References
+
+- Tversky, A., & Kahneman, D. (1974). Judgment under uncertainty: Heuristics and biases. *Science*, 185(4157), 1124–1131. [https://doi.org/10.1126/science.185.4157.1124](https://doi.org/10.1126/science.185.4157.1124)
+- Aranda, J., & Easterbrook, S. (2005). Anchoring and adjustment in software estimation. In *Proceedings of the 10th European Software Engineering Conference held jointly with the 13th ACM SIGSOFT International Symposium on Foundations of Software Engineering* (pp. 346–355). ACM. [https://doi.org/10.1145/1081706.1081761](https://doi.org/10.1145/1081706.1081761)
+- Nickerson, R. S. (1998). Confirmation bias: A ubiquitous phenomenon in many guises. *Review of General Psychology*, 2(2), 175–220. [https://doi.org/10.1037/1089-2680.2.2.175](https://doi.org/10.1037/1089-2680.2.2.175)
+- Lord, C. G., Lepper, M. R., & Preston, E. (1984). Considering the opposite: A corrective strategy for social judgment. *Journal of Personality and Social Psychology*, 47(6), 1231–1243. [https://doi.org/10.1037/0022-3514.47.6.1231](https://doi.org/10.1037/0022-3514.47.6.1231)
+- Stasser, G., & Titus, W. (1985). Pooling of unshared information in group decision making: Biased information sampling during discussion. *Journal of Personality and Social Psychology*, 48(6), 1467–1478. [https://doi.org/10.1037/0022-3514.48.6.1467](https://doi.org/10.1037/0022-3514.48.6.1467)
+- Molokken-Ostvold, K., & Haugen, N. C. (2007). Combining estimates with planning poker: An empirical study. In *Proceedings of the 2007 Australian Software Engineering Conference (ASWEC 2007)* (pp. 349–358). IEEE. [https://doi.org/10.1109/ASWEC.2007.15](https://doi.org/10.1109/ASWEC.2007.15)

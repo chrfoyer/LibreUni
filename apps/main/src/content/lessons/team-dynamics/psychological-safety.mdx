@@ -1,81 +1,94 @@
 ---
 title: Psychological Safety
 course: team-dynamics
-description: The shared belief that a team member can speak up about risks, questions, and mistakes without punishment, and the leadership behaviors that build it.
+description: Team psychological safety is a shared belief that interpersonal risk taking is safe, and the evidence and leader behaviors connected to it are examined here.
 ---
+
+import CaseStudy from '../../../components/CaseStudy';
+import Quiz from '../../../components/Quiz';
 
 # The Foundation of Learning Teams
 
-Psychological safety is a shared belief that a team member can speak up with ideas, questions, concerns, or mistakes without being punished or humiliated for it. Amy Edmondson (1999) introduced the concept in a study of work teams. A counterintuitive result from that study is that teams with higher psychological safety reported more errors. The likely explanation is that these teams were more willing to surface problems, so their error counts reflected candor rather than worse performance.
+Engineering work depends on information that is uncomfortable to share: an unrealistic schedule, a design flaw noticed late, a metric that looks wrong. Whether people share it depends on what they expect to happen to them afterwards. Psychological safety names that expectation.
 
-The concept describes a property of the team, not of any individual. A confident engineer can work in a team where speaking up is dangerous, and a quiet one can work in a team where it is normal. Safety is a norm the group holds, and leaders shape it more than anyone else.
+## Definition and Origins
 
-## Why It Matters for Engineering
+{/* Source tracking: Edmondson (1999), abstract; Edmondson and Lei (2014), abstract; Edmondson (2018), chapter 1 excerpt. */}
 
-Engineering depends on information that is uncomfortable to share: a schedule that is unrealistic, a design flaw noticed late, a metric that looks wrong. When people expect to be punished for bad news, they delay reporting it, and problems grow.
+Edmondson (1999) introduced the construct of team psychological safety, in the abstract's words, "a shared belief held by members of a team that the team is safe for interpersonal risk taking". In 51 work teams at one manufacturing company, Edmondson (1999) found that team psychological safety was associated with learning behavior, and that learning behavior mediated the link between psychological safety and team performance.
 
-Google's internal study of team effectiveness, known as Project Aristotle, examined what distinguished high-performing teams. Charles Duhigg's account in the *New York Times Magazine* (2016) reports that psychological safety ranked first among five dynamics associated with effective teams. The study's conclusion is widely cited, but its statistical details are not public in full, so the claim should be read as a finding from a single company's research and not as a general law. Edmondson's academic work provides the more rigorous evidence base.
+The term itself is older. Edmondson (2018) reports that Schein and Bennis addressed psychological safety in a 1965 book, in connection with the uncertainty of organizational change, and that Kahn studied it alongside meaningfulness as a condition for engagement at work in 1990. Edmondson and Lei (2014) describe a first exploration in the 1960s and a renaissance from the 1990s. The 1999 contribution is therefore the team-level construct, not the words.
 
-Psychological safety supports three practical outcomes.
+The construct describes a team, not a person. A confident engineer can work in a team where speaking up is dangerous, and a quiet one in a team where it is normal.
 
-- **Faster learning.** Teams that can admit mistakes detect and correct them sooner.
-- **Better decisions.** Dissenting views are heard before a decision is locked in, which reduces the risk of groupthink.
-- **Greater engagement.** People who believe their input is valued contribute more of it.
+## Why Better Teams Can Report More Errors
 
-## Building It
+{/* Source tracking: Edmondson (1996), abstract; Edmondson (2018), chapter 1 excerpt. */}
 
-Leaders build safety through specific, observable behaviors. Edmondson (2019) calls these the actions of a leader who frames work as a learning problem, invites participation, and responds to failure with curiosity.
+Edmondson (1996) studied patient care groups in two hospitals and found that the groups differed systematically, both in how often errors occurred and in how likely members were to detect and learn from them. In her later account, Edmondson (2018) describes a puzzle: units she rated as stronger teams appeared to make more mistakes, not fewer. She interpreted this as a reporting difference, writing that good teams "don't make more mistakes; they report more", and she says a research assistant who did not know the error counts found differences in how comfortable units were discussing mistakes that were almost perfectly correlated with the detected rates.
 
-1. **Model fallibility.** A lead who says "I don't know, what do you think?" or "I made that call and it was wrong" signals that admitting uncertainty is acceptable.
-2. **Treat failures as system problems.** A blameless postmortem asks how the system allowed the failure and what can change. It does not ask who to blame. The question changes what people are willing to report.
-3. **Invite participation.** Ask quieter members directly for their views, and do not treat silence as agreement. Structured turns in a meeting help.
-4. **Respond constructively.** Thank people for raising a concern before evaluating it. Even a poor idea is worth discussing, because the discussion teaches the team which tradeoffs matter.
+This is Edmondson's interpretation, and the 1996 abstract alone does not state it. This suggests a rule for reading incident data: a low count can mean few errors or little disclosure, and the count alone does not say which.
 
-## Safety Is Not Comfort
+## Evidence from Project Aristotle
 
-Psychological safety is sometimes mistaken for a culture in which nobody disagrees or criticizes. That is a different condition, and it can be harmful. A team that avoids hard conversations to protect feelings does not have safety in Edmondson's sense. Her framing emphasizes candor: people can say difficult things, and the team can handle them.
+{/* Source tracking: Google re:Work (2015), Understand team effectiveness guide; Duhigg (2016); Frazier et al. (2017), abstract. */}
 
-The distinction matters in practice. A safe team holds a sharp design review in which the author's approach is criticized severely, and both parties leave with respect for each other. An unsafe team holds a polite review in which real problems go unmentioned until they appear in production.
+Google's Project Aristotle studied 180 teams, 115 engineering project teams and 65 sales pods. Google re:Work (2015) lists five dynamics in order of importance: psychological safety, dependability, structure and clarity, meaning, and impact. Duhigg (2016) gives the conclusion as "Google's data indicated that psychological safety, more than anything else, was critical to making a team work."
 
-## Example: A Postmortem That Changes Behavior
+The evidence has limits. The re:Work guide describes over 35 statistical models on hundreds of variables but, as far as this lesson's sources show, reports no effect sizes, and no peer-reviewed account was found. This is single-company, summary-level evidence. A broader evidence base is the meta-analysis by Frazier et al. (2017), which aggregates "136 independent samples representing over 22,000 individuals and nearly 5,000 groups"; its abstract states the question of whether psychological safety influences task performance and citizenship behavior beyond leader relations and engagement, and this lesson reports no results from it.
 
-A deployment causes a four-hour outage. In the first postmortem, the team lead asks which engineer approved the change. The engineer, who had raised a concern, says nothing more, and the next three postmortems contain no information about near-misses. In a later incident, the same engineer notices a risk and stays silent.
+## Leader Behaviors
 
-A second postmortem uses the blameless format. The team examines the review process, which allowed a change to merge without a rollback plan. It finds that the engineer's concern had been raised in a comment that was never read by the approver. The fix is a review checklist, and the engineer is credited for raising the concern. The next near-miss is reported within the hour.
+{/* Source tracking: Edmondson (2018), table of contents; Lunney and Lueder (2016), postmortem culture chapter. */}
+
+The table of contents of Edmondson (2018) groups a leader's toolkit under three headings: set the stage, invite participation, and respond productively. One way to read these headings, as this lesson's own reading and not Edmondson's, is by timing: before work starts, when asking for input, and in the moment after someone speaks.
+
+Blameless postmortems apply the same idea to incidents. Lunney and Lueder (2016) state that a blameless postmortem is aimed at "identifying the contributing causes of the incident without indicting any individual or team for bad or inappropriate behavior". They describe blameless postmortems as a tenet of SRE culture.
+
+## Example: Two Reviews of the Same Outage
+
+This is a hypothetical case. In week 1, a deployment causes a four-hour outage on a payments service. Dana, the team lead, opens the first postmortem by asking which engineer approved the change. Marcus, the reviewer, had written a concern in a code comment but says nothing. By week 5, near-misses have stopped appearing in postmortems, and in week 6 Marcus notices a similar risk and stays silent.
+
+In week 7, Dana changes the format to a blameless postmortem. The group examines the review process, which let a change merge without a rollback plan, and finds that Marcus's comment was never seen by the approver. The fix is a review checklist, and Marcus is thanked for raising the concern. In week 9, a different engineer reports a near-miss within the hour. The change in team psychological safety shows in the outcome: the information that was withheld in weeks 1 to 6 now reaches the team while it is still cheap to act on.
 
 ## Exercise
 
-Think of a time you saw a team hide a problem. Identify the specific response that discouraged disclosure. Write a one-paragraph description of how a leader could have responded that would have made disclosure more likely, without lowering the standard for the work.
+Recall a team in which a problem stayed hidden. Write one paragraph naming the specific response, by a leader or colleague, that discouraged disclosure. Then describe a replacement response, stating when it happens (before work, when asking, or after someone speaks, following this lesson's timing reading) and which of the three toolkit headings it matches. A good answer keeps the standard for the work unchanged and shows what the speaker would observe.
 
 <Quiz client:load
-  title="What Psychological Safety Means"
-  question="According to Edmondson's definition, which team is psychologically safe?"
+  title="Reading Error Counts"
+  question="Unit A logs 20 medication errors a quarter and Unit B logs 4. A blind observer finds that staff in Unit A discuss mistakes openly and staff in Unit B rarely do. Which interpretation fits Edmondson's account?"
   options={[
-    "A team in which no one disagrees, because disagreement is treated as conflict.",
-    "A team in which members can raise concerns and admit mistakes without fear of punishment, and can still have candid, difficult conversations.",
-    "A team in which the leader makes all decisions so that members do not have to take risks.",
-    "A team in which members avoid giving negative feedback to protect each other's feelings."
+    "Unit A may report more, so the counts alone cannot show which unit errs more.",
+    "Unit A makes five times as many errors, so its team needs retraining before anything else.",
+    "Unit B is the safer unit, because a lower count always reflects fewer errors in a hospital.",
+    "The counts carry no information about either unit, so they should be ignored in every case."
   ]}
-  correctIndex={1}
-  explanation="Edmondson defines psychological safety as a shared belief that speaking up will not lead to punishment or humiliation. It is compatible with, and often requires, candid disagreement. Avoiding conflict is closer to the opposite of the concept."
+  correctIndex={0}
+  explanation="Edmondson (2018) interpreted higher detected error rates in stronger teams as a reporting difference, supported by a blind observer's findings about how openly units discussed mistakes. Treating the counts as a direct measure of errors made, as the second and third options do, ignores that disclosure varies. The fourth option goes too far: the counts are informative once openness is measured alongside them."
 />
 
 <CaseStudy client:load
   title="The Silent Reviewer"
-  scenario="During a design review, a mid-level engineer notices a race condition in the proposed design. The engineer does not speak, because the design was championed by a senior architect who has been dismissive of questions in earlier reviews. The race condition is found two weeks later during load testing."
-  question="Which leadership action most directly addresses the cause of this silence?"
+  scenario="During a design review, a mid-level engineer notices a race condition in the proposal. The engineer says nothing, because the senior architect who championed the design has dismissed questions in earlier reviews. The race condition is found two weeks later in load testing. The engineering manager wants to change what happens in reviews."
+  question="Which action most directly addresses the cause of the silence?"
   options={[
-    "Remind the mid-level engineer that all concerns should be sent to the architect privately.",
-    "Begin each design review by asking each attendee for a concern before discussing the proposal, and respond to concerns by thanking the raiser and discussing the tradeoffs.",
-    "Remove the mid-level engineer from design reviews to avoid conflict.",
-    "Increase the number of design reviews so that the race condition is more likely to be found."
+    "Run an anonymous survey on review culture each quarter, and act on the aggregate scores when they drop.",
+    "Announce a no-blame policy for design reviews at the next all-hands, while the architect keeps challenging bad news sharply.",
+    "Rotate a designated devil's advocate through every review, leaving the architect's handling of questions as it is today.",
+    "Ask each attendee for a concern before the architect presents, and have the architect thank the raiser before replying."
   ]}
-  correctIndex={1}
-  explanation="Structured invitation for concerns, combined with a constructive response, signals that raising risks is expected. The other options either move the problem out of view or do not address why the engineer stayed silent."
+  correctIndex={3}
+  explanation="The silence came from how questions were received, so the fix acts on the invitation and on the response, two of the toolkit headings in Edmondson (2018). The announcement leaves the architect's reaction unchanged, and the engineer's silence came from that reaction. The devil's advocate gives someone a role but leaves the dismissive response in place, so the mid-level engineer still has no reason to speak."
 />
 
 ## References
 
 - Edmondson, A. (1999). Psychological safety and learning behavior in work teams. *Administrative Science Quarterly*, 44(2), 350–383. [https://doi.org/10.2307/2666999](https://doi.org/10.2307/2666999)
-- Edmondson, A. C. (2019). *The Fearless Organization: Creating Psychological Safety in the Workplace for Learning, Innovation, and Growth*. Wiley.
-- Duhigg, C. (2016, February 25). What Google learned from its quest to build the perfect team. *The New York Times Magazine*.
+- Edmondson, A. C. (1996). Learning from mistakes is easier said than done: Group and organizational influences on the detection and correction of human error. *The Journal of Applied Behavioral Science*, 32(1), 5–28. [https://doi.org/10.1177/0021886396321001](https://doi.org/10.1177/0021886396321001)
+- Edmondson, A. C. (2018). *The Fearless Organization: Creating Psychological Safety in the Workplace for Learning, Innovation, and Growth*. Wiley. ISBN 978-1-119-47726-6.
+- Edmondson, A. C., & Lei, Z. (2014). Psychological safety: The history, renaissance, and future of an interpersonal construct. *Annual Review of Organizational Psychology and Organizational Behavior*, 1, 23–43. [https://doi.org/10.1146/annurev-orgpsych-031413-091305](https://doi.org/10.1146/annurev-orgpsych-031413-091305)
+- Frazier, M. L., Fainshmidt, S., Klinger, R. L., Pezeshkan, A., & Vracheva, V. (2017). Psychological safety: A meta-analytic review and extension. *Personnel Psychology*, 70(1), 113–165. [https://doi.org/10.1111/peps.12183](https://doi.org/10.1111/peps.12183)
+- Google re:Work (2015). Guide: Understand team effectiveness. [https://rework.withgoogle.com/intl/en/guides/understand-team-effectiveness](https://rework.withgoogle.com/intl/en/guides/understand-team-effectiveness)
+- Duhigg, C. (2016, February 25). What Google learned from its quest to build the perfect team. *The New York Times Magazine*. [https://www.nytimes.com/2016/02/28/magazine/what-google-learned-from-its-quest-to-build-the-perfect-team.html](https://www.nytimes.com/2016/02/28/magazine/what-google-learned-from-its-quest-to-build-the-perfect-team.html)
+- Lunney, J., & Lueder, S. (2016). Postmortem culture: Learning from failure. In B. Beyer, C. Jones, J. Petoff, & N. R. Murphy (Eds.), *Site Reliability Engineering: How Google Runs Production Systems*. O'Reilly. [https://sre.google/sre-book/postmortem-culture/](https://sre.google/sre-book/postmortem-culture/)

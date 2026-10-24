@@ -17,13 +17,9 @@ modules:
     lessons:
       - group-development
       - motivation-theory
+      - cognitive-biases
   - title: "Leadership & Strategy"
     lessons:
       - leadership-frameworks
       - decision-making
-  - title: "Organizational Psychology"
-    lessons:
-      - cognitive-biases
-  - title: "Leadership & Strategy"
-    lessons:
       - system-thinking

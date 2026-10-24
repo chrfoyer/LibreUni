@@ -1,31 +1,94 @@
 ---
 title: System Thinking for Teams
 course: team-dynamics
-description: Viewing the team as a complex system of feedback loops and interactions.
+description: A team is a system of feedback loops, delays, and incentives, and interventions work best where they change the structure that produces the behavior.
 ---
+
+import CaseStudy from '../../../components/CaseStudy';
+import Quiz from '../../../components/Quiz';
+
 # The Team as a System
 
-University-level dynamics requires moving from "linear" thinking (A causes B) to "systemic" thinking (A affects B which loops back to A).
+Linear thinking says A causes B. Systems thinking adds that B may feed back on A, sometimes after a delay, so that the effect of an action depends on the loops it joins. Senge (1990) made this view the cornerstone of his five disciplines for a learning organization, and Meadows (1999) gave it a working vocabulary of loops, delays, and leverage points.
 
-### 1. Basic System Dynamics
-- **Feedback Loops**:
-    - *Reinforcing (+)*: Growth or decline that accelerates (e.g., trust breeds transparency, which breeds more trust).
-    - *Balancing (-)*: Stability-seeking (e.g., as the team works faster, technical debt increases, eventually slowing them back down).
-- **Delays**: The time between an action and its consequence (e.g., hiring a new person actually slows a team down for weeks before productivity increases - Brook's Law).
+## Feedback Loops and Delays
 
-### 2. Common System Archetypes
-- **Fixes that Backfire**: A quick fix (e.g., working overtime to hit a deadline) has an immediate positive result but a long-term negative consequence (burnout, bugs) that makes the original problem worse.
-- **Shifting the Burden**: Using a "crutch" (e.g., a specific hero developer fixing every bug) rather than fundamentally improving the team's skillset.
+{/* Source tracking: Meadows (1999), sections on feedback loops and delays. */}
 
-### 3. The Fifth Discipline (Peter Senge)
-A "Learning Organization" requires five disciplines:
-1. **Personal Mastery**: Continuous individual growth.
-2. **Mental Models**: Surfacing and challenging our internal maps of the world.
-3. **Shared Vision**: A genuine commitment to a common future.
-4. **Team Learning**: Collective intelligence that exceeds individual IQ.
-5. **Systems Thinking**: The "cornerstone" that integrates the other four.
+Meadows (1999) distinguishes two loop types. A positive (reinforcing) loop strengthens itself: success in one pass of the loop gives it more force in the next. A negative (balancing) loop is self-correcting, and it is goal-seeking. It needs a goal, a monitoring device that detects deviation from the goal, and a response mechanism that closes the gap.
 
-### High-Leverage Interventions
-In systems, small changes in the right place can lead to significant, lasting improvements.
-- **The Information Flow**: Often, the bottleneck isn't "effort," but the speed and quality of information (who knows what, and when?).
-- **The Reward Structure**: If you reward individual performance but expect team collaboration, you have a systemic conflict. Focus on rewarding *team outcomes*.
+- **Reinforcing, as a hypothesis.** Suppose that when members share bad news early, colleagues respond constructively, and constructive responses make members more willing to share. If so, transparency and trust would grow together, and the same loop would run in reverse after a punished disclosure. This is an illustrative hypothesis, not an empirical finding.
+- **Balancing, with an explicit goal.** A team sets the goal of keeping the backlog of known defects below twenty. The monitor is the weekly defect count. When the count exceeds the goal, the response is to pause feature work and fix defects. The loop pushes the count back toward the goal.
+
+A delay is the time between an action and its consequence. Meadows (1999) notes that excessive delays produce oscillations that may die out, persist, or grow. A team that checks the defect count only once a quarter overreacts when the report finally arrives, then relaxes, then overreacts again.
+
+## Brooks's Law as a Delay
+
+{/* Source tracking: Brooks (1995), as reported in secondary sources; Abdel-Hamid & Madnick (1991), as reported in secondary sources. */}
+
+Brooks's law shows a delay at work. Brooks (1995) put it this way: "Adding manpower to a late software project makes it later." He gave three mechanisms: new members need time to become productive; the number of communication paths grows roughly with the square of team size; and many tasks cannot be divided among more people. The first mechanism is a delay: the cost of training falls on existing staff now, and the payoff arrives later.
+
+The evidence is weaker than the slogan. The law is an argument from experience, and Brooks himself called it an oversimplification. Abdel-Hamid & Madnick (1991) modelled the law in a simulation of software projects.
+
+## Archetypes
+
+{/* Source tracking: Senge (1990), as summarised in secondary sources. */}
+
+Senge (1990) describes recurring structures called archetypes; one is Shifting the Burden. They are conceptual models offered by practitioners, and the sources describe their mechanisms without reporting empirical tests of them.
+
+- **Shifting the Burden.** A symptomatic fix reduces the pressure to apply the fundamental solution, and its side effect further undermines that solution.
+
+## Leverage Points and Incentives
+
+{/* Source tracking: Meadows (1999), leverage points list; Kerr (1975). */}
+
+Meadows (1999) defines leverage points as places where a small change can produce large effects across a whole system. Her list runs from 12 (constants and parameters, which she ranks last) up to 1, and she calls it tentative: its order is slithery, with exceptions to every item. Two items matter for teams. The structure of information flows (who has access to information) is number 6, and she writes that absent feedback is a very common cause of malfunction. The rules, meaning incentives, punishments, and constraints, are number 5, and she urges looking at who holds power over them.
+
+Information flow has a classic anecdote. The story goes that houses with the electricity meter in the front hall used less electricity than comparable houses with the meter in the basement. A team analogue is making the defect backlog visible on a shared board. Raising a target from twenty defects to thirty is a parameter change and leaves the structure as it was.
+
+Kerr (1975) supplies the incentive case. In this essay, with examples from many domains rather than an experiment, he observes that organizations often reward one behavior while hoping for another, and the rewarded behavior then predominates. A team that is paid for individually closed tickets but hoped to collaborate will get closed tickets. This suggests that a lead who wants collaboration should first check what the reward rules actually pay for.
+
+## Example: The Hero Developer
+
+{/* Source tracking: Senge (1990), Shifting the Burden, as summarised in secondary sources. */}
+
+The following case is hypothetical. In week 1, a product team ships a payment service with frequent production bugs. Dana, the senior developer, fixes every incident overnight. The symptom (open incidents) falls, so the manager sees no reason to invest in anything else. By week 6, the other developers never see an incident through to its cause, because Dana gets there first. When Dana takes leave in week 10, an outage lasts two days because nobody else knows the service. The quick fix was the dependence on one person, and its side effect, the erosion of everyone else's skill, undermined the fundamental solution of spreading knowledge. Naming the structure changes the response: the manager pairs Dana with a second developer on each incident and requires a written runbook, which treats the cause instead of the symptom.
+
+## Exercise
+
+Choose a recurring problem in a team you know. Draw its causal loop in words: name the symptom, the quick fix, the side effect, and the fundamental solution. State which archetype it fits, whether each loop is reinforcing or balancing, and where one delay hides. Then propose one intervention at the level of an information flow or a rule rather than a parameter. A good answer names a goal for any balancing loop, traces the side effect back to the fundamental solution, and says why the intervention changes the structure instead of the number.
+
+<CaseStudy client:load
+  title="Dependence on the Hero"
+  scenario="A support team routes every hard ticket to Priya, who resolves them quickly. Ticket backlog drops, and managers praise the arrangement. Over six months, other team members stop attempting hard tickets, Priya works evenings, and when she is out the backlog doubles."
+  question="Which response addresses the fundamental solution rather than the symptom?"
+  options={[
+    "Hire a second specialist who also takes all hard tickets, so the backlog stays low.",
+    "Have Priya pair with others on hard tickets and document her approach, so the team's own capability grows.",
+    "Give Priya a bonus for each hard ticket she closes to keep her motivated.",
+    "Ask Priya to work faster so that the backlog stays low even when others are busy."
+  ]}
+  correctIndex={1}
+  explanation="This is Shifting the Burden: the quick fix of routing to one person reduces the pressure to build team skill and erodes that skill as a side effect. Pairing and documentation rebuild the fundamental solution. A second hero or a bonus repeats the symptomatic fix, and asking for more speed leaves the dependence in place."
+/>
+
+<Quiz client:load
+  title="Classifying Loops"
+  question="A team has a goal of keeping the release cycle under two weeks. A dashboard shows the cycle length, and when it exceeds two weeks the team trims scope. How should this loop be classified?"
+  options={[
+    "Reinforcing, because trimming scope makes the team faster each time.",
+    "Reinforcing, because the dashboard amplifies whatever trend it displays.",
+    "Balancing, because a goal, a monitor, and a response correct deviation.",
+    "Reinforcing, because the loop repeats every cycle and keeps running for as long as the team works."
+  ]}
+  correctIndex={2}
+  explanation="A balancing loop is goal-seeking: it compares the state with a goal and responds to close the gap, which is what scope trimming does here. A reinforcing loop would amplify its own output instead of correcting toward a goal, so the first two options misdescribe the structure."
+/>
+
+## References
+
+- Senge, P. M. (1990). *The Fifth Discipline: The Art and Practice of the Learning Organization*. Doubleday/Currency. ISBN 0-385-26094-6.
+- Meadows, D. H. (1999). *Leverage points: Places to intervene in a system*. The Sustainability Institute. [https://donellameadows.org/archives/leverage-points-places-to-intervene-in-a-system/](https://donellameadows.org/archives/leverage-points-places-to-intervene-in-a-system/)
+- Brooks, F. P., Jr. (1995). *The Mythical Man-Month: Essays on Software Engineering* (Anniversary ed.). Addison-Wesley. ISBN 0-201-83595-9.
+- Abdel-Hamid, T., & Madnick, S. E. (1991). *Software Project Dynamics: An Integrated Approach*. Prentice Hall. ISBN 0-13-822040-9.
+- Kerr, S. (1975). On the folly of rewarding A, while hoping for B. *Academy of Management Journal*, 18(4), 769–783. [https://doi.org/10.2307/255378](https://doi.org/10.2307/255378)
