@@ -1,22 +1,82 @@
 ---
-title: Ways of Working (WoW)
+title: Ways of Working
 course: team-dynamics
-description: Designing the processes that allow teams to flow.
+description: The processes a team uses to plan and deliver work, the trade-offs of Scrum, Kanban, and Shape Up, and how retrospectives turn process into an improvement loop.
 ---
+
 # Designing Your Team Operating System
 
-"Ways of Working" (WoW) is the set of protocols a team uses to coordinate.
+"Ways of working" is the set of practices a team uses to plan, coordinate, and deliver work. It includes how work is split, how priorities are set, how progress is seen, and how decisions about process itself are made. Every team has ways of working, whether or not it has chosen them. The useful question is whether the practices were designed to fit the team's work or inherited without examination.
 
-### Common Frameworks
-- **Agile/Scrum**: Sprints, Standups, and Retrospectives. Focuses on predictability and iterative delivery.
-- **Kanban**: Visualizing flow and limiting Work In Progress (WIP). Focuses on continuous delivery and throughput.
-- **Shape Up**: De-risking work before starting and working in "cycles" without daily standups.
+## Three Common Frameworks
 
-### The Power of the Retrospective
-A team that doesn't reflect cannot improve.
-- **What went well?**
-- **What didn't go well?**
-- **What are we going to change?** (Actionable items only!)
+Frameworks package a set of practices with a rationale. Each one optimizes for different properties of delivery.
 
-### Continuous Improvement (Kaizen)
-WoW should never be static. If a meeting feels useless, change it. If the PR process is too slow, automate it. The team owns the process; the process does not own the team.
+- **Scrum** organizes work into fixed-length sprints with a defined goal, a backlog, a daily synchronization meeting, and a sprint review and retrospective. The Scrum Guide (Schwaber & Sutherland, 2020) defines three accountabilities and five events. Scrum emphasizes predictability and regular inspection of progress, which suits work with clear goals that can be divided into increments.
+- **Kanban** visualizes work on a board and limits the amount of work in progress at each stage. David Anderson (2010) developed it as a way to evolve existing processes gradually. Its main property is flow: a limit on work in progress exposes bottlenecks, and throughput becomes measurable. Kanban does not prescribe time-boxes, so it suits teams with unpredictable or interrupt-driven work, such as operations.
+- **Shape Up** is described by Ryan Singer (2019). It replaces continuous backlog grooming with six-week cycles. Before a cycle starts, a small group shapes a problem into a bounded solution, identifying the risks and leaving out details the builders should decide. The team then works within a fixed time. Shape Up de-risks work before it starts, and it avoids the daily status ritual that some teams find unhelpful.
+
+None of these is correct in general. Scrum's sprint boundaries fit work that can be finished in two weeks. Kanban's flow measures fit a support queue. Shape Up's upfront shaping fits product work where scope is the main uncertainty. A team that adopts a framework without understanding its assumptions often keeps the ceremonies and loses the purpose behind them.
+
+## Example: Choosing Between Sprints and Flow
+
+A platform team maintains internal tooling and also responds to incidents from other teams. Its sprints are repeatedly disrupted, and two of every five planned items are carried over. The team is not failing at Scrum. Its work arrives unpredictably, so fixed-length commitments are the wrong unit of planning.
+
+A better response is to keep the team's planning cadence but use a board with a work-in-progress limit for the unplanned queue, and reserve a fixed share of capacity for incidents. The team then measures how long items take from start to finish, which gives it evidence for future planning. The change came from examining the work, not from switching to the most popular framework.
+
+## The Retrospective
+
+Every framework above includes some form of reflection, and the retrospective is its most important form. A team that does not examine its own process cannot improve it. Derby and Larsen (2006) describe retrospectives as structured conversations that surface what happened, why, and what to change.
+
+A simple structure is enough.
+
+1. **What went well?** Name practices to keep.
+2. **What did not go well?** Describe specific events, not general complaints.
+3. **What will we change?** Choose one or two actions, assign an owner, and check the result in the next retrospective.
+
+The third question is where most retrospectives fail. A list of ten improvements that nobody owns produces no change. Actionable items should be specific enough that a team member could tell, at the next meeting, whether they were done.
+
+## Continuous Improvement
+
+Taiichi Ohno's Toyota Production System and the idea of kaizen, popularized outside Japan by Masaaki Imai (1986), treat small, continuous improvement as the responsibility of everyone in the process, not only of managers. Applied to a team, this means that a meeting that does not help should be changed, a review process that is too slow should be automated where possible, and the team should treat its own process as something it designs and revises.
+
+A useful rule follows: the team owns the process, and the process should not own the team. When a practice starts to cost more than it gives, the team should be willing to change it.
+
+## Exercise
+
+Pick one practice your team uses, such as a standup, a review rule, or a planning meeting. Write down its purpose, the outcome the team currently gets from it, and one change that would improve the outcome. State how you would know, in four weeks, whether the change worked.
+
+<CaseStudy client:load
+  title="The Ceremony That Stopped Helping"
+  scenario="A four-person team holds a fifteen-minute daily standup in which each member lists yesterday's work. Two members are on different projects and rarely depend on each other. The meeting has grown to thirty minutes because people explain details that only one listener needs."
+  question="Which change best preserves the purpose of the standup while reducing its cost?"
+  options={[
+    "Cancel the standup and rely on the sprint review at the end of each cycle.",
+    "Keep the standup, but focus it on blockers and dependencies between members, and move detailed discussion to a separate thread.",
+    "Keep the same format and add a second standup for the members who work on different projects.",
+    "Require each member to write a longer status report before the meeting."
+  ]}
+  correctIndex={1}
+  explanation="The purpose of a standup is to surface blockers and dependencies. Focusing on those and moving detail to a thread keeps the coordination benefit while removing the time spent on information only a few people need. Cancelling the standup removes the coordination, and a second meeting or longer reports add cost without addressing the cause."
+/>
+
+<Quiz client:load
+  title="Work in Progress"
+  question="Why does Kanban limit the amount of work in progress at each stage?"
+  options={[
+    "To make sure every team member is always busy with a single task.",
+    "To expose bottlenecks and keep work flowing, because excess work in progress lengthens the time each item takes to finish.",
+    "To reduce the number of meetings the team has to attend.",
+    "To make estimates unnecessary by fixing the length of every task."
+  ]}
+  correctIndex={1}
+  explanation="Limiting work in progress makes queues visible and forces the team to finish items before starting new ones. Without limits, work accumulates, cycle time grows, and bottlenecks remain hidden."
+/>
+
+## References
+
+- Schwaber, K., & Sutherland, J. (2020). *The Scrum Guide*. [https://scrumguides.org/](https://scrumguides.org/)
+- Anderson, D. J. (2010). *Kanban: Successful Evolutionary Change for Your Technology Business*. Blue Hole Press.
+- Singer, R. (2019). *Shape Up: Stop Running in Circles and Ship Work that Matters*. Basecamp. [https://basecamp.com/shapeup](https://basecamp.com/shapeup)
+- Derby, E., & Larsen, D. (2006). *Agile Retrospectives: Making Good Teams Great*. Pragmatic Bookshelf.
+- Imai, M. (1986). *Kaizen: The Key to Japan's Competitive Success*. McGraw-Hill.

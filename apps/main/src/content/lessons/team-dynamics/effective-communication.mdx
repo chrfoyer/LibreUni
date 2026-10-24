@@ -1,24 +1,82 @@
 ---
 title: Effective Communication
 course: team-dynamics
-description: Learning to communicate with clarity, empathy, and intent.
+description: How engineers choose between synchronous and asynchronous channels, give feedback in code review, and confirm that a message has been understood.
 ---
+
 # High-Bandwidth Communication
 
-In engineering, communication is the process of transferring mental models from one person to another.
+Communication in engineering transfers mental models. When one engineer describes a design, the goal is not only that the listener hears the words but that the listener builds a model of the system that matches the speaker's. Most communication failures are mismatches between those models. Each party believes the other agrees, and the disagreement appears later, usually in code or in production.
 
-### Forms of Communication
-- **Synchronous**: Meetings, Pair Programming, Instant Messaging. Use for high-ambiguity, urgent, or emotionally sensitive topics.
-- **Asynchronous**: Email, PR Comments, RFCs. Use for deep work, documentation, and non-urgent updates.
+Herbert Clark and Susan Brennan (1991) describe communication as a process of *grounding*: speakers and listeners jointly establish that a message has been understood. Grounding takes effort, and the channel determines how much effort it costs. Face-to-face conversation provides immediate feedback through facial expression, pauses, and interruptions. A written comment provides almost none, so the author has to anticipate misreadings.
 
-### The Art of the Code Review
-Code reviews are a social interaction first.
-- **Be Kind**: "This could be improved" instead of "This is wrong."
-- **Focus on the Code**: Use "we" or talk about the code directly ("The variable name...") instead of "you."
-- **Explain 'Why'**: Don't just give a command; provide the reasoning.
+## Choosing a Channel
 
-### Active Listening
-Communication isn't just about talking.
-- **Mirroring**: Repeating back what you heard to confirm understanding.
-- **Asking Open-Ended Questions**: "Help me understand how this part works?"
-- **Validating**: Acknowledging the other person's perspective, even if you disagree.
+Synchronous and asynchronous communication suit different purposes.
+
+- **Synchronous** channels include meetings, pair programming, and instant messaging. They provide fast feedback and are appropriate when a topic is ambiguous, urgent, or emotionally sensitive. A disagreement about a team's priorities usually needs a live conversation, because the nuance is hard to convey in text.
+- **Asynchronous** channels include email, pull request comments, and design documents. They allow careful thought, create a record, and do not interrupt anyone. They suit deep technical work, documentation, and updates that do not require an immediate response.
+
+A common error is to use a synchronous channel for an asynchronous purpose. A design question sent as a chat message and answered in three quick exchanges leaves no record and often produces an answer that the wider team never sees.
+
+## Giving Feedback in Code Review
+
+Code review is a social interaction before it is a technical one. Sadowski and colleagues (2018), describing code review practice at Google, note that the process serves knowledge sharing and team cohesion as well as defect detection. A reviewer who sounds dismissive can discourage a colleague even when every comment is correct.
+
+Several practices reduce this risk.
+
+- **Describe the code, not the person.** "This function mixes parsing and validation" is more useful than "You made this hard to follow."
+- **Explain the reason.** A comment that says "use a map here, because lookups happen in a hot loop" gives the author something to evaluate. A bare instruction gives them only something to obey.
+- **Separate blocking issues from suggestions.** Mark which comments must be addressed before merging and which are optional. Authors who cannot tell the difference tend to either over-correct or ignore everything.
+- **Ask before asserting.** "Is there a reason this handles only the first element?" invites an explanation. It may reveal a context the reviewer lacked.
+
+## Active Listening
+
+Listening is the other half of communication, and it is harder to observe. Three techniques make it deliberate.
+
+- **Mirroring.** Restate what you heard in your own words. "So the concern is that the cache can return stale data during deployment?" lets the speaker correct a misunderstanding before it becomes a design decision.
+- **Open questions.** Ask questions that require an explanation rather than a yes or no. "How does this path behave when the upstream service times out?" reveals more than "Does this handle timeouts?"
+- **Acknowledging the other view.** You can recognize a person's point without agreeing with it. "That tradeoff matters for the on-call team, and I think it is outweighed by the latency cost" shows that the point was heard and weighed.
+
+## Example: A Design Disagreement Resolved in Writing
+
+Two engineers disagree about whether a service should use a relational database or a document store. In a chat thread, each restates a position, and the disagreement grows. The team lead asks both to write a one-page comparison that lists the query patterns, the consistency requirements, and the operational costs of each option. Once the document exists, the disagreement narrows to two specific questions about query patterns, which the team can test.
+
+The written artifact did not remove the disagreement. It made the models explicit enough to compare. That is the purpose of high-bandwidth communication: not more messages, but messages that let two people's models converge.
+
+## Exercise
+
+Choose a recent technical disagreement you were part of or observed. Identify where the models diverged: what each person assumed about requirements, constraints, or the system. Write a three-sentence summary that a neutral reader could accept as both parties' positions. If you cannot write it, that is evidence that grounding did not happen.
+
+<Quiz client:load
+  title="Choosing the Channel"
+  question="A team member needs to tell the group that a shared dependency is being deprecated next quarter, and that the change has no urgent impact. Which channel is most appropriate?"
+  options={[
+    "A thirty-minute meeting, so that everyone can ask questions immediately.",
+    "A written announcement in the team's documentation or channel, with a link to the migration guide and a deadline.",
+    "A private message to the two engineers who use the dependency most.",
+    "A comment on an unrelated pull request, so that it is seen by the people who read reviews."
+  ]}
+  correctIndex={1}
+  explanation="The update is non-urgent and informational, so an asynchronous written announcement is suitable. It creates a durable record, reaches everyone, and lets readers respond when they have time. The other options either interrupt unnecessarily, exclude people, or hide the message."
+/>
+
+<CaseStudy client:load
+  title="The Terse Review"
+  scenario="A senior engineer reviews a junior colleague's pull request. Their only comments are 'Wrong approach' on the first change and 'Rewrite this' on the second. The junior engineer does not reply and quietly closes the pull request the next day."
+  question="Which response best improves the communication in this review?"
+  options={[
+    "Ask the senior engineer to apologize and resubmit the same review.",
+    "Explain what problem the approach causes, suggest an alternative with its reasoning, and mark which comments are blocking.",
+    "Merge the pull request without changes to avoid further friction.",
+    "Escalate the disagreement to the team lead so that the junior engineer is not reviewed by the same person again."
+  ]}
+  correctIndex={1}
+  explanation="Specific comments that explain the reasoning and distinguish blocking issues from suggestions give the author something to act on. Escalation or merging without changes avoids the communication problem rather than solving it."
+/>
+
+## References
+
+- Clark, H. H., & Brennan, S. E. (1991). Grounding in communication. In L. B. Resnick, J. M. Levine, & S. D. Teasley (Eds.), *Perspectives on Socially Shared Cognition* (pp. 127–149). American Psychological Association.
+- Sadowski, C., Söderberg, E., Church, L., Sipko, M., & Bacchelli, A. (2018). Modern code review: A case study at Google. In *Proceedings of the 40th International Conference on Software Engineering: Software Engineering in Practice*, 181–190.
+- Hinds, P. J., & Mortensen, M. (2005). Understanding conflict in geographically distributed teams: The moderating effects of shared identity, shared context, and spontaneous communication. *Organization Science*, 16(3), 290–307. [https://doi.org/10.1287/orsc.1050.0133](https://doi.org/10.1287/orsc.1050.0133)

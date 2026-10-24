@@ -1,25 +1,82 @@
 ---
 title: Conflict Resolution
 course: team-dynamics
-description: Transforming technical and personal disagreements into productive outcomes.
+description: How task, process, and relationship conflict differ in their effects on teams, and how interest-based negotiation and escalation paths turn disagreement into decisions.
 ---
+
 # Navigating Friction
 
-Conflict is inevitable in any high-performing team. The goal is not to eliminate conflict, but to make it *constructive*.
+Conflict is a normal part of any team that does real work. Two engineers who disagree about a data model are doing their jobs. The aim is not to remove conflict but to keep it productive, so that disagreement improves the decision instead of damaging the team that makes it.
 
-### Types of Conflict
-1. **Task Conflict**: Disagreement over *what* to do or *how* to do it (e.g., architectural choices). This is often healthy.
-2. **Process Conflict**: Disagreement over the "Ways of Working" (e.g., estimation methods).
-3. **Relationship Conflict**: Personal friction or lack of trust. This is usually destructive.
+Research supports this distinction. Karen Jehn (1995) studied work groups and separated conflict into types with different effects. Task conflict, a disagreement about the content of the work, was associated with better decision quality when it was kept within bounds. Relationship conflict, a disagreement about personal matters, was associated with lower satisfaction and performance. The practical lesson is that the type of conflict matters more than its amount.
 
-### The Interest-Based Relational (IBR) Approach
-- **Prioritize Relationships**: Fix the problem, don't damage the person.
-- **Separate People from Problems**: Focus on the technical trade-offs, not who proposed what.
-- **Listen First, Talk Second**: Ensure everyone feels heard before seeking a solution.
-- **Explore Options Together**: Collaborate on a "win-win" solution rather than compromising.
+## Three Types of Conflict
 
-### Escalation Paths
-When a stalemate occurs:
-1. **Peer Review**: Get a third person's perspective.
-2. **Experimentation**: Try both ways (if possible) and measure.
-3. **Decision Maker**: Escalate to a Lead or Manager who can make the final call (and commit to that decision).
+1. **Task conflict** is disagreement over *what* to build or *how* to build it, such as an architectural choice or the scope of a release. It is often healthy when people can separate the idea from the person who proposed it.
+2. **Process conflict** is disagreement over the team's ways of working, such as how estimates are made or who approves a merge. It is common during changes in practice and usually resolves through explicit agreement about the process.
+3. **Relationship conflict** is personal friction, a lack of trust, or a history of unresolved slights. It is usually destructive because it makes every technical disagreement feel personal.
+
+The three types often blur together. A technical disagreement becomes a relationship conflict when one party believes the other is acting in bad faith. Good resolution starts by identifying which type is occurring.
+
+## Principled Negotiation
+
+Roger Fisher and William Ury (1981) proposed an approach to negotiation that separates the people from the problem and focuses on interests rather than positions. A position is what someone says they want. An interest is why they want it. Two engineers may both insist on a particular framework, but one wants fast onboarding and the other wants long-term maintainability. Once the interests are visible, the team can search for options that satisfy both.
+
+Applied to team conflict, the approach has four steps.
+
+- **Separate the people from the problem.** Discuss the design, not the author. "This approach makes failure recovery harder" is about the system.
+- **Focus on interests.** Ask what each person needs the solution to achieve before debating the solution.
+- **Listen before proposing.** Make sure each party can state the other's view accurately before negotiating. Many stalemates persist because one side has not been heard.
+- **Generate options together.** Look for solutions that serve both interests, and test them against objective criteria, such as latency targets or maintenance cost, rather than against who has more authority.
+
+## Escalation Paths
+
+Some disagreements cannot be resolved by discussion. Teams need a predictable path for those cases, so that a stalemate does not last for weeks.
+
+1. **Peer review.** Ask a third engineer with relevant knowledge to assess the options and explain the tradeoffs.
+2. **Experiment.** If the options can be tested cheaply, build small prototypes or run a benchmark and let the measurements decide.
+3. **Decision owner.** Escalate to the person with authority over the decision, who makes the call and commits the team to it.
+
+The third step needs a commitment from everyone: once the decision owner decides, the team proceeds with it, and disagreement is recorded but not relitigated in every meeting. Without that commitment, escalation only moves the conflict upward.
+
+## Example: A Stalled Migration
+
+Two senior engineers disagree about whether to migrate a service to a new message broker now or after a planned refactoring. In meetings, each argues the technical merits and neither moves. The team lead asks each engineer to state the other's concern. One says the other fears that a half-finished migration will leave two systems running for months. The other says that a refactoring first will delay the migration by a quarter. Both concerns are legitimate, and they point to a shared interest in not carrying two systems for long.
+
+The team agrees on a time-boxed prototype of the migration on one non-critical path. The prototype reveals a serialization issue that makes the refactoring a prerequisite for part of the migration. The disagreement ends because the evidence settled the task question, and the interests were served by a plan that addressed both concerns.
+
+## Exercise
+
+Think of a recent disagreement on your team. Classify it as task, process, or relationship conflict. Write the stated position of each party and, for each one, a sentence that begins "They want this because." Propose one option that addresses both interests.
+
+<CaseStudy client:load
+  title="Two Positions, One Interest"
+  scenario="Two engineers argue over whether a shared library should be pinned to an exact version or allowed to float within a minor release range. One wants builds to be reproducible. The other wants security patches to reach production without manual work. The argument has lasted three weeks and has become personal."
+  question="Which first step is most likely to move the team toward a resolution?"
+  options={[
+    "Ask the team lead to choose a version policy immediately without discussion.",
+    "Have each engineer state the other's underlying interest, such as reproducible builds or timely security patches, before proposing any policy.",
+    "Split the library into two copies, one pinned and one floating, and let both run in production.",
+    "Schedule a vote so that the majority position is adopted."
+  ]}
+  correctIndex={1}
+  explanation="Making each party state the other's interest converts a position dispute into a problem with shared goals. Once both interests are visible, the team can design a policy that meets them, for example pinned builds with automated patch updates. Choosing by vote or duplicating the library avoids the disagreement instead of resolving it."
+/>
+
+<Quiz client:load
+  title="Types of Conflict"
+  question="Jehn's research suggests which type of conflict is most consistently harmful to team performance?"
+  options={[
+    "Task conflict about the design of a system.",
+    "Process conflict about how estimates are produced.",
+    "Relationship conflict involving personal friction and low trust.",
+    "Disagreement about which metrics to track on a dashboard."
+  ]}
+  correctIndex={2}
+  explanation="Jehn found that relationship conflict was associated with reduced satisfaction and performance, while task conflict could benefit decision quality when kept within bounds. Relationship conflict is the type to address first."
+/>
+
+## References
+
+- Jehn, K. A. (1995). A multimethod examination of the benefits and detriments of intragroup conflict. *Administrative Science Quarterly*, 40(2), 256–282. [https://doi.org/10.2307/2393737](https://doi.org/10.2307/2393737)
+- Fisher, R., & Ury, W. (1981). *Getting to Yes: Negotiating Agreement Without Giving In*. Houghton Mifflin.

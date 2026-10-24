@@ -1,22 +1,58 @@
 ---
 title: Introduction to Team Dynamics
 course: team-dynamics
-description: An overview of what makes teams work (or not).
+description: What team dynamics studies, why it affects engineering outcomes, and how the course's topics connect.
 ---
+
 # The Human Element of Engineering
 
-Success in software engineering is rarely just about code. It's about how people interact, coordinate, and solve problems together. Team dynamics is the study of these interactions.
+Software projects fail for technical reasons and for social ones, and the social causes are harder to see. A design can be sound while the team that must build it withholds bad news, avoids a difficult decision, or waits for someone else to act. Team dynamics is the study of how people in a group interact, coordinate, influence one another, and produce outcomes that no single member could produce alone.
 
-### Why Team Dynamics Matter
-- **Velocity**: Teams that trust each other move faster.
-- **Innovation**: Diverse perspectives lead to better solutions.
-- **Retention**: People stay where they feel valued and heard.
-- **Reliability**: Good communication prevents "human errors" in production.
+The field draws on organizational psychology, sociology, and management research. Its central claim is that group behavior follows patterns. Those patterns can be described, measured in part, and changed by deliberate choices about structure, communication, and leadership.
 
-### Course Roadmap
-In this course, we will explore:
-- **Collaboration**: Navigating remote work, effective communication, and modern "Ways of Working".
-- **Organizational Psychology**: Diving into group development models, motivation theories, and cognitive biases.
-- **Leadership & Strategy**: Mastering leadership frameworks, robust decision-making, and systems thinking.
-- **High-Performance Culture**: Building psychological safety and resolving conflict constructively.
+## Why Team Dynamics Matters for Engineers
 
+A team's output depends on more than the skill of its members. Research on group performance consistently shows that the way members interact is a strong predictor of results. Four consequences are especially relevant to engineering work.
+
+- **Coordination cost.** Every additional dependency between people adds communication overhead. Frederick Brooks described this in *The Mythical Man-Month*, where he observed that adding people to a late project makes it later. The cost is not the new person's effort but the time the existing team spends bringing them up to speed.
+- **Information flow.** Technical decisions depend on who knows what and when. A team in which a junior engineer notices a defect but does not raise it has a systemic problem, even if every individual is competent.
+- **Social loafing.** Individuals often contribute less effort in a group than they would alone, especially when their contribution is not visible. Latané, Williams, and Harkins (1979) documented this effect in experiments on shouting and clapping tasks.
+- **Retention.** People leave teams where they feel their input is ignored. Turnover carries direct costs in recruitment and lost knowledge.
+
+## Example: One Incident, Three Explanations
+
+Consider a production outage caused by a configuration change. A technical explanation says the change was not tested in staging. A dynamics explanation asks a different set of questions. Did the engineer who made the change feel safe asking for review? Did the reviewer assume the author had already tested it? Did the on-call rotation lack a clear escalation path? Did the team reward fast delivery more than careful verification?
+
+Each question points to a different intervention. Better tests address the first explanation. Clearer review norms address the second. Changing incentives and escalation paths addresses the rest. A team that only fixes the technical cause will likely see the same failure pattern again under a different technical guise.
+
+## What This Course Covers
+
+The course moves from observable interactions to the systems that shape them.
+
+- **Collaboration** examines remote work, communication channels, and the operating practices a team adopts, such as Scrum, Kanban, or Shape Up.
+- **Advanced Teamwork** covers psychological safety and the management of conflict, which determine whether a team can talk honestly about problems.
+- **Organizational Psychology** describes how groups develop over time, what motivates knowledge workers, and which cognitive biases distort group judgment.
+- **Leadership and Strategy** compares leadership models, decision regimes, and the feedback structures that make a team's behavior hard to predict.
+
+Each lesson can be read on its own. Later lessons refer to concepts from earlier ones, but none depends on a specific reading order.
+
+## Knowledge Check
+
+<Quiz client:load
+  title="Why Teams Underperform"
+  question="A team produces slow, low-quality work after adding two engineers to a late project. Which explanation is most consistent with the coordination cost described by Brooks?"
+  options={[
+    "The new engineers lack technical skill, so they must be replaced.",
+    "Existing members spend time onboarding and coordinating with the newcomers, which reduces their own output.",
+    "Adding people always increases the amount of work the team can finish at the same rate.",
+    "The team has too few meetings, so information does not reach the new engineers."
+  ]}
+  correctIndex={1}
+  explanation="Brooks argued that adding people to a late project can delay it, because onboarding and added communication consume the time of people already doing the work."
+/>
+
+## References
+
+- Brooks, F. P. (1975). *The Mythical Man-Month: Essays on Software Engineering*. Addison-Wesley.
+- Latané, B., Williams, K., & Harkins, S. (1979). Many hands make light the work: The causes and consequences of social loafing. *Journal of Personality and Social Psychology*, 37(6), 822–832. [https://doi.org/10.1037/0022-3514.37.6.822](https://doi.org/10.1037/0022-3514.37.6.822)
+- Hinds, P. J., & Mortensen, M. (2005). Understanding conflict in geographically distributed teams: The moderating effects of shared identity, shared context, and spontaneous communication. *Organization Science*, 16(3), 290–307. [https://doi.org/10.1287/orsc.1050.0133](https://doi.org/10.1287/orsc.1050.0133)

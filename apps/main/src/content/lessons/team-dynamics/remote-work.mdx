@@ -1,23 +1,63 @@
 ---
 title: The Remote Work Landscape
 course: team-dynamics
-description: Strategies for success in distributed and hybrid environments.
+description: How distributed and hybrid teams coordinate across time zones, and which practices reduce the visibility and isolation problems that remote work creates.
 ---
-# Remote Work: Beyond Zoom Calls
 
-Remote work is not just "working from home"; it's a fundamental shift in how we coordinate effort across space and time.
+# Remote Work: Beyond Video Calls
 
-### Key Challenges
-1. **The Visibility Gap**: How do you know what's happening without tapping someone on the shoulder?
-2. **Context Switching**: The danger of being "always on" and interrupted by pings.
-3. **Social Isolation**: Building relationships without the watercooler.
-4. **Time Zone Asymmetry**: Handling teams spread across the globe.
+Remote work changes how a team coordinates effort across space and time. Moving a meeting from a room to a video call does not change those mechanics. The team still has to decide who knows what, when decisions are made, and how a colleague finds out that a dependency has slipped. Remote and hybrid teams fail when they copy the rituals of co-located work without replacing the informal signals that made those rituals unnecessary.
 
-### Best Practices for Remote Teams
-- **Asynchronous First**: Default to written communication (Slack, GitHub, Documentation) so work doesn't stop when someone is offline.
-- **Intentional Over-communication**: Narrate your work-in-progress to provide context.
-- **Office Hours**: Dedicated times for sync collaboration to prevent constant interruptions.
-- **Work-Life Boundaries**: Setting clear "out of office" expectations to prevent burnout.
+## What Co-location Provided Without Asking
 
-### Tools are Secondary
-Remember: Slack, Jira, and Zoom are tools, not a strategy. A team with poor dynamics will still struggle even with the best tools.
+In an office, much coordination happens without a deliberate act. An engineer sees a teammate stuck at a whiteboard, overhears a conversation about a failing build, or notices that a colleague has not left their desk all day. These signals are weak individually, but together they keep work visible.
+
+Distributed teams lose most of these signals. Research on distributed teams shows that when members lack shared context, they conflict more often and resolve conflicts less well. Hinds and Mortensen (2005) found that spontaneous communication and shared context reduced the difficulty of conflict in geographically distributed teams, and that shared identity by itself did not compensate for their absence.
+
+## Four Core Challenges
+
+1. **The visibility gap.** Without physical presence, a manager or teammate cannot easily tell whether work is progressing. The usual response is more status meetings, which consume time and add interruptions.
+2. **Context switching.** Chat tools and calendar invitations make every member reachable at all times. Each interruption breaks a chain of thought, and the cost of recovering focus is often larger than the interruption itself.
+3. **Social isolation.** Relationships formed through casual contact are harder to create remotely. Weak relationships make it harder to ask for help or disagree.
+4. **Time zone asymmetry.** When teammates are eight or more hours apart, a question asked in the morning may not get an answer until the next day. Handoffs become a source of delay and error.
+
+## Practices That Address the Challenges
+
+Remote work is not inherently less productive. A randomized experiment at a Chinese travel agency found that employees who worked from home were more productive than office-based colleagues (Bloom et al., 2015). The gains depend on how the work is organized, which is why the practices below matter. Most effective remote practices reduce dependence on real-time communication without removing human contact.
+
+- **Asynchronous first.** Default to written communication in a shared, searchable place such as an issue tracker, a design document, or a team chat channel with clear threading. A written update lets a teammate in another time zone act without waiting for a meeting.
+- **Intentional over-communication.** Narrate work in progress. A short note that says what is being attempted, what is blocked, and when the author expects to know more replaces the ambient signals of an office.
+- **Protected focus time and office hours.** Set specific periods for synchronous collaboration and encourage long stretches without meetings. Office hours concentrate interruptions into predictable windows.
+- **Written decisions.** Record decisions and their reasons in a durable place. A decision that exists only in a call is invisible to anyone who was not there.
+- **Explicit boundaries.** Publish working hours, response expectations, and out-of-office status so that people do not feel obliged to answer messages during rest.
+
+Tools support these practices but do not create them. A team with weak norms will struggle with any tool, and a team with strong norms can work well with a small set of simple tools.
+
+## Example: A Cross-Time-Zone Handoff
+
+A payment service team has engineers in Lisbon and in Toronto. The Lisbon engineer finishes a migration at the end of the day and leaves no written status. The Toronto engineer starts work the next morning, finds the migration half-applied, and spends three hours reconstructing its state from logs before proceeding.
+
+A better handoff takes ten minutes. The Lisbon engineer writes a short note: what was applied, what remains, which checks passed, and what the next step is. The Toronto engineer continues within minutes. The technical work is identical in both cases. The difference is whether the team's communication norms made the state of the work visible without a synchronous conversation.
+
+## Exercise
+
+Consider a team whose members work across three time zones. One engineer repeatedly reports that important decisions are made in a call they could not attend. Propose two changes to the team's practices that would give that engineer equal access to decisions without requiring them to attend every meeting. Explain which of the four challenges each change addresses.
+
+<CaseStudy client:load
+  title="The Missed Architecture Decision"
+  scenario="A distributed team of six decides in a video call to replace a message queue. Two members in one time zone attended. The other four learn of the change when a pull request arrives that depends on it. The team has a shared chat channel, but no decision log."
+  question="Which change most directly addresses the visibility gap in this situation?"
+  options={[
+    "Schedule a longer weekly sync so that all members attend the architecture discussion.",
+    "Record each architecture decision, with its reasons and the people affected, in a shared decision log that the team reviews asynchronously.",
+    "Require every engineer to join every call by making attendance part of the performance review.",
+    "Move all discussion to a private chat between the two engineers who attended the call."
+  ]}
+  correctIndex={1}
+  explanation="A written decision log makes the outcome and its reasons available to everyone, including people in other time zones, without depending on a live meeting. Longer meetings and mandatory attendance increase the synchronous burden the team already struggles with."
+/>
+
+## References
+
+- Hinds, P. J., & Mortensen, M. (2005). Understanding conflict in geographically distributed teams: The moderating effects of shared identity, shared context, and spontaneous communication. *Organization Science*, 16(3), 290–307. [https://doi.org/10.1287/orsc.1050.0133](https://doi.org/10.1287/orsc.1050.0133)
+- Bloom, N., Liang, J., Roberts, J., & Ying, Z. J. (2015). Does working from home work? Evidence from a Chinese experiment. *The Quarterly Journal of Economics*, 130(1), 165–218. [https://doi.org/10.1093/qje/qju032](https://doi.org/10.1093/qje/qju032)
