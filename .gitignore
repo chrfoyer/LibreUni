@@ -28,5 +28,8 @@ playwright-report/
 
 # Python caches and local build metadata
 __pycache__/
+
+# Crossref lookup cache (scripts/check_references.py)
+.cache/
 *.py[cod]
 *.egg-info/
