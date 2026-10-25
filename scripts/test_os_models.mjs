@@ -167,7 +167,7 @@ try {
   const lostSignal = lost.find((state) => state.buffer.length > 0);
   assert.notEqual(lostSignal.consumerA, 'blocked', 'no waiter is registered when the signal occurs');
   assert.equal(lostSignal.wakeup, 'lost');
-  assert.ok(lost.every((state) => state.consumerA !== 'blocked'), 'the broken trace never registers the waiter');
+  assert.ok(lost.every((state) => state.consumerA !== 'blocked' && state.wakeup !== 'armed'), 'the broken trace never registers the waiter');
   assert.deepEqual([lost.at(-1).buffer, lost.at(-1).producer, lost.at(-1).consumerA], [['X'], 'done', 'sleeping'], 'consumer sleeps forever beside available work');
   const herd = traces.ifcheck.states;
   const broadcast = herd.find((state) => state.wakeup === 'broadcast');
