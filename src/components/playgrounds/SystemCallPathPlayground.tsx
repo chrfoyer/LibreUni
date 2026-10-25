@@ -61,7 +61,7 @@ export const stages: Stage[] = [
   },
   {
     actor: 'Trampoline and sret',
-    mode: 'hardware',
+    mode: 'kernel',
     action: 'Restores saved user registers; sret restores the selected privilege and program counter',
     state: 'The user PC resumes after the ecall; a0 contains 4 or an error.',
     invariant: 'Kernel-only state and privilege must not leak across the return boundary.',
