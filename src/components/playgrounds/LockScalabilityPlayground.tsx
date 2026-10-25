@@ -3,7 +3,7 @@ import InteractivePlayground from '../InteractivePlayground';
 
 type Design = 'global' | 'sharded' | 'rcu';
 
-function speedup(design: Design, cores: number, criticalFraction: number, readFraction: number) {
+export function speedup(design: Design, cores: number, criticalFraction: number, readFraction: number) {
   const f = criticalFraction;
   if (design === 'global') return 1 / (f + (1 - f) / cores);
   if (design === 'sharded') {

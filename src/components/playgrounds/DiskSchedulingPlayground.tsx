@@ -9,7 +9,7 @@ const workloads: Record<string, number[]> = {
   adversarial: [10, 190, 20, 180, 30, 170, 40, 160],
 };
 
-function route(requests: number[], head: number, policy: Policy) {
+export function route(requests: number[], head: number, policy: Policy) {
   if (policy === 'FCFS') return [head, ...requests];
   if (policy === 'SCAN') {
     const upper = requests.filter((request) => request >= head).sort((a, b) => a - b);
@@ -30,7 +30,7 @@ function route(requests: number[], head: number, policy: Policy) {
   return result;
 }
 
-function distance(path: number[]) {
+export function distance(path: number[]) {
   return path.slice(1).reduce((sum, value, index) => sum + Math.abs(value - path[index]), 0);
 }
 
