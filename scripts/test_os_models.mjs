@@ -13,7 +13,7 @@ const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const temp = mkdtempSync(join(tmpdir(), 'libreuni-os-models-'));
 const modules = {};
 try {
-  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground', 'DiskSchedulingPlayground', 'LockScalabilityPlayground', 'DeviceIOPlayground', 'InterleavingPlayground', 'ConditionVariablePlayground', 'IsolationBoundaryPlayground']) {
+  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground', 'DiskSchedulingPlayground', 'LockScalabilityPlayground', 'DeviceIOPlayground', 'InterleavingPlayground', 'ConditionVariablePlayground', 'IsolationBoundaryPlayground', 'SystemCallPathPlayground']) {
     const outfile = join(temp, `${name}.mjs`);
     buildSync({ entryPoints: [join(repositoryRoot, 'src/components/playgrounds', `${name}.tsx`)], bundle: true, format: 'esm', platform: 'node', outfile });
     modules[name] = await import(outfile);
@@ -196,6 +196,27 @@ try {
       assert.deepEqual(origins, [depth === 0 ? 0 : depth + 1], `${boundary} depth ${depth}: exactly one origin at the selected layer`);
     }
   }
+
+  // System-call path contract: the lesson's eight-stage xv6 read path. Trap
+  // hardware switches privilege but not stack, page table, or registers;
+  // validation, the first possible block, and result commit come in that
+  // order, and the return resumes after the ecall.
+  const { stages } = modules.SystemCallPathPlayground;
+  const at = (pattern) => stages.findIndex((stage) => pattern.test(stage.actor));
+  assert.equal(stages.length, 8, 'eight-stage model');
+  const order = [/^Application$/, /Library wrapper/, /RISC-V trap hardware/, /trampoline entry/, /Dispatcher and read handler/, /VFS and device path/, /Kernel completion/, /Trampoline.*sret/];
+  assert.deepEqual(order.map(at), [0, 1, 2, 3, 4, 5, 6, 7], 'stages follow the ecall-to-sret sequence');
+  assert.deepEqual(stages.slice(0, 2).map((stage) => stage.mode), ['user', 'user'], 'the library wrapper is not the privilege boundary');
+  assert.equal(stages[2].mode, 'hardware');
+  assert.match(stages[2].state, /not switched by hardware/, 'hardware does not select stack, page table, or save registers');
+  assert.match(stages[3].action, /Saves user registers.*kernel stack and page table/, 'trampoline software performs the switch');
+  assert.ok(stages.slice(3, 7).every((stage) => stage.mode === 'kernel'), 'kernel software runs between entry and return');
+  const firstValidation = stages.findIndex((stage) => /validat/i.test(stage.action));
+  assert.equal(firstValidation, at(/Dispatcher and read handler/), 'descriptor, count, and buffer are first checked in the handler stage');
+  assert.ok(stages.slice(0, firstValidation).every((stage) => !/validat/i.test(stage.action)), 'trap entry is not proof of legality');
+  assert.equal(stages.findIndex((stage) => /block/i.test(stage.action)), at(/VFS and device path/), 'VFS/device path is the first stage that may block');
+  assert.match(stages[6].action, /Copies completed bytes.*trapframe/, 'data and result are committed before return');
+  assert.match(stages.at(-1).state, /resumes after the ecall/, 'ecall return advances past the trapping instruction');
 
   // Scheduler lab contract: weight affects debt, ties are deterministic, and
   // child placement cannot restart below the global service frontier.
