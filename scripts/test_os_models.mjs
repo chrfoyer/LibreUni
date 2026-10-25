@@ -13,7 +13,7 @@ const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const temp = mkdtempSync(join(tmpdir(), 'libreuni-os-models-'));
 const modules = {};
 try {
-  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground', 'DiskSchedulingPlayground', 'LockScalabilityPlayground']) {
+  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground', 'DiskSchedulingPlayground', 'LockScalabilityPlayground', 'DeviceIOPlayground']) {
     const outfile = join(temp, `${name}.mjs`);
     buildSync({ entryPoints: [join(repositoryRoot, 'src/components/playgrounds', `${name}.tsx`)], bundle: true, format: 'esm', platform: 'node', outfile });
     modules[name] = await import(outfile);
@@ -99,6 +99,28 @@ try {
   assert.ok(speedup('rcu', 1, 0.1, 0.9) < 1, 'RCU starts below the common baseline');
   assert.ok(speedup('rcu', 16, 0.1, 0.1) < speedup('rcu', 16, 0.1, 0.9), 'lower read share erodes RCU');
   assert.equal(speedup('rcu', 16, 0.1, 0), speedup('global', 16, 0.1, 0), 'no reads: RCU degenerates to the global lock');
+
+  // Device I/O contract: the lesson's 4 KiB table, the 64-byte prediction,
+  // the 650-byte PIO/DMA crossover, and occupancy capped at one CPU.
+  const io = modules.DeviceIOPlayground.model;
+  const rounds = (actual, expected, digits, message) => assert.equal(actual.toFixed(digits), expected, message);
+  const table = { polling: ['1.0439', '1.0439', '10.44'], interrupt: ['0.00330', '1.0443', '0.033'], dma: ['0.00100', '1.0420', '0.010'] };
+  for (const [mode, [busy, elapsed, percent]] of Object.entries(table)) {
+    const result = io(mode, 4096, 1, 100);
+    rounds(result.busyMs, busy, busy.split('.')[1].length, `${mode}: busy per operation`);
+    rounds(result.elapsedMs, elapsed, 4, `${mode}: elapsed per operation`);
+    rounds(result.utilization * 100, percent, percent.split('.')[1].length, `${mode}: CPU occupancy`);
+  }
+  near(io('interrupt', 4096, 1, 100).deviceMs, 1.04096, 'device time L + 1000B/1e8');
+  rounds(io('interrupt', 64, 0.1, 2000).utilization * 100, '0.122', 3, '64 B interrupt copy at 2000/s');
+  rounds(io('dma', 64, 0.1, 2000).utilization * 100, '0.200', 3, '64 B DMA at 2000/s');
+  assert.equal(io('interrupt', 650, 1, 100).busyMs, io('dma', 650, 1, 100).busyMs, 'PIO and DMA CPU work meet at 650 bytes');
+  assert.ok(io('interrupt', 649, 1, 100).busyMs < io('dma', 649, 1, 100).busyMs, 'PIO wins below the crossover');
+  assert.ok(io('interrupt', 651, 1, 100).busyMs > io('dma', 651, 1, 100).busyMs, 'DMA wins above the crossover');
+  assert.equal(io('interrupt', 4096, 10, 100).busyMs, io('interrupt', 4096, 0.1, 100).busyMs, 'latency does not change interrupt CPU work');
+  const overloaded = io('polling', 4096, 1, 2000);
+  assert.ok(overloaded.offeredCpuLoad > 1, 'polling 1 ms at 2000/s offers more than one CPU');
+  assert.equal(overloaded.utilization, 1, 'occupancy is capped at 100%');
 
   // Scheduler lab contract: weight affects debt, ties are deterministic, and
   // child placement cannot restart below the global service frontier.

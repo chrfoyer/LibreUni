@@ -9,7 +9,7 @@ const labels: Record<Mode, string> = {
   dma: 'DMA + completion interrupt',
 };
 
-function model(mode: Mode, bytes: number, latencyMs: number, operationsPerSecond: number) {
+export function model(mode: Mode, bytes: number, latencyMs: number, operationsPerSecond: number) {
   const cpuGHz = 3;
   const cyclesPerMs = cpuGHz * 1_000_000;
   const transferMs = bytes / 100_000_000 * 1000;
