@@ -232,6 +232,24 @@ try {
   assert.equal(selectWvt([{ pid: 8, vruntime: 4 }, { pid: 3, vruntime: 4 }, { pid: 2, vruntime: 7 }]).pid, 3);
   assert.equal(placeChild(12, 20), 20);
   assert.notEqual(placeChild(12, 20), 0); // kills zero-initialized-child mutant
+  assert.equal(placeChild(30, 20), 30, 'a parent above the floor keeps its own debt');
+  // Exactly the weights 1, 2, 4, 8 are legal; the lab's rejection set is 0, 3, 16, -1.
+  assert.deepEqual([1, 2, 4, 8].map(weight => weightedCharge(8, weight)), [8, 4, 2, 1]);
+  for (const weight of [0, 3, 16, -1]) assert.throws(() => weightedCharge(8, weight), RangeError, `weight ${weight}`);
+  for (const delta of [-1, 1.5]) assert.throws(() => weightedCharge(delta, 1), RangeError, `delta ${delta}`);
+  // No runnable process means no selection.
+  assert.equal(selectWvt([]), null);
+  const valid = [{ pid: 1, vruntime: 0 }, { pid: 2, vruntime: 5 }];
+  // Malformed entries also sit after valid ones, so every process is validated, not just the first.
+  const malformedRunnable = ['3', [{ pid: 1.5, vruntime: 0 }], [{ pid: 1, vruntime: '3' }],
+    [valid[0], { pid: 3, vruntime: '3' }, valid[1]], [...valid, { pid: 3.5, vruntime: 9 }]];
+  for (const runnable of malformedRunnable) {
+    // The model's own validation error, not an incidental "x.some is not a function".
+    assert.throws(() => selectWvt(runnable), { name: 'TypeError', message: /integer pid and vruntime/ }, `selectWvt(${JSON.stringify(runnable)})`);
+  }
+  for (const [parent, floor] of [[1.5, 0], [0, '20']]) {
+    assert.throws(() => placeChild(parent, floor), TypeError, `placeChild(${parent}, ${floor})`);
+  }
 
   // Driver lab contract: completions are identity-checked and cannot be
   // applied twice or reaped before completion.
@@ -242,6 +260,27 @@ try {
   request = requestTransition({ ...request, completionId: 4 }, 'COMPLETE').request;
   assert.equal(requestTransition(request, 'COMPLETE').reason, 'invalid-transition');
   assert.equal(requestTransition(request, 'REAP').request.state, 'REAPED');
+  const inflight = { id: 4, state: 'INFLIGHT', completed: false };
+  // An error status still ends the request exactly once (I7); it is never left in flight.
+  const errored = requestTransition(inflight, 'FAIL');
+  assert.deepEqual([errored.ok, errored.request.state, errored.request.completed], [true, 'COMPLETE', true]);
+  assert.equal(requestTransition({ ...inflight, completed: true }, 'COMPLETE').reason, 'duplicate-completion');
+  assert.equal(requestTransition({ ...inflight, completed: true }, 'FAIL').reason, 'duplicate-completion');
+  // I6: the used-ring ID is checked before anything is indexed by it.
+  for (const id of [-1, 1.5]) {
+    for (const event of ['COMPLETE', 'FAIL']) {
+      assert.equal(requestTransition({ ...inflight, id }, event).reason, 'invalid-id', `${event} with id ${id}`);
+    }
+  }
+  assert.equal(requestTransition({ ...inflight, id: -1, completed: true }, 'COMPLETE').reason, 'invalid-id', 'ID check precedes the duplicate check');
+  assert.equal(requestTransition({ ...inflight, id: 0 }, 'COMPLETE').ok, true, 'id 0 is in bounds');
+  assert.equal(requestTransition(null, 'POST').reason, 'invalid-state');
+  // A name in neither the model's nor the lesson's state vocabulary; the lesson allows enum names to differ.
+  assert.equal(requestTransition({ id: 4, state: 'BOGUS' }, 'COMPLETE').reason, 'invalid-state');
+  // Reap only consumes a completed result.
+  for (const state of ['POSTED', 'INFLIGHT']) {
+    assert.equal(requestTransition({ id: 4, state, completed: false }, 'REAP').reason, 'invalid-transition', `REAP from ${state}`);
+  }
 
   // Filesystem lab contract: same-inode replacement is a no-op and ENOSPC
   // preserves the complete namespace, killing clear-first mutants.
@@ -253,6 +292,27 @@ try {
   const failed = renameEntry(full, '/a/old', '/b/new', { capacity: false });
   assert.equal(failed.reason, 'enospc');
   assert.deepEqual(failed.state, full);
+  // Worked replacement trace: old absent, new -> inode 20; other names are untouched
+  // and the caller's namespace is not rewritten in place.
+  const live = { '/a/old': { inode: 20 }, '/b/new': { inode: 44 }, '/c/keep': { inode: 7 } };
+  const snapshot = structuredClone(live);
+  const moved = renameEntry(live, '/a/old', '/b/new');
+  assert.deepEqual([moved.ok, moved.reason], [true, 'renamed']);
+  assert.deepEqual(moved.state, { '/b/new': { inode: 20 }, '/c/keep': { inode: 7 } });
+  assert.deepEqual(live, snapshot, 'input namespace is not mutated');
+  assert.deepEqual(renameEntry({ '/a/old': { inode: 20 } }, '/a/old', '/b/new').state, { '/b/new': { inode: 20 } }, 'absent target');
+  // No-change-on-error: a missing source or malformed call leaves the namespace as it was.
+  const missing = renameEntry(live, '/a/gone', '/b/new');
+  assert.deepEqual([missing.ok, missing.reason], [false, 'missing-source']);
+  assert.deepEqual(missing.state, snapshot);
+  // Each path guard is checked with both falsy shapes, so a narrowed guard cannot pass.
+  const malformed = [[null, '/a/old', '/b/new'], [live, '', '/b/new'], [live, undefined, '/b/new'], [live, '/a/old', ''], [live, '/a/old', undefined]];
+  for (const [state, source, destination] of malformed) {
+    const rejected = renameEntry(state, source, destination);
+    assert.deepEqual([rejected.ok, rejected.reason], [false, 'invalid-input'], `invalid-input for ${source} -> ${destination}`);
+    if (state) assert.deepEqual(rejected.state, snapshot, `namespace unchanged for ${source} -> ${destination}`);
+  }
+  assert.deepEqual(live, snapshot, 'rejected calls do not mutate the input');
   console.log('OS deterministic models: passed');
 } finally {
   rmSync(temp, { recursive: true, force: true });
