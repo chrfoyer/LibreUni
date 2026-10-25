@@ -13,7 +13,7 @@ const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const temp = mkdtempSync(join(tmpdir(), 'libreuni-os-models-'));
 const modules = {};
 try {
-  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground']) {
+  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground', 'DiskSchedulingPlayground']) {
     const outfile = join(temp, `${name}.mjs`);
     buildSync({ entryPoints: [join(repositoryRoot, 'src/components/playgrounds', `${name}.tsx`)], bundle: true, format: 'esm', platform: 'node', outfile });
     modules[name] = await import(outfile);
@@ -53,6 +53,31 @@ try {
   assert.match(recover('unsafe', diskAtCrash('unsafe', 1)).verdict, /Inconsistent/);
   assert.match(recover('journal', diskAtCrash('journal', 1)).verdict, /ignored/);
   assert.match(recover('cow', diskAtCrash('cow', 1)).verdict, /Old root/);
+
+  // Disk scheduling contract: the lesson's published traces, list-order SSTF
+  // ties, and SCAN visiting cylinder 199 only as a needed turnaround.
+  const { route, distance } = modules.DiskSchedulingPlayground;
+  const mixed = [98, 183, 37, 122, 14, 124, 65, 67];
+  assert.equal(distance(route(mixed, 53, 'FCFS')), 640);
+  assert.deepEqual(route(mixed, 53, 'SSTF'), [53, 65, 67, 37, 14, 98, 122, 124, 183]);
+  assert.equal(distance(route(mixed, 53, 'SSTF')), 236);
+  assert.deepEqual(route(mixed, 53, 'SCAN'), [53, 65, 67, 98, 122, 124, 183, 199, 37, 14]);
+  assert.equal(distance(route(mixed, 53, 'SCAN')), 331);
+  const exercise = [90, 10, 92, 12, 160, 14, 162, 16];
+  assert.equal(distance(route(exercise, 50, 'FCFS')), 870);
+  assert.deepEqual(route(exercise, 50, 'SSTF'), [50, 16, 14, 12, 10, 90, 92, 160, 162]);
+  assert.equal(distance(route(exercise, 50, 'SSTF')), 192);
+  assert.deepEqual(route([60, 40], 50, 'SSTF'), [50, 60, 40]);
+  assert.deepEqual(route([40, 60], 50, 'SSTF'), [50, 40, 60]);
+  assert.deepEqual(route([70, 120], 50, 'SCAN'), [50, 70, 120]);
+  assert.deepEqual(route([199, 20], 50, 'SCAN'), [50, 199, 20]);
+  for (const policy of ['FCFS', 'SSTF', 'SCAN']) {
+    for (const head of [0, 53, 199]) {
+      const served = route(mixed, head, policy).slice(1);
+      if (policy === 'SCAN' && served.includes(199)) served.splice(served.indexOf(199), 1); // sweep endpoint, not a request
+      assert.deepEqual(served.sort((a, b) => a - b), [...mixed].sort((a, b) => a - b), `${policy} from ${head}: every request served exactly once`);
+    }
+  }
 
   // Scheduler lab contract: weight affects debt, ties are deterministic, and
   // child placement cannot restart below the global service frontier.
