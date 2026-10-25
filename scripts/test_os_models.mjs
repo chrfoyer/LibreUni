@@ -13,7 +13,7 @@ const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const temp = mkdtempSync(join(tmpdir(), 'libreuni-os-models-'));
 const modules = {};
 try {
-  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground', 'DiskSchedulingPlayground', 'LockScalabilityPlayground', 'DeviceIOPlayground']) {
+  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground', 'DiskSchedulingPlayground', 'LockScalabilityPlayground', 'DeviceIOPlayground', 'InterleavingPlayground']) {
     const outfile = join(temp, `${name}.mjs`);
     buildSync({ entryPoints: [join(repositoryRoot, 'src/components/playgrounds', `${name}.tsx`)], bundle: true, format: 'esm', platform: 'node', outfile });
     modules[name] = await import(outfile);
@@ -117,6 +117,29 @@ try {
   const overloaded = io('polling', 4096, 1, 2000);
   assert.ok(overloaded.offeredCpuLoad > 1, 'polling 1 ms at 2000/s offers more than one CPU');
   assert.equal(overloaded.utilization, 1, 'occupancy is capped at 100%');
+
+  // Interleaving contract: the lesson's step-by-step lost-update table, the
+  // counter == 2 postcondition for serialized and atomic schedules, and
+  // fetch-add returning the value it replaced.
+  const { run, schedules } = modules.InterleavingPlayground;
+  const lostTable = [[0, null, null], [0, 0, null], [0, 0, 0], [0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 1]];
+  lostTable.forEach(([counter, rA, rB], step) => {
+    const state = run(schedules.lost.operations, step);
+    assert.deepEqual([state.counter, state.registers.A, state.registers.B], [counter, rA, rB], `lost update after ${step} events`);
+  });
+  assert.deepEqual(run(schedules.lost.operations, 5).completed, { A: true, B: false }, 'only A has stored after five events');
+  const [aLoad, bLoad, aAdd, bAdd, aStore, bStore] = schedules.lost.operations;
+  assert.equal(run([aLoad, bLoad, aAdd, bAdd, bStore, aStore], 6).counter, 1, 'stale stores lose an update in either order');
+  const late = run([aLoad, bLoad, bAdd, bStore, aAdd, aStore], 6);
+  assert.deepEqual([late.counter, late.registers.A], [1, 1], 'the add is local: A increments its stale register, not the committed counter');
+  for (const key of ['serial', 'atomic']) {
+    const final = run(schedules[key].operations, schedules[key].operations.length);
+    assert.equal(final.counter, 2, `${key}: two increments committed`);
+    assert.deepEqual(final.completed, { A: true, B: true }, `${key}: both threads completed`);
+  }
+  assert.equal(run(schedules.serial.operations, 3).counter, 1, 'serialized: A commits before B loads');
+  assert.deepEqual(run(schedules.atomic.operations, 2).registers, { A: 0, B: 1 }, 'fetch-add returns the replaced value');
+  assert.equal(run(schedules.lost.operations, 0).trace.length, 0);
 
   // Scheduler lab contract: weight affects debt, ties are deterministic, and
   // child placement cannot restart below the global service frontier.
