@@ -13,7 +13,7 @@ const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const temp = mkdtempSync(join(tmpdir(), 'libreuni-os-models-'));
 const modules = {};
 try {
-  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground', 'DiskSchedulingPlayground', 'LockScalabilityPlayground', 'DeviceIOPlayground', 'InterleavingPlayground', 'ConditionVariablePlayground']) {
+  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground', 'DiskSchedulingPlayground', 'LockScalabilityPlayground', 'DeviceIOPlayground', 'InterleavingPlayground', 'ConditionVariablePlayground', 'IsolationBoundaryPlayground']) {
     const outfile = join(temp, `${name}.mjs`);
     buildSync({ entryPoints: [join(repositoryRoot, 'src/components/playgrounds', `${name}.tsx`)], bundle: true, format: 'esm', platform: 'node', outfile });
     modules[name] = await import(outfile);
@@ -176,6 +176,26 @@ try {
   const bRuns = herd.findIndex((state) => state.consumerB === 'running');
   assert.equal(herd[falsified].mutex, 'consumer A', "consumer A's dequeue makes the predicate false");
   assert.ok(falsified < bRuns && herd[bRuns].buffer.length === 0, 'B reacquires after the predicate became false');
+
+  // Isolation-boundary contract: the lesson's trust chains and blast radii.
+  // Cards are tenant, peer, shared implementation, hardware; a card is
+  // affected when it or a lower layer it relies on is compromised.
+  const { blastRadius, models: boundaries } = modules.IsolationBoundaryPlayground;
+  const affected = (boundary, depth) => blastRadius(boundary, depth).map((card) => card.affected);
+  assert.equal(boundaries.container.implementation, 'Shared host kernel', 'containers share the host kernel');
+  assert.equal(boundaries.vm.implementation, 'Shared VMM / hypervisor', 'VMs share the VMM');
+  assert.match(boundaries.vm.stages[0], /guest kernel/, 'the guest kernel sits inside the VM boundary');
+  assert.deepEqual(affected('container', 1), [true, true, true, false], 'host-kernel compromise crosses every container boundary');
+  assert.deepEqual(affected('vm', 0), [true, false, false, false], 'guest-kernel compromise stays inside one VM');
+  assert.deepEqual(affected('vm', 1), [true, true, true, false], 'VMM compromise loses sibling-VM isolation');
+  for (const boundary of ['process', 'container', 'vm']) {
+    assert.deepEqual(affected(boundary, 0), [true, false, false, false], `${boundary}: tenant compromise reaches no sibling`);
+    assert.deepEqual(affected(boundary, 2), [true, true, true, true], `${boundary}: hardware compromise reaches every layer`);
+    for (const depth of [0, 1, 2]) {
+      const origins = blastRadius(boundary, depth).map((card, index) => card.origin ? index : -1).filter((index) => index >= 0);
+      assert.deepEqual(origins, [depth === 0 ? 0 : depth + 1], `${boundary} depth ${depth}: exactly one origin at the selected layer`);
+    }
+  }
 
   // Scheduler lab contract: weight affects debt, ties are deterministic, and
   // child placement cannot restart below the global service frontier.
