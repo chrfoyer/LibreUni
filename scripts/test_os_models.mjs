@@ -92,6 +92,10 @@ try {
   near(speedup('sharded', 16, 0.1, 0.9), 1 / (0.1 / 8 + 0.9 / 16), 'sharded caps at eight shards');
   assert.equal(speedup('sharded', 64, 0.1, 0.9), 1 / (0.1 / 8 + 0.9 / 64));
   near(speedup('rcu', 1, 0.1, 0.9), 1 / (1 + 0.08 * 0.1 * 0.9), 'RCU R(1) = 1/(1+0.08fr)');
+  // R_R(N) = 1/(f(1-r) + 0.08fr + ((1-f)+fr)/N), the lesson's formula, with a tight bound so the 0.08 constant is pinned.
+  const rcuLesson = (n, f, r) => 1 / (f * (1 - r) + 0.08 * f * r + ((1 - f) + f * r) / n);
+  assert.ok(Math.abs(speedup('rcu', 16, 0.1, 0.9) - rcuLesson(16, 0.1, 0.9)) < 1e-9, 'RCU R(16), f=0.1, r=0.9, matches the lesson formula');
+  assert.ok(Math.abs(speedup('rcu', 4, 0.5, 0.5) - rcuLesson(4, 0.5, 0.5)) < 1e-9, 'RCU R(4), f=0.5, r=0.5, matches the lesson formula');
   assert.ok(speedup('rcu', 1, 0.1, 0.9) < 1, 'RCU starts below the common baseline');
   assert.ok(speedup('rcu', 16, 0.1, 0.1) < speedup('rcu', 16, 0.1, 0.9), 'lower read share erodes RCU');
   assert.equal(speedup('rcu', 16, 0.1, 0), speedup('global', 16, 0.1, 0), 'no reads: RCU degenerates to the global lock');
