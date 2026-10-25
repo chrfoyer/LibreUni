@@ -13,7 +13,7 @@ const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const temp = mkdtempSync(join(tmpdir(), 'libreuni-os-models-'));
 const modules = {};
 try {
-  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground', 'DiskSchedulingPlayground', 'LockScalabilityPlayground', 'DeviceIOPlayground', 'InterleavingPlayground']) {
+  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground', 'DiskSchedulingPlayground', 'LockScalabilityPlayground', 'DeviceIOPlayground', 'InterleavingPlayground', 'ConditionVariablePlayground']) {
     const outfile = join(temp, `${name}.mjs`);
     buildSync({ entryPoints: [join(repositoryRoot, 'src/components/playgrounds', `${name}.tsx`)], bundle: true, format: 'esm', platform: 'node', outfile });
     modules[name] = await import(outfile);
@@ -140,6 +140,42 @@ try {
   assert.equal(run(schedules.serial.operations, 3).counter, 1, 'serialized: A commits before B loads');
   assert.deepEqual(run(schedules.atomic.operations, 2).registers, { A: 0, B: 1 }, 'fetch-add returns the replaced value');
   assert.equal(run(schedules.lost.operations, 0).trace.length, 0);
+
+  // Condition-variable contract: the lesson's protocol claims. Wait releases
+  // the mutex and registers the waiter in one step, Mesa signal does not hand
+  // over the mutex, a check-then-sleep gap loses the wakeup, and in the
+  // broadcast trace consumer A's dequeue falsifies B's predicate.
+  const { traces } = modules.ConditionVariablePlayground;
+  const owner = { producer: 'producer', 'consumer A': 'consumerA', 'consumer B': 'consumerB' };
+  for (const [key, trace] of Object.entries(traces)) {
+    trace.states.forEach((state, index) => {
+      if (state.mutex !== 'free') assert.equal(state[owner[state.mutex]], 'running', `${key}[${index}]: the mutex holder is the running thread`);
+      const before = trace.states[index - 1];
+      if (before && state.buffer.length > before.buffer.length) assert.equal(state.mutex, 'producer', `${key}[${index}]: enqueue happens under the mutex`);
+    });
+  }
+  const correct = traces.correct.states;
+  const waitIndex = correct.findIndex((state) => state.consumerA === 'blocked');
+  assert.deepEqual([correct[waitIndex].mutex, correct[waitIndex].wakeup], ['free', 'armed'], 'wait releases the mutex and arms the waiter atomically');
+  assert.equal(correct[waitIndex - 1].mutex, 'consumer A', 'the predicate is tested under the mutex before waiting');
+  const signalled = correct[waitIndex + 1];
+  assert.deepEqual([signalled.mutex, signalled.consumerA, signalled.buffer], ['producer', 'ready', ['X']], 'Mesa signal: waiter becomes ready, signaller keeps the mutex');
+  const reacquired = correct.find((state, index) => index > waitIndex && state.mutex === 'consumer A');
+  assert.ok(reacquired.buffer.length > 0, 'the predicate holds when the waiter reacquires');
+  assert.deepEqual([correct.at(-1).buffer, correct.at(-1).producer, correct.at(-1).consumerA], [[], 'done', 'done'], 'correct trace: safety and progress');
+  const lost = traces.lost.states;
+  const lostSignal = lost.find((state) => state.buffer.length > 0);
+  assert.notEqual(lostSignal.consumerA, 'blocked', 'no waiter is registered when the signal occurs');
+  assert.equal(lostSignal.wakeup, 'lost');
+  assert.ok(lost.every((state) => state.consumerA !== 'blocked'), 'the broken trace never registers the waiter');
+  assert.deepEqual([lost.at(-1).buffer, lost.at(-1).producer, lost.at(-1).consumerA], [['X'], 'done', 'sleeping'], 'consumer sleeps forever beside available work');
+  const herd = traces.ifcheck.states;
+  const broadcast = herd.find((state) => state.wakeup === 'broadcast');
+  assert.deepEqual([broadcast.consumerA, broadcast.consumerB, broadcast.mutex], ['ready', 'ready', 'producer'], 'broadcast readies both; neither owns the mutex');
+  const falsified = herd.findIndex((state, index) => index > 0 && state.buffer.length < herd[index - 1].buffer.length);
+  const bRuns = herd.findIndex((state) => state.consumerB === 'running');
+  assert.equal(herd[falsified].mutex, 'consumer A', "consumer A's dequeue makes the predicate false");
+  assert.ok(falsified < bRuns && herd[bRuns].buffer.length === 0, 'B reacquires after the predicate became false');
 
   // Scheduler lab contract: weight affects debt, ties are deterministic, and
   // child placement cannot restart below the global service frontier.

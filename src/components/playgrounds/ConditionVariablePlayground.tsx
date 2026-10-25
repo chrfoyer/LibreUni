@@ -13,7 +13,7 @@ type Snapshot = {
   verdict: string;
 };
 
-const traces: Record<string, { label: string; states: Snapshot[] }> = {
+export const traces: Record<string, { label: string; states: Snapshot[] }> = {
   correct: {
     label: 'Mutex + while-loop condition wait',
     states: [
