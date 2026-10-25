@@ -209,6 +209,7 @@ try {
   assert.deepEqual(stages.slice(0, 2).map((stage) => stage.mode), ['user', 'user'], 'the library wrapper is not the privilege boundary');
   assert.equal(stages[2].mode, 'hardware');
   assert.match(stages[2].state, /not switched by hardware/, 'hardware does not select stack, page table, or save registers');
+  assert.doesNotMatch(stages[2].action, /stack|satp|saves/i, 'the trap-hardware action claims no stack, satp, or register switch');
   assert.match(stages[3].action, /Saves user registers.*kernel stack and page table/, 'trampoline software performs the switch');
   assert.ok(stages.slice(3, 7).every((stage) => stage.mode === 'kernel'), 'kernel software runs between entry and return');
   const firstValidation = stages.findIndex((stage) => /validat/i.test(stage.action));
@@ -216,6 +217,8 @@ try {
   assert.ok(stages.slice(0, firstValidation).every((stage) => !/validat/i.test(stage.action)), 'trap entry is not proof of legality');
   assert.equal(stages.findIndex((stage) => /block/i.test(stage.action)), at(/VFS and device path/), 'VFS/device path is the first stage that may block');
   assert.match(stages[6].action, /Copies completed bytes.*trapframe/, 'data and result are committed before return');
+  assert.match(stages[6].state, /committed before user registers or privilege are restored/, 'commit precedes the restore');
+  assert.match(stages.at(-1).state, /a0 contains/, 'the result returns in a0');
   assert.match(stages.at(-1).state, /resumes after the ecall/, 'ecall return advances past the trapping instruction');
 
   // Scheduler lab contract: weight affects debt, ties are deterministic, and
