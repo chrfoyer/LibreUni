@@ -13,7 +13,7 @@ const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const temp = mkdtempSync(join(tmpdir(), 'libreuni-os-models-'));
 const modules = {};
 try {
-  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground', 'DiskSchedulingPlayground']) {
+  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground', 'DiskSchedulingPlayground', 'LockScalabilityPlayground']) {
     const outfile = join(temp, `${name}.mjs`);
     buildSync({ entryPoints: [join(repositoryRoot, 'src/components/playgrounds', `${name}.tsx`)], bundle: true, format: 'esm', platform: 'node', outfile });
     modules[name] = await import(outfile);
@@ -78,6 +78,23 @@ try {
       assert.deepEqual(served.sort((a, b) => a - b), [...mixed].sort((a, b) => a - b), `${policy} from ${head}: every request served exactly once`);
     }
   }
+
+  // Lock scalability contract: the lesson's published values, the sharded
+  // cap at eight active shards, and the RCU baseline sitting below 1x.
+  const { speedup } = modules.LockScalabilityPlayground;
+  const near = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 0.005, `${message}: got ${actual}, expected ${expected}`);
+  near(speedup('global', 16, 0.1, 0.9), 6.4, 'global lock, 16 cores, 10% serial');
+  near(speedup('global', 16, 0.08, 0.9), 7.27, 'Amdahl worked example, s=0.08');
+  near(speedup('global', 8, 1 / 7, 0.9), 4, 'inverted Amdahl example, s=1/7');
+  assert.ok(speedup('global', 64, 0.1, 0.9) < 10, 'global lock stays under the 1/f limit');
+  assert.equal(speedup('global', 1, 0.1, 0.9), 1);
+  near(speedup('sharded', 4, 0.1, 0.9), 1 / (0.1 / 4 + 0.9 / 4), 'sharded uses N shards below eight cores');
+  near(speedup('sharded', 16, 0.1, 0.9), 1 / (0.1 / 8 + 0.9 / 16), 'sharded caps at eight shards');
+  assert.equal(speedup('sharded', 64, 0.1, 0.9), 1 / (0.1 / 8 + 0.9 / 64));
+  near(speedup('rcu', 1, 0.1, 0.9), 1 / (1 + 0.08 * 0.1 * 0.9), 'RCU R(1) = 1/(1+0.08fr)');
+  assert.ok(speedup('rcu', 1, 0.1, 0.9) < 1, 'RCU starts below the common baseline');
+  assert.ok(speedup('rcu', 16, 0.1, 0.1) < speedup('rcu', 16, 0.1, 0.9), 'lower read share erodes RCU');
+  assert.equal(speedup('rcu', 16, 0.1, 0), speedup('global', 16, 0.1, 0), 'no reads: RCU degenerates to the global lock');
 
   // Scheduler lab contract: weight affects debt, ties are deterministic, and
   // child placement cannot restart below the global service frontier.
