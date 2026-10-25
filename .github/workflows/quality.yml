@@ -26,7 +26,7 @@ jobs:
       # Run even if the content gate failed, so wrong DOIs are always reported
       - name: Restore Crossref cache
         if: ${{ !cancelled() }}
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: .cache/crossref.json
           key: crossref-${{ github.run_id }}
@@ -34,6 +34,13 @@ jobs:
       - name: Reference DOI check
         if: ${{ !cancelled() }}
         run: npm run check:references
+      # actions/cache only saves on job success; save explicitly so a failing check keeps its lookups
+      - name: Save Crossref cache
+        if: ${{ !cancelled() }}
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/crossref.json
+          key: crossref-${{ github.run_id }}
 
   build-and-test:
     name: Build and test
