@@ -220,6 +220,9 @@ try {
   assert.doesNotMatch(stages[2].action, /stack|satp|saves/i, 'the trap-hardware action claims no stack, satp, or register switch');
   assert.match(stages[3].action, /Saves user registers.*kernel stack and page table/, 'trampoline software performs the switch');
   assert.ok(stages.slice(3, 7).every((stage) => stage.mode === 'kernel'), 'kernel software runs between entry and return');
+  assert.equal(stages.at(-1).mode, 'kernel', 'trampoline assembly restores registers; hardware does not restore them from the trapframe');
+  assert.equal(stages.filter((stage) => stage.mode === 'hardware').length, 1, 'only the ecall trap is a hardware stage');
+  assert.match(stages.at(-1).action, /sret/, 'the return stage still ends in sret');
   const firstValidation = stages.findIndex((stage) => /validat/i.test(stage.action));
   assert.equal(firstValidation, at(/Dispatcher and read handler/), 'descriptor, count, and buffer are first checked in the handler stage');
   assert.ok(stages.slice(0, firstValidation).every((stage) => !/validat/i.test(stage.action)), 'trap entry is not proof of legality');
