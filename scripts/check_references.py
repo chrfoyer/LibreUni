@@ -21,6 +21,7 @@ from typing import Optional
 ROOT = Path(__file__).resolve().parents[1]
 LESSONS_DIR = ROOT / "apps" / "main" / "src" / "content" / "lessons"
 DEFAULT_CACHE = ROOT / ".cache" / "crossref.json"
+CROSSREF_WORKS = "https://api.crossref.org/works/"
 
 REFERENCE_HEADING_RE = re.compile(
     r"^##+\s+(references|sources|bibliography|further reading)\b.*$",
@@ -39,7 +40,19 @@ class ReferenceLookupError(Exception):
 
 
 class DoiNotFound(ReferenceLookupError):
-    """Crossref has no record of the DOI."""
+    """No registry knows the DOI: Crossref has no record and no registration agency."""
+
+
+class NonCrossrefDoi(ReferenceLookupError):
+    """The DOI is registered with another agency, e.g. DataCite for arXiv and Zenodo."""
+
+    def __init__(self, doi, agency):
+        super().__init__(f"{doi} is registered with {agency}")
+        self.agency = agency
+
+
+class HttpNotFound(Exception):
+    """A Crossref API request returned 404."""
 
 
 @dataclass
@@ -47,13 +60,12 @@ class Reference:
     text: str
     doi: Optional[str]
     year: Optional[int]
-    first_author: Optional[str]
 
 
 def normalize(text):
     text = unicodedata.normalize("NFKD", text)
     text = "".join(c for c in text if not unicodedata.combining(c))
-    return re.sub(r"[^a-z0-9]+", " ", text.lower())
+    return re.sub(r"[^a-z0-9]+", " ", text.casefold())  # casefold also folds ß to ss
 
 
 def extract_references(body):
@@ -70,13 +82,10 @@ def extract_references(body):
         doi_match = DOI_RE.search(item)
         doi = doi_match.group(1).rstrip(".,;").lower() if doi_match else None
         year_match = YEAR_RE.search(item)
-        author = re.split(r"[,(]", item, maxsplit=1)[0]
-        author = re.sub(r"[*_\[\]]", "", author).strip()
         refs.append(Reference(
             text=item,
             doi=doi,
             year=int(year_match.group(1)) if year_match else None,
-            first_author=author or None,
         ))
     return refs
 
@@ -93,8 +102,11 @@ def compare(ref, meta):
             errors.append(f"title mismatch ({matched:.0%} of words): Crossref has '{meta['title']}'")
 
     authors = meta.get("authors") or []
-    if authors and normalize(authors[0]).strip() not in ref_text:
-        errors.append(f"first author mismatch: Crossref has '{authors[0]}'")
+    if authors:
+        # Whole-word search over the whole reference, so title-first styles still match.
+        surname = re.escape(normalize(authors[0]).strip())
+        if not re.search(rf"\b{surname}\b", ref_text):
+            errors.append(f"first author mismatch: Crossref has '{authors[0]}'")
 
     if ref.year and meta.get("year"):
         diff = abs(ref.year - meta["year"])
@@ -120,7 +132,10 @@ def check_body(body, cache, fetcher):
         try:
             meta = lookup(ref.doi, cache, fetcher)
         except DoiNotFound:
-            errors.append(f"{ref.doi}: DOI not found in Crossref")
+            errors.append(f"{ref.doi}: DOI not found in any registry")
+            continue
+        except NonCrossrefDoi as exc:
+            warnings.append(f"{ref.doi}: registered with {exc.agency}, not Crossref (non-Crossref DOI); metadata not checked")
             continue
         except ReferenceLookupError as exc:
             warnings.append(f"{ref.doi}: lookup failed ({exc})")
@@ -138,18 +153,17 @@ def parse_crossref(message):
     return {"title": title, "authors": authors, "year": parts[0][0]}
 
 
-def fetch_crossref(doi, retries=3, backoff=2.0):
-    url = "https://api.crossref.org/works/" + urllib.parse.quote(doi, safe="/")
+def get_crossref_json(url, retries=3, backoff=2.0):
     request = urllib.request.Request(
         url, headers={"User-Agent": "LibreUni-reference-check (https://github.com/LibreUni/LibreUni)"}
     )
     for attempt in range(retries + 1):
         try:
             with urllib.request.urlopen(request, timeout=15) as response:
-                return parse_crossref(json.load(response)["message"])
+                return json.load(response)
         except urllib.error.HTTPError as exc:
             if exc.code == 404:
-                raise DoiNotFound(doi) from exc
+                raise HttpNotFound(url) from exc
             if exc.code == 429 and attempt < retries:
                 time.sleep(backoff * 2 ** attempt)
                 continue
@@ -157,6 +171,30 @@ def fetch_crossref(doi, retries=3, backoff=2.0):
         except (urllib.error.URLError, TimeoutError, ValueError) as exc:
             raise ReferenceLookupError(str(exc)) from exc
     raise ReferenceLookupError("retries exhausted")
+
+
+# What indexing or .get() raises on a Crossref body of an unexpected shape.
+MALFORMED_BODY_ERRORS = (KeyError, TypeError, AttributeError)
+
+
+def fetch_crossref(doi, get_json=get_crossref_json):
+    url = CROSSREF_WORKS + urllib.parse.quote(doi, safe="/")
+    try:
+        return parse_crossref(get_json(url)["message"])
+    except HttpNotFound:
+        pass
+    except MALFORMED_BODY_ERRORS as exc:
+        raise ReferenceLookupError(f"malformed Crossref response: {exc!r}") from exc
+    # Not in Crossref: ask which agency registered it, so a typo is told apart from a DataCite DOI.
+    try:
+        agency = get_json(url + "/agency")["message"]["agency"]["id"]
+    except HttpNotFound:
+        raise DoiNotFound(doi) from None
+    except MALFORMED_BODY_ERRORS as exc:
+        raise ReferenceLookupError(f"malformed Crossref response: {exc!r}") from exc
+    if agency == "crossref":
+        raise ReferenceLookupError("Crossref lists the DOI but returned no record")
+    raise NonCrossrefDoi(doi, agency)
 
 
 def throttled(fetcher, delay):
@@ -178,15 +216,15 @@ def lesson_files(targets):
     return files
 
 
-def main():
+def main(argv=None, fetcher=None):
     parser = argparse.ArgumentParser(description="Check lesson DOIs against Crossref metadata.")
     parser.add_argument("targets", nargs="*", help="Lesson files, course folders, or course ids (default: all lessons)")
     parser.add_argument("--cache", type=Path, default=DEFAULT_CACHE, help="Crossref cache file")
     parser.add_argument("--delay", type=float, default=1.0, help="Seconds between Crossref requests")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     cache = json.loads(args.cache.read_text(encoding="utf-8")) if args.cache.exists() else {}
-    fetcher = throttled(fetch_crossref, args.delay)
+    fetcher = fetcher or throttled(fetch_crossref, args.delay)
 
     total_errors = total_warnings = 0
     for path in lesson_files(args.targets):

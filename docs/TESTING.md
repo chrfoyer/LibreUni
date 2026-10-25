@@ -65,7 +65,7 @@ python3 scripts/verify_lessons.py               # frontmatter, banned phrases, c
 python3 scripts/check_references.py [course]    # DOIs match their Crossref record
 ```
 
-`check_references.py` reads each lesson's References section and compares every DOI's Crossref record (title, first author, year) with the reference text. A DOI can resolve and still name a different paper, so resolving alone is not enough. A mismatched title or author, a year off by more than one, or a DOI unknown to Crossref is an error. A year off by one (online-first versus print dates) and a failed lookup are warnings. Results are cached in `.cache/crossref.json`.
+`check_references.py` reads each lesson's References section and compares every DOI's Crossref record (title, first author, year) with the reference text. A DOI can resolve and still name a different paper, so resolving alone is not enough. A mismatched title, a Crossref first author that does not appear in the reference as a whole word, a year off by more than one, or a DOI no registry knows is an error. A year off by one (online-first versus print dates), a failed lookup, and a non-Crossref DOI (registered with DataCite, as arXiv and Zenodo DOIs are; its metadata is not checked) are warnings. Results are cached in `.cache/crossref.json`.
 
 ## CI
 
