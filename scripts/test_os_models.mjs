@@ -254,19 +254,51 @@ try {
     assert.throws(() => placeChild(parent, floor), TypeError, `placeChild(${parent}, ${floor})`);
   }
 
-  // Driver lab contract: completions are identity-checked and cannot be
+  // Driver lab contract: the per-head lifecycle in device-driver-lab, with its
+  // state names and event types. Completions are identity-checked and cannot be
   // applied twice or reaped before completion.
   let request = { id: 4, state: 'FREE', completed: false };
-  request = requestTransition(request, 'POST').request;
-  request = requestTransition(request, 'ACCEPT').request;
+  for (const [event, state] of [['RESERVE', 'RESERVED'], ['BUILD', 'BUILT'], ['PUBLISH', 'PUBLISHED']]) {
+    request = requestTransition(request, event).request;
+    assert.equal(request.state, state, `${event} reaches ${state}`);
+  }
   assert.equal(requestTransition({ ...request, completionId: 5 }, 'COMPLETE').reason, 'wrong-id');
   request = requestTransition({ ...request, completionId: 4 }, 'COMPLETE').request;
+  assert.equal(request.state, 'COMPLETED');
   assert.equal(requestTransition(request, 'COMPLETE').reason, 'invalid-transition');
-  assert.equal(requestTransition(request, 'REAP').request.state, 'REAPED');
-  const inflight = { id: 4, state: 'INFLIGHT', completed: false };
+  request = requestTransition(request, 'REAP').request;
+  assert.equal(request.state, 'REAPED');
+  // Clearing the descriptor returns the head to FREE, ready for a fresh request.
+  request = requestTransition(request, 'CLEAR').request;
+  assert.deepEqual([request.state, request.completed], ['FREE', false]);
+  // Rollback only before publication; once published, the device owns the head (I9).
+  for (const state of ['RESERVED', 'BUILT']) {
+    assert.equal(requestTransition({ id: 4, state, completed: false }, 'ROLLBACK').request.state, 'FREE', `ROLLBACK from ${state}`);
+  }
+  assert.equal(requestTransition({ id: 4, state: 'PUBLISHED', completed: false }, 'ROLLBACK').reason, 'invalid-transition');
+  // Completion requires a published request.
+  assert.equal(requestTransition({ id: 4, state: 'BUILT', completed: false }, 'COMPLETE').reason, 'invalid-transition');
+  // The table is closed: the diagram's eight edges (FAIL shares PUBLISHED -> COMPLETED,
+  // the error-status path) are the only legal moves; every other pair is rejected.
+  // Events outside the diagram are walked too: a timeout may not move a head to FREE
+  // (line 275), and neither may the model's former events or an unknown one.
+  const lessonEdges = {
+    'FREE RESERVE': 'RESERVED', 'RESERVED BUILD': 'BUILT', 'BUILT PUBLISH': 'PUBLISHED',
+    'PUBLISHED COMPLETE': 'COMPLETED', 'PUBLISHED FAIL': 'COMPLETED', 'COMPLETED REAP': 'REAPED',
+    'REAPED CLEAR': 'FREE', 'RESERVED ROLLBACK': 'FREE', 'BUILT ROLLBACK': 'FREE'
+  };
+  for (const state of ['FREE', 'RESERVED', 'BUILT', 'PUBLISHED', 'COMPLETED', 'REAPED']) {
+    for (const event of ['RESERVE', 'BUILD', 'PUBLISH', 'COMPLETE', 'FAIL', 'REAP', 'ROLLBACK', 'CLEAR', 'TIMEOUT', 'POST', 'ACCEPT', 'BOGUS']) {
+      const result = requestTransition({ id: 4, state, completed: false }, event);
+      const target = lessonEdges[`${state} ${event}`];
+      if (target) assert.equal(result.request?.state, target, `${state} --${event}--> ${target}`);
+      else assert.equal(result.reason, 'invalid-transition', `${state} --${event}--> rejected`);
+    }
+  }
+  const inflight = { id: 4, state: 'PUBLISHED', completed: false };
   // An error status still ends the request exactly once (I7); it is never left in flight.
   const errored = requestTransition(inflight, 'FAIL');
-  assert.deepEqual([errored.ok, errored.request.state, errored.request.completed], [true, 'COMPLETE', true]);
+  assert.deepEqual([errored.ok, errored.request.state, errored.request.completed], [true, 'COMPLETED', true]);
   assert.equal(requestTransition({ ...inflight, completed: true }, 'COMPLETE').reason, 'duplicate-completion');
   assert.equal(requestTransition({ ...inflight, completed: true }, 'FAIL').reason, 'duplicate-completion');
   // I6: the used-ring ID is checked before anything is indexed by it.
@@ -277,11 +309,13 @@ try {
   }
   assert.equal(requestTransition({ ...inflight, id: -1, completed: true }, 'COMPLETE').reason, 'invalid-id', 'ID check precedes the duplicate check');
   assert.equal(requestTransition({ ...inflight, id: 0 }, 'COMPLETE').ok, true, 'id 0 is in bounds');
-  assert.equal(requestTransition(null, 'POST').reason, 'invalid-state');
-  // A name in neither the model's nor the lesson's state vocabulary (see D-014).
-  assert.equal(requestTransition({ id: 4, state: 'BOGUS' }, 'COMPLETE').reason, 'invalid-state');
+  assert.equal(requestTransition(null, 'RESERVE').reason, 'invalid-state');
+  // States outside the lesson's lifecycle, including the model's former names (D-014).
+  for (const state of ['BOGUS', 'POSTED', 'INFLIGHT', 'COMPLETE']) {
+    assert.equal(requestTransition({ id: 4, state }, 'COMPLETE').reason, 'invalid-state', `state ${state}`);
+  }
   // Reap only consumes a completed result.
-  for (const state of ['POSTED', 'INFLIGHT']) {
+  for (const state of ['RESERVED', 'BUILT', 'PUBLISHED']) {
     assert.equal(requestTransition({ id: 4, state, completed: false }, 'REAP').reason, 'invalid-transition', `REAP from ${state}`);
   }
 
