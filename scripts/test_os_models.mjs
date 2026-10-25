@@ -168,6 +168,10 @@ try {
   assert.ok(reacquired.buffer.length > 0, 'the predicate holds when the waiter reacquires');
   assert.deepEqual([correct.at(-1).buffer, correct.at(-1).producer, correct.at(-1).consumerA], [[], 'done', 'done'], 'correct trace: safety and progress');
   const lost = traces.lost.states;
+  const lostCheck = lost.find((state) => state.consumerA === 'running');
+  assert.match(lostCheck.event, /releases the mutex before sleeping/, 'lesson: the consumer checks, then releases the mutex before sleeping');
+  assert.doesNotMatch(lostCheck.event, /without holding/, 'the check is not described as unlocked');
+  assert.equal(lostCheck.mutex, 'free', 'the mutex is already released in the gap');
   const lostSignal = lost.find((state) => state.buffer.length > 0);
   assert.notEqual(lostSignal.consumerA, 'blocked', 'no waiter is registered when the signal occurs');
   assert.equal(lostSignal.wakeup, 'lost');
