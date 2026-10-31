@@ -159,13 +159,6 @@ const colorModes = COLOR_MODES.map((mode) => mode.id);
       <slot />
     </div>
 
-    <div id="diagram-overlay" class="diagram-overlay" aria-hidden="true">
-      <button type="button" class="diagram-overlay-close" aria-label="Close diagram">Close</button>
-      <div class="diagram-overlay-panel" role="dialog" aria-modal="true" aria-label="Expanded diagram">
-        <div id="diagram-overlay-content" class="diagram-overlay-content"></div>
-      </div>
-    </div>
-
     <script is:inline>
         const menuToggle = document.getElementById('mobile-menu-toggle');
         const mobileMenu = document.getElementById('mobile-menu');
@@ -200,48 +193,298 @@ const colorModes = COLOR_MODES.map((mode) => mode.id);
             });
         });
 
-        const diagramOverlay = document.getElementById('diagram-overlay');
-        const diagramOverlayContent = document.getElementById('diagram-overlay-content');
-        const diagramOverlayClose = diagramOverlay?.querySelector('.diagram-overlay-close');
-        let diagramPreviousFocus = null;
+        // Interactive diagram canvas controls (Ctrl/Cmd + wheel zoom, drag pan, toolbar controls)
+        const DIAGRAM_MIN_SCALE = 1;
+        const DIAGRAM_MAX_SCALE = 5;
+        const DIAGRAM_STEP = 1.25;
+        const isMacPlatform = /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
+        const modKeyLabel = isMacPlatform ? '⌘' : 'Ctrl';
+        let hoveredDiagramController = null;
 
-        function closeDiagramOverlay() {
-            if (!diagramOverlay || !diagramOverlayContent) return;
-            diagramOverlay.classList.remove('is-open');
-            diagramOverlay.setAttribute('aria-hidden', 'true');
-            diagramOverlayContent.replaceChildren();
-            document.body.style.overflow = '';
-            if (diagramPreviousFocus && typeof diagramPreviousFocus.focus === 'function') {
-                diagramPreviousFocus.focus();
+        function initDiagramFrame(frame) {
+            if (!(frame instanceof HTMLElement) || frame.dataset.diagramInteractive === 'true') return;
+            const render = frame.querySelector('.diagram-render');
+            if (!(render instanceof HTMLElement)) return;
+            const getTarget = () => render.querySelector(':scope > svg, :scope > img');
+            if (!getTarget()) return;
+
+            frame.dataset.diagramInteractive = 'true';
+
+            const zoomOutBtn = frame.querySelector('[data-diagram-action="zoom-out"]');
+            const zoomResetBtn = frame.querySelector('[data-diagram-action="reset"]');
+            const zoomInBtn = frame.querySelector('[data-diagram-action="zoom-in"]');
+            const hintEl = frame.querySelector('.diagram-zoom-hint');
+
+            if (hintEl) {
+                hintEl.textContent = `${modKeyLabel} + scroll to zoom`;
             }
+            if (zoomOutBtn) zoomOutBtn.setAttribute('title', `Zoom out (${modKeyLabel} + −)`);
+            if (zoomResetBtn) zoomResetBtn.setAttribute('title', `Reset view (${modKeyLabel} + 0)`);
+            if (zoomInBtn) zoomInBtn.setAttribute('title', `Zoom in (${modKeyLabel} + +)`);
+
+            const state = {
+                scale: 1,
+                tx: 0,
+                ty: 0,
+                hintTimer: null,
+                wheelTimer: null,
+                panStart: null,
+                activePointers: new Map(),
+                pinchStartDist: 0,
+                pinchStartScale: 1,
+                pinchStartMid: null,
+                pinchStartTx: 0,
+                pinchStartTy: 0,
+            };
+
+            function clampPan(nextTx, nextTy, nextScale) {
+                const rect = render.getBoundingClientRect();
+                const maxX = Math.max(0, rect.width * Math.max(1, nextScale) * 0.65);
+                const maxY = Math.max(0, rect.height * Math.max(1, nextScale) * 0.65);
+                return [
+                    Math.max(-maxX, Math.min(maxX, nextTx)),
+                    Math.max(-maxY, Math.min(maxY, nextTy)),
+                ];
+            }
+
+            function hideHint() {
+                if (!hintEl) return;
+                if (state.hintTimer) {
+                    clearTimeout(state.hintTimer);
+                    state.hintTimer = null;
+                }
+                hintEl.classList.remove('is-visible');
+            }
+
+            function showHint() {
+                if (!hintEl) return;
+                hintEl.classList.add('is-visible');
+                if (state.hintTimer) clearTimeout(state.hintTimer);
+                state.hintTimer = setTimeout(() => {
+                    hintEl.classList.remove('is-visible');
+                    state.hintTimer = null;
+                }, 1300);
+            }
+
+            function applyTransform() {
+                const target = getTarget();
+                if (!target) return;
+                const isTransformed = state.scale > 1.01 || Math.abs(state.tx) > 0.5 || Math.abs(state.ty) > 0.5;
+
+                if (!isTransformed) {
+                    state.scale = 1;
+                    state.tx = 0;
+                    state.ty = 0;
+                    target.style.transform = '';
+                } else {
+                    target.style.transform = `translate3d(${state.tx.toFixed(2)}px, ${state.ty.toFixed(2)}px, 0) scale(${state.scale.toFixed(4)})`;
+                }
+
+                frame.classList.toggle('is-transformed', isTransformed);
+                if (zoomResetBtn) {
+                    zoomResetBtn.textContent = `${Math.round(state.scale * 100)}%`;
+                }
+                if (zoomOutBtn instanceof HTMLButtonElement) {
+                    zoomOutBtn.disabled = state.scale <= DIAGRAM_MIN_SCALE + 0.005;
+                }
+                if (zoomInBtn instanceof HTMLButtonElement) {
+                    zoomInBtn.disabled = state.scale >= DIAGRAM_MAX_SCALE - 0.005;
+                }
+            }
+
+            function zoomTo(nextScale, clientX, clientY, immediate = false) {
+                let clampedScale = Math.max(DIAGRAM_MIN_SCALE, Math.min(DIAGRAM_MAX_SCALE, nextScale));
+                if (Math.abs(clampedScale - 1) < 0.04) {
+                    clampedScale = 1;
+                }
+                if (Math.abs(clampedScale - state.scale) < 0.0005) return;
+
+                if (clampedScale === 1) {
+                    resetZoom();
+                    return;
+                }
+
+                const rect = render.getBoundingClientRect();
+                const hasPoint = typeof clientX === 'number' && typeof clientY === 'number';
+                const cx = hasPoint ? clientX - (rect.left + rect.width / 2) : 0;
+                const cy = hasPoint ? clientY - (rect.top + rect.height / 2) : 0;
+                const ratio = clampedScale / state.scale;
+                const nextTx = cx - (cx - state.tx) * ratio;
+                const nextTy = cy - (cy - state.ty) * ratio;
+
+                if (immediate) {
+                    frame.classList.add('is-wheel-zooming');
+                    if (state.wheelTimer) clearTimeout(state.wheelTimer);
+                    state.wheelTimer = setTimeout(() => {
+                        frame.classList.remove('is-wheel-zooming');
+                        state.wheelTimer = null;
+                    }, 120);
+                } else {
+                    frame.classList.remove('is-wheel-zooming');
+                }
+
+                state.scale = clampedScale;
+                [state.tx, state.ty] = clampPan(nextTx, nextTy, clampedScale);
+                applyTransform();
+            }
+
+            function resetZoom() {
+                frame.classList.remove('is-wheel-zooming', 'is-dragging');
+                state.scale = 1;
+                state.tx = 0;
+                state.ty = 0;
+                applyTransform();
+            }
+
+            const controller = { frame, zoomTo, resetZoom, getScale: () => state.scale };
+            frame.addEventListener('mouseenter', () => { hoveredDiagramController = controller; });
+            frame.addEventListener('mouseleave', () => {
+                if (hoveredDiagramController === controller) hoveredDiagramController = null;
+            });
+
+            render.addEventListener('wheel', (event) => {
+                if (event.ctrlKey || event.metaKey) {
+                    event.preventDefault();
+                    hideHint();
+                    let deltaY = event.deltaY;
+                    if (event.deltaMode === 1) deltaY *= 16;
+                    else if (event.deltaMode === 2) deltaY *= 100;
+                    const clampedDelta = Math.max(-120, Math.min(120, deltaY));
+                    const sensitivity = Math.abs(deltaY) < 40 ? 0.008 : 0.0025;
+                    const factor = Math.exp(-clampedDelta * sensitivity);
+                    zoomTo(state.scale * factor, event.clientX, event.clientY, true);
+                } else if (Math.abs(event.deltaY) > 2) {
+                    showHint();
+                }
+            }, { passive: false });
+
+            render.addEventListener('dragstart', (event) => event.preventDefault());
+
+            render.addEventListener('pointerdown', (event) => {
+                if (event.pointerType === 'mouse' && event.button !== 0 && event.button !== 1) return;
+                if (event.target instanceof Element && event.target.closest('a, button, summary, details')) return;
+
+                if (event.pointerType === 'touch') {
+                    state.activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                    if (state.activePointers.size === 2) {
+                        const pts = Array.from(state.activePointers.values());
+                        state.pinchStartDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+                        state.pinchStartScale = state.scale;
+                        state.pinchStartMid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+                        state.pinchStartTx = state.tx;
+                        state.pinchStartTy = state.ty;
+                        state.panStart = null;
+                        frame.classList.add('is-dragging');
+                        return;
+                    }
+                    if (state.scale <= 1.005) return;
+                }
+
+                state.panStart = {
+                    pointerId: event.pointerId,
+                    x: event.clientX,
+                    y: event.clientY,
+                    tx: state.tx,
+                    ty: state.ty,
+                    moved: false,
+                };
+            });
+
+            render.addEventListener('pointermove', (event) => {
+                if (state.activePointers.has(event.pointerId)) {
+                    state.activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                    if (state.activePointers.size === 2 && state.pinchStartDist > 8 && state.pinchStartMid) {
+                        const pts = Array.from(state.activePointers.values());
+                        const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+                        const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+                        const nextScale = Math.max(DIAGRAM_MIN_SCALE, Math.min(DIAGRAM_MAX_SCALE, state.pinchStartScale * (dist / state.pinchStartDist)));
+                        const rect = render.getBoundingClientRect();
+                        const cx = state.pinchStartMid.x - (rect.left + rect.width / 2);
+                        const cy = state.pinchStartMid.y - (rect.top + rect.height / 2);
+                        const ratio = nextScale / state.pinchStartScale;
+                        const nextTx = cx - (cx - state.pinchStartTx) * ratio + (mid.x - state.pinchStartMid.x);
+                        const nextTy = cy - (cy - state.pinchStartTy) * ratio + (mid.y - state.pinchStartMid.y);
+                        state.scale = nextScale;
+                        [state.tx, state.ty] = clampPan(nextTx, nextTy, nextScale);
+                        applyTransform();
+                        return;
+                    }
+                }
+
+                if (!state.panStart || event.pointerId !== state.panStart.pointerId) return;
+                const dx = event.clientX - state.panStart.x;
+                const dy = event.clientY - state.panStart.y;
+                if (!state.panStart.moved && Math.hypot(dx, dy) > 2) {
+                    state.panStart.moved = true;
+                    frame.classList.add('is-dragging');
+                    try { render.setPointerCapture(event.pointerId); } catch {}
+                }
+                if (state.panStart.moved) {
+                    [state.tx, state.ty] = clampPan(state.panStart.tx + dx, state.panStart.ty + dy, state.scale);
+                    applyTransform();
+                }
+            });
+
+            function endPointer(event) {
+                state.activePointers.delete(event.pointerId);
+                if (state.panStart && event.pointerId === state.panStart.pointerId) {
+                    if (state.panStart.moved) {
+                        try { render.releasePointerCapture(event.pointerId); } catch {}
+                    }
+                    state.panStart = null;
+                }
+                if (state.activePointers.size < 2 && !state.panStart) {
+                    frame.classList.remove('is-dragging');
+                }
+            }
+
+            render.addEventListener('pointerup', endPointer);
+            render.addEventListener('pointercancel', endPointer);
+
+            render.addEventListener('dblclick', (event) => {
+                if (event.target instanceof Element && event.target.closest('a, button, summary, details')) return;
+                event.preventDefault();
+                if (event.shiftKey) {
+                    zoomTo(state.scale / 1.6, event.clientX, event.clientY, false);
+                } else if (state.scale >= DIAGRAM_MAX_SCALE - 0.05) {
+                    resetZoom();
+                } else {
+                    zoomTo(state.scale * 1.6, event.clientX, event.clientY, false);
+                }
+            });
+
+            zoomInBtn?.addEventListener('click', (event) => {
+                event.stopPropagation();
+                zoomTo(state.scale * DIAGRAM_STEP);
+            });
+            zoomOutBtn?.addEventListener('click', (event) => {
+                event.stopPropagation();
+                zoomTo(state.scale / DIAGRAM_STEP);
+            });
+            zoomResetBtn?.addEventListener('click', (event) => {
+                event.stopPropagation();
+                resetZoom();
+            });
+
+            applyTransform();
         }
 
-        document.addEventListener('click', (event) => {
-            const target = event.target;
-            if (!(target instanceof Element)) return;
+        document.querySelectorAll('.diagram-frame').forEach(initDiagramFrame);
 
-            if (target.closest('.diagram-source')) return;
-
-            const frame = target.closest('.diagram-frame');
-            if (frame && !target.closest('a') && !target.closest('.diagram-overlay')) {
-                const render = frame.querySelector('.diagram-render');
-                if (!render || !diagramOverlay || !diagramOverlayContent) return;
-                diagramPreviousFocus = document.activeElement;
-                diagramOverlayContent.replaceChildren(render.cloneNode(true));
-                diagramOverlay.classList.add('is-open');
-                diagramOverlay.setAttribute('aria-hidden', 'false');
-                document.body.style.overflow = 'hidden';
-                diagramOverlayClose?.focus();
-            }
-        });
-
-        diagramOverlayClose?.addEventListener('click', closeDiagramOverlay);
-        diagramOverlay?.addEventListener('click', (event) => {
-            if (event.target === diagramOverlay) closeDiagramOverlay();
-        });
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && diagramOverlay?.classList.contains('is-open')) {
-                closeDiagramOverlay();
+            if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+            const focusedFrame = document.activeElement instanceof Element ? document.activeElement.closest('.diagram-frame') : null;
+            if (!focusedFrame) return;
+
+            if ((event.ctrlKey || event.metaKey) && (event.key === '+' || event.key === '=')) {
+                event.preventDefault();
+                focusedFrame.querySelector('[data-diagram-action="zoom-in"]')?.click();
+            } else if ((event.ctrlKey || event.metaKey) && (event.key === '-' || event.key === '_')) {
+                event.preventDefault();
+                focusedFrame.querySelector('[data-diagram-action="zoom-out"]')?.click();
+            } else if ((event.ctrlKey || event.metaKey) && event.key === '0') {
+                event.preventDefault();
+                focusedFrame.querySelector('[data-diagram-action="reset"]')?.click();
             }
         });
 
@@ -260,12 +503,6 @@ const colorModes = COLOR_MODES.map((mode) => mode.id);
                     setTimeout(() => copyBtn.innerHTML = originalText, 2000);
                 }
                 return;
-            }
-
-            // Zoom logic for rendered diagram overlay
-            const diagramRender = target.closest('.diagram-overlay-content .diagram-render');
-            if (diagramRender) {
-                diagramRender.classList.toggle('zoomed');
             }
         });
 
@@ -939,20 +1176,42 @@ const colorModes = COLOR_MODES.map((mode) => mode.id);
   }
 
   .diagram-render {
+    position: relative;
     overflow: hidden;
+    cursor: default;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: pan-x pan-y;
+    border-radius: 1rem;
+  }
+
+  .diagram-frame.is-transformed .diagram-render {
+    cursor: grab;
+  }
+
+  .diagram-frame.is-dragging .diagram-render {
+    cursor: grabbing;
   }
 
   .diagram-render > svg,
   .diagram-render img {
     display: block;
-    cursor: pointer;
     /* Use the available reading width so labels remain legible at a glance. */
     width: 100% !important;
     height: auto !important;
     max-width: 100% !important;
     max-height: min(64vh, 720px);
     object-fit: contain;
-    transition: transform 0.25s ease-out;
+    transform-origin: 50% 50%;
+    transition: transform 0.16s cubic-bezier(0.2, 0, 0, 1);
+    will-change: transform;
+  }
+
+  .diagram-frame.is-wheel-zooming .diagram-render > svg,
+  .diagram-frame.is-wheel-zooming .diagram-render img,
+  .diagram-frame.is-dragging .diagram-render > svg,
+  .diagram-frame.is-dragging .diagram-render img {
+    transition: none !important;
   }
 
   .diagram-toolbar {
@@ -961,8 +1220,94 @@ const colorModes = COLOR_MODES.map((mode) => mode.id);
     right: 0.875rem;
     z-index: 3;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.5rem;
+  }
+
+  .diagram-zoom-controls {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    border-radius: 999px;
+    border: 1px solid var(--light-border);
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--light-text);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-0.25rem);
+    transition: opacity 0.2s, transform 0.2s, background-color 0.2s;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+    overflow: hidden;
+  }
+
+  .dark .diagram-zoom-controls {
+    border-color: var(--dark-border);
+    background: rgba(15, 23, 42, 0.94);
+    color: var(--dark-text);
+  }
+
+  .diagram-zoom-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 0.9rem;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+  }
+
+  .diagram-zoom-btn:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+  }
+
+  .diagram-zoom-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3.1rem;
+    height: 2rem;
+    padding: 0 0.45rem;
+    border: 0;
+    border-left: 1px solid var(--light-border);
+    border-right: 1px solid var(--light-border);
+    background: transparent;
+    color: inherit;
+    font-size: 0.65rem;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+  }
+
+  .dark .diagram-zoom-reset {
+    border-color: var(--dark-border);
+  }
+
+  .diagram-zoom-btn:hover:not(:disabled),
+  .diagram-zoom-reset:hover {
+    background: rgb(var(--primary-rgb) / 0.12);
+    color: rgb(var(--primary-rgb));
+  }
+
+  .dark .diagram-zoom-btn:hover:not(:disabled),
+  .dark .diagram-zoom-reset:hover {
+    background: rgb(var(--dark-accent-rgb) / 0.16);
+    color: rgb(var(--dark-accent-rgb));
+  }
+
+  .diagram-zoom-btn:focus-visible,
+  .diagram-zoom-reset:focus-visible {
+    outline: 2px solid rgb(var(--primary-rgb) / 0.8);
+    outline-offset: -2px;
   }
 
   .diagram-source {
@@ -977,7 +1322,7 @@ const colorModes = COLOR_MODES.map((mode) => mode.id);
     padding: 0 0.75rem;
     border-radius: 999px;
     border: 1px solid var(--light-border);
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(255, 255, 255, 0.94);
     color: var(--light-text);
     font-size: 0.65rem;
     font-weight: 900;
@@ -986,15 +1331,20 @@ const colorModes = COLOR_MODES.map((mode) => mode.id);
     list-style: none;
     cursor: pointer;
     opacity: 0;
+    pointer-events: none;
     transform: translateY(-0.25rem);
     transition: opacity 0.2s, transform 0.2s, background-color 0.2s;
     box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
   }
 
+  .diagram-frame:hover .diagram-zoom-controls,
+  .diagram-frame:focus-within .diagram-zoom-controls,
   .diagram-frame:hover .diagram-source-summary,
+  .diagram-frame:focus-within .diagram-source-summary,
   .diagram-source-summary:focus-visible,
   .diagram-source[open] .diagram-source-summary {
     opacity: 1;
+    pointer-events: auto;
     transform: translateY(0);
   }
 
@@ -1004,7 +1354,7 @@ const colorModes = COLOR_MODES.map((mode) => mode.id);
 
   .dark .diagram-source-summary {
     border-color: var(--dark-border);
-    background: rgba(15, 23, 42, 0.92);
+    background: rgba(15, 23, 42, 0.94);
     color: var(--dark-text);
   }
 
@@ -1045,81 +1395,30 @@ const colorModes = COLOR_MODES.map((mode) => mode.id);
     color: var(--dark-muted);
   }
 
-  .diagram-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 100000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 5rem 1rem 1rem;
-    background: rgba(2, 6, 23, 0.72);
-    backdrop-filter: blur(14px);
-  }
-
-  .diagram-overlay.is-open {
-    display: flex;
-  }
-
-  .diagram-overlay-panel {
-    max-width: 96vw;
-    max-height: 84vh;
-    overflow: auto;
-    border-radius: 1.25rem;
-    border: 1px solid rgba(226, 232, 240, 0.35);
-    background: #ffffff;
-    padding: 1.25rem;
-    box-shadow: 0 30px 100px rgba(0, 0, 0, 0.35);
-  }
-
-  .dark .diagram-overlay-panel {
-    background: #0f172a;
-    border-color: rgba(148, 163, 184, 0.24);
-  }
-
-  .diagram-overlay-content .diagram-render {
-    max-width: none;
-    overflow: visible;
-    cursor: zoom-in;
-  }
-
-  .diagram-overlay-content .diagram-render.zoomed {
-    cursor: zoom-out;
-  }
-
-  .diagram-overlay-content .diagram-render > svg,
-  .diagram-overlay-content .diagram-render img {
-    width: 100% !important;
-    height: 84vh !important;
-    max-width: 100% !important;
-    max-height: 84vh !important;
-    object-fit: contain;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .diagram-overlay-content .diagram-render.zoomed > svg,
-  .diagram-overlay-content .diagram-render.zoomed img {
-    width: min(2000px, 150vw) !important;
-    height: auto !important;
-    max-height: none !important;
-  }
-
-  .diagram-overlay-close {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    z-index: 1;
-    min-height: 2.5rem;
-    padding: 0 1rem;
+  .diagram-zoom-hint {
+    position: absolute;
+    bottom: 1rem;
+    left: 50%;
+    transform: translate(-50%, 0.25rem);
+    z-index: 4;
+    padding: 0.35rem 0.85rem;
     border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    background: rgba(15, 23, 42, 0.92);
-    color: white;
-    font-size: 0.72rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(15, 23, 42, 0.88);
+    color: #f8fafc;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.22);
+    white-space: nowrap;
+  }
+
+  .diagram-zoom-hint.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
   }
 
   ::-webkit-scrollbar {

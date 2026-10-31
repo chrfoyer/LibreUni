@@ -382,6 +382,41 @@ test.describe('production smoke checks', () => {
 
     expect(firstRowAfterAsc).not.toEqual(firstRowAfterDesc);
   });
+
+  test('diagrams support Ctrl+scroll zoom, drag panning, and toolbar reset', async ({ page }) => {
+    await page.goto('/lessons/database-systems/relational-model.html', { waitUntil: 'networkidle' });
+
+    const frame = page.locator('.diagram-frame').first();
+    const render = frame.locator('.diagram-render');
+    const resetBtn = frame.locator('[data-diagram-action="reset"]');
+    const zoomInBtn = frame.locator('[data-diagram-action="zoom-in"]');
+    const hint = frame.locator('.diagram-zoom-hint');
+
+    await expect(frame).toBeVisible();
+    await expect(resetBtn).toHaveText('100%');
+
+    // Wheel without Ctrl shows the hint without zooming the diagram
+    await render.dispatchEvent('wheel', { deltaY: 80, ctrlKey: false });
+    await expect(hint).toHaveClass(/is-visible/);
+    await expect(resetBtn).toHaveText('100%');
+
+    // Wheel with Ctrl zooms the diagram inline and hides the hint
+    const box = await render.boundingBox();
+    await render.dispatchEvent('wheel', {
+      deltaY: -100,
+      ctrlKey: true,
+      clientX: (box?.x ?? 100) + (box?.width ?? 200) / 2,
+      clientY: (box?.y ?? 100) + (box?.height ?? 200) / 2,
+    });
+    await expect(frame).toHaveClass(/is-transformed/);
+    await expect(resetBtn).not.toHaveText('100%');
+
+    // Toolbar zoom in and reset restore 100%
+    await zoomInBtn.click({ force: true });
+    await resetBtn.click({ force: true });
+    await expect(resetBtn).toHaveText('100%');
+    await expect(frame).not.toHaveClass(/is-transformed/);
+  });
 });
 
 test('every course PDF is available as a downloadable document', async ({ request }) => {

@@ -85,9 +85,11 @@ if (region exists and access is allowed?) then (yes)
       :commit PTE, refcount, and dirty state;
       :invalidate stale translation as required;
       :retry faulting instruction;
+      stop
     else (no)
       :release unused prepared resources;
       :retry classification;
+      stop
     endif
   else (no)
     :deliver process-visible failure;

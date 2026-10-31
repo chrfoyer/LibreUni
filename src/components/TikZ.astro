@@ -109,6 +109,11 @@ if (fs.existsSync(cacheFile)) {
 
 <div class:list={['diagram-frame my-12 flex flex-col items-center bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[2rem] shadow-xl p-6 md:p-8 transition-colors w-full max-w-5xl mx-auto', { 'book-only-diagram': bookOnly, 'book-only': bookOnly }]} data-diagram-kind="TikZ">
   <div class="diagram-toolbar">
+    <div class="diagram-zoom-controls" role="group" aria-label="Diagram zoom controls">
+      <button type="button" class="diagram-zoom-btn" data-diagram-action="zoom-out" aria-label="Zoom out" title="Zoom out (Ctrl + −)">−</button>
+      <button type="button" class="diagram-zoom-reset" data-diagram-action="reset" aria-label="Reset zoom" title="Reset view (Ctrl + 0)">100%</button>
+      <button type="button" class="diagram-zoom-btn" data-diagram-action="zoom-in" aria-label="Zoom in" title="Zoom in (Ctrl + +)">+</button>
+    </div>
     <details class="diagram-source group/source">
       <summary class="diagram-source-summary" aria-label="Show TikZ source">Code</summary>
       <div class="diagram-source-code group/code">
@@ -120,4 +125,5 @@ if (fs.existsSync(cacheFile)) {
   <div class="diagram-render w-full flex justify-center dark:invert dark:hue-rotate-180 dark:brightness-110">
     <Fragment set:html={svgContent} />
   </div>
+  <div class="diagram-zoom-hint" aria-hidden="true">Ctrl + scroll to zoom</div>
 </div>
