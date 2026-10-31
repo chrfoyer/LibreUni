@@ -17,26 +17,26 @@ Curriculum shape (a possible fourth course) is in [`MATH_STRATEGY.md`](MATH_STRA
 - Decide cleanup items from STATE.md (delete `backup.txt`, etc.). Commit separately.
 - Gate: required checks green or every failure documented with owner.
 
-### Phase 1 — Define "perfect" (human + 1 designer agent)
+### Phase 1 — Define "perfect"
 - Write `docs/refactor/LESSON_EXEMPLAR_SPEC.md`: a concrete checklist derived from `COURSE_STANDARD.md`, `COURSE_PEDAGOGY.md`, `COURSE_INTEGRITY.md`, and the repair contracts. Must be testable: per-section worked example/counterexample, solved exercises with all inputs, omission statement, claim-level sources, executable-evidence rule, static/book parity.
-- Perfect **two exemplar lessons** by hand first (suggested: `interleavings-and-atomicity` and `page-tables-and-tlbs`, which already have independently solved examples in the OS contract) and have the owner approve them. They become the template for swarm output.
+- Perfect **two exemplar lessons** first (suggested: `interleavings-and-atomicity` and `page-tables-and-tlbs`, which already have independently solved examples in the OS contract) and have the owner approve them.
 - Gate: owner approves the exemplars and spec.
 
-### Phase 2 — Perfect the pilot (swarm, parallel by lesson)
-- Execute `PILOT_BACKLOG.md` units using the playbook. One lesson = one work unit = one writer owner.
-- Cross-cutting units (manifest/metadata, playground models + tests, sources, glossary/terminology consistency) are serialized, owned by a single integrator.
+### Phase 2 — Perfect the pilot
+- Execute `PILOT_BACKLOG.md` units.
+- Cross-cutting units (manifest/metadata, playground models + tests, sources, glossary/terminology consistency) are serialized.
 - Gate (course): every lesson passes the spec checklist by an **independent reviewer** (not the writer), independent calculation/counterexample re-derivation passes, `check:required` green, visual/UX inspection done, owner spot-checks ≥5 lessons.
 
-### Phase 3 — Extract the pattern (1–2 agents)
-- Produce `docs/refactor/COURSE_PATTERN.md`: what actually worked (lesson skeleton, component usage rules, review packet format, time per lesson, defect classes found in review). Fold stable rules into `docs/agent-rules/` (not here).
+### Phase 3 — Extract the pattern
+- Produce `docs/refactor/COURSE_PATTERN.md`: what actually worked (lesson skeleton, component usage rules, defect classes found in review). Fold stable rules into `docs/agent-rules/` (not here).
 - Gate: pattern validated by applying it to one lesson of another course without help.
 
-### Phase 4 — Port to Database Systems and Operating Systems (swarm)
+### Phase 4 — Port to Database Systems and Operating Systems
 - Same backlog mechanics, generated from each repair contract's disposition table. DB first (smaller); OS after the executable-lab policy question is answered.
 - Gate: same as Phase 2 per course, plus cross-course consistency (terminology, prerequisites, learning-path gates in `systems-foundations.json`, crosswalk).
 
 ### Phase 5 — Verification of the trio
-- Fresh-context reviewers run held-out tasks (see panel `quality_probe.py` and `agentic-runbook.md` for the evidence-packet idea), full `check:full`, accessibility and visual review, PDF export check.
+- Fresh-context reviewers run held-out tasks, full `check:full`, accessibility and visual review, PDF export check.
 - Gate: owner sign-off. Update `COURSE_CROSSWALK.md`, `STATE.md`, D-0007 status.
 
 ### Phase 6 — Mass production

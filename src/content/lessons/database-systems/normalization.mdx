@@ -17,12 +17,54 @@ assessment: "Given a relation and functional dependencies, identify its key, cho
 
 import ExerciseSolution from '../../../components/ExerciseSolution.astro';
 import MathStatement from '../../../components/MathStatement.astro';
+import Quiz from '../../../components/Quiz';
+import CaseStudy from '../../../components/CaseStudy';
+import PlantUML from '../../../components/PlantUML.astro';
 
 # Normalization: decompose without losing facts
 
 Normalization is not a ritual of splitting tables. It asks whether one tuple stores several facts whose values can change independently. If it does, a dependency tells us where the repetition comes from and a lossless decomposition tells us whether we can separate the facts safely.
 
 > **Definition.** A relation has an update anomaly when one logical fact is stored in multiple tuples and those copies can disagree. Normalization uses dependencies to move each independently determined fact to a relation whose key actually determines it.
+
+<PlantUML code={`
+@startuml
+skinparam linetype ortho
+hide circle
+
+class "Registration [Unnormalized]" as R {
+  * **student_id**
+  * **course_code**
+  * **term**
+  --
+  instructor
+  room
+}
+
+note bottom of R
+  FD: (course_code, term) -> (instructor, room)
+  Violates BCNF because determinant is NOT a superkey!
+end note
+
+class "Offering [BCNF]" as O {
+  * **course_code** <<PK>>
+  * **term** <<PK>>
+  --
+  instructor
+  room
+}
+
+class "Enrollment [BCNF]" as E {
+  * **student_id** <<PK>>
+  * **course_code** <<PK, FK>>
+  * **term** <<PK, FK>>
+}
+
+R -down-> O : "Lossless Decompose"
+R -down-> E : "Lossless Decompose"
+O "1" -right- "many" E : "(course_code, term)"
+@enduml
+`} />
 
 {/* Source tracking: The normal-form definitions, lossless-join criterion, and decomposition trade-offs are synthesized from Ramakrishnan and Gehrke’s schema-refinement chapters. */}
 
@@ -117,6 +159,19 @@ For every proposed split, submit a three-part evidence record: the two projected
 
 For the `Registration` split, name $R_1$, $R_2$, their intersection, and the dependency that satisfies the criterion.
 
+<Quiz client:load
+  title="Verify the Lossless-Join Criterion"
+  question="For a relation R(A, B, C) decomposed into R1(A, B) and R2(B, C), which condition mathematically guarantees that the natural join R1 ⋈ R2 produces no spurious tuples?"
+  options={[
+    "B must be non-null in all rows",
+    "(R1 ∩ R2) → R1 or (R1 ∩ R2) → R2, meaning B → A or B → C is in F+",
+    "R1 and R2 must have an equal number of tuples",
+    "B must be a foreign key in both R1 and R2"
+  ]}
+  correctIndex={1}
+  explanation="The binary lossless-join theorem states that the decomposition is lossless if and only if the shared attributes (the intersection B) functionally determine at least one of the two decomposed relations."
+/>
+
 <ExerciseSolution hint="Put the scheduled-offering relation on the side determined by the shared pair.">
 
 Take $R_1 = Offering(course\_code, term, instructor, room)$ and $R_2 = Enrollment(student\_id, course\_code, term)$. Their intersection is $(course\_code, term)$, and $(course\_code, term) \to R_1$ follows from $(course\_code, term) \to (instructor, room)$ plus reflexivity. The criterion therefore proves the binary decomposition lossless.
@@ -139,6 +194,20 @@ BCNF removes every dependency whose determinant is not a superkey. It can sacrif
 ### Choose the trade-off
 
 Your team can enforce dependencies with single-relation checks during every write, but a BCNF decomposition would require checking one dependency across a join. What design question should be documented before choosing 3NF or BCNF?
+
+<CaseStudy client:load
+  title="The BCNF vs 3NF Architecture Decision"
+  scenario="Consider schema Address(Street, City, Zip) with FDs: { (Street, City) -> Zip, Zip -> City }. Candidate keys are (Street, City) and (Street, Zip). Notice Zip -> City violates BCNF because Zip is not a superkey, but satisfies 3NF because City is prime. Decomposing into R1(Zip, City) and R2(Street, Zip) achieves BCNF."
+  question="Why might an engineering team intentionally remain in 3NF instead of decomposing to BCNF?"
+  options={[
+    "Because 3NF prevents all NULL values by forcing every nullable attribute into an isolated relationship schema.",
+    "Because BCNF decomposition destroys dependency preservation, making (Street, City) -> Zip impossible to enforce with single-table keys without expensive join assertions.",
+    "Because BCNF decomposition is mathematically proven to cause lossy joins during common query projections.",
+    "Because 3NF relations eliminate the requirement for primary key indexes, speeding up write-heavy transactional workloads."
+  ]}
+  correctIndex={1}
+  explanation="BCNF guarantees absence of redundancy from functional dependencies, but does not guarantee dependency preservation. 3NF always guarantees both a lossless join AND dependency preservation. When enforcing a cross-table dependency on writes is too costly, 3NF is the superior engineering choice."
+/>
 
 <ExerciseSolution hint="There is no automatic winner: name the anomaly risk and the cost of enforcement.">
 

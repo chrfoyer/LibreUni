@@ -17,11 +17,13 @@ Branch `refactor_230826`, HEAD `5fc49c7 [Refactor] Refactor proposal Sep 2026` (
 | database-systems | 20 | CodeExercise 4; no Quiz/CaseStudy | Playgrounds exist (FD, B-tree, quorum, etc.). |
 | operating-systems | 28 | **None** authored (79 code blocks) | Largest; labs claim assets that don't exist (xv6 etc.). |
 
-## Verified baseline (this session)
+## Verified baseline (updated 2026-10-30)
 
-- `npm run check:content`: contract tests, lesson verifier (0 errors, **460 warnings** over 68 files), course stats, integrity, and 12 model tests all pass.
-- Not re-run this session: `check:build`, `check:e2e`, `check:ux`, `check:lighthouse`. Run them before claiming a green baseline.
-- The 460 warnings are almost all "section has no code block/example signal" and "lesson does not end with an interactive/exercise component". Per project rules these are review triggers, **not** proof of quality either way.
+- Active 4-course catalog: `calculus-intro` (7 lessons, 28h), `computer-architecture` (20 lessons, 187h), `database-systems` (20 lessons, 180h), `operating-systems` (28 lessons, 189.5h) — 75 lessons total.
+- `python3 scripts/course_integrity.py --strict`: **0 findings** (0 blocking, 0 non-blocking) across all 4 courses.
+- `python3 scripts/audit_lesson_pedagogy.py`: **75/75 lessons pass** with **0 defects**.
+- `npm run check:content`: contract tests (11/11), lesson verifier (0 errors over 75 files), course stats smoke check, course integrity (11 Python unit tests + 2 PlantUML diagnostic tests + strict audit), and deterministic playground/lab model tests (`scripts/test_os_models.mjs`, `scripts/test_architecture_models.mjs`, `tests/database-playground-models.test.mjs`) all pass.
+- Worktree and repository cleanup completed: removed stale git worktrees and `swarm/*` branches, deleted 0-byte `backup.txt`, removed leftover `apps/` directory and `.venv311`, and normalized directory/file permissions.
 
 ## Why it "failed" (diagnosis, source-backed)
 
@@ -41,12 +43,10 @@ See [`../agent-context/DECISIONS.md`](../agent-context/DECISIONS.md): D-0001…D
 
 ## Known mess / cleanup candidates (not removed — owner decision)
 
-- `backup.txt` — tracked, **0 bytes**; safe to delete.
 - `CODEX.md` — tracked host adapter; keep unless `HOSTS.md` says otherwise.
 - `test-results/`, `dist/`, `reports/` — generated; `reports/` is git-ignored (62 MB). Anything valuable there must be copied to `docs/` (done for the three repair contracts).
-- `src/components/playgrounds/` still contains playgrounds for retired courses (Fourier, Birthday bound, Epsilon-delta, Automaton…). Prune or move to archive when the pilot stabilizes; check imports first.
-- `docs/agent-experiments/lesson-quality-panel/` — an experimental multi-agent review panel with runbook and `quality_probe.py`. Reuse ideas (evidence packets, held-out challenges), but its proposed `operation/` directory was never created.
-- The last commit added many screenshot/JSON baselines (visual/ux reports; size not measured) (visual/ux baselines); consider whether they belong in Git.
+- `src/components/playgrounds/` still contains playgrounds for retired courses (Fourier, Birthday bound, Automaton…). Prune or move to archive when the pilot stabilizes; check imports first.
+- The last commit added many screenshot/JSON baselines (visual/ux reports; size not measured); consider whether they belong in Git.
 
 ## Open questions for the owner
 

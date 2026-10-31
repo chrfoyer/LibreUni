@@ -51,7 +51,14 @@
 
 ## D-0008 — Add an Introduction to Calculus course (and recover its source)
 
-- **Status:** accepted · 2026-10-06 (lesson table to be confirmed at Phase 0)
-- **Decision:** A single-variable "Introduction to Calculus" course (Calculus 1 level, about 7–8 lessons) is recovered from `aaee234^` and rewritten against the current standard. Multivariable, series, differential equations, and analysis remain staged in `archive/curriculum/2026-10-06-calculus-recovery/`. Its interactive-diagram pattern (single-claim playground, accessible control, static twin) is a reference for other courses, subject to D-0005's prediction and testing requirements.
+- **Status:** accepted · 2026-10-06 (7-lesson `calculus-intro` course active and verified)
+- **Decision:** A single-variable "Introduction to Calculus" course (Calculus 1 level, 7 lessons, 28h) is recovered from `aaee234^` and rewritten against the current standard. Multivariable, series, differential equations, and analysis remain staged in `archive/curriculum/2026-10-06-calculus-recovery/`. Its interactive-diagram pattern (single-claim playground, accessible control, static twin) is a reference for other courses, subject to D-0005's prediction and testing requirements.
 - **Rationale:** The trio assumes mathematical preparation it does not teach; a narrow course supplies it without becoming a full analysis curriculum. Recovery follows the archive rule: review per lesson, no wholesale restore.
-- **Sources:** [`docs/refactor/CALCULUS_RECOVERY.md`](../refactor/CALCULUS_RECOVERY.md), [`archive README`](../../archive/curriculum/2026-10-06-calculus-recovery/README.md)
+- **Sources:** [`docs/refactor/CALCULUS_RECOVERY.md`](../refactor/CALCULUS_RECOVERY.md), [`archive README`](../../archive/curriculum/2026-10-06-calculus-recovery/README.md), [`src/data/course-manifests/calculus-intro.yml`](../../src/data/course-manifests/calculus-intro.yml)
+
+## D-0009 — Dual lab-fixture and deterministic playground-model verification
+
+- **Status:** accepted · 2026-10-30
+- **Decision:** Operating Systems labs combine (a) a pinned upstream `xv6-riscv` revision-5 reference snapshot (`7d7adbb1b0acbd67c9766a20d0f9900fef2789fa`) with verified file/symbol anchors under `fixtures/xv6-riscv/` and (b) in-repo deterministic executable lab models and mutation-killing oracles in `src/lib/osLabModels.mjs` (WVT scheduler, Virtio split/indirect queue lifecycle, atomic directory rename with crash-window injection). Every shipped interactive playground exports pure model functions tested under `scripts/test_os_models.mjs`, `scripts/test_architecture_models.mjs`, and `tests/database-playground-models.test.mjs` via `npm run test:models`.
+- **Rationale:** Learners who build the full `xv6-riscv` kernel need exact, pinned upstream commit and patch-point contracts, while repository CI and in-browser readers need deterministic, self-contained models and independent oracles that kill named wrong implementations without claiming simulated numbers are hardware benchmarks.
+- **Sources:** [`fixtures/xv6-riscv/README.md`](../../fixtures/xv6-riscv/README.md), [`src/lib/osLabModels.mjs`](../../src/lib/osLabModels.mjs), [`scripts/test_os_models.mjs`](../../scripts/test_os_models.mjs)

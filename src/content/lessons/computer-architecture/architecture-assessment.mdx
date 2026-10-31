@@ -30,6 +30,8 @@ This assessment tests whether a student can connect the layers of computer archi
 
 ## Part I: representation and ISA
 
+> **Example.** Worked trace: for a branch instruction at `0x1000` with a 12-bit signed displacement of $-16$ (`0xFF0`, sign-extended to `0xFFFFFFF0`) relative to `PC + 4` (`0x1004`), the target address is `0x1004 + 0xFFFFFFF0 = 0x0FF4` modulo $2^{32}$.
+
 A processor has 32-bit registers, fixed four-byte instructions, and byte-addressed memory. An instruction encodes a signed 12-bit displacement in bytes, two 5-bit register identifiers, and an opcode. A branch uses PC-relative addressing from the address of the next instruction. Explain the signed immediate range, sign-extension procedure, and target calculation for an instruction at `0x1000` with displacement `-16`.
 
 Then define the architectural transition for a load of a 16-bit signed value from `base + displacement`. Include alignment, permission, byte order, extension, destination write, PC update, and the exception state if the page is absent. State which details are ISA guarantees and which can vary by microarchitecture.
@@ -71,6 +73,8 @@ Explain the difference between holding the PC/IF-ID registers, inserting a bubbl
 
 ## Part IV: memory hierarchy and virtual memory
 
+> **Definition.** In a two-level cache hierarchy with L1 hit time $t_{L1}$, local miss rate $m_{L1}$, L2 hit time $t_{L2}$, local miss rate $m_{L2}$, and memory penalty $t_{\mathrm{mem}}$, the serial Average Memory Access Time is $\mathrm{AMAT} = t_{L1} + m_{L1}(t_{L2} + m_{L2} t_{\mathrm{mem}})$, where the global L2 miss rate is $m_{\mathrm{global},2} = m_{L1} \cdot m_{L2}$.
+
 A cache is 32 KiB, 4-way set associative, with 64-byte lines and 32-bit physical addresses. Derive offset, index, tag, number of sets, and the mapping of addresses `0x12345678` and `0x12347678`. Construct a conflict-miss trace and compare direct-mapped and 2-way behavior, keeping total capacity and line size fixed when comparing organizations.
 
 The L1 hit time is 1 cycle with a 6% local miss rate. L2 hit time is 8 cycles with a 15% local miss rate; main memory adds 90 cycles after an L2 miss. Compute AMAT and explain what changes if someone mistakenly treats the 15% as a global rate.
@@ -81,17 +85,23 @@ Finally, explain a physically indexed/physically tagged cache versus a virtually
 
 ## Part V: parallel and I/O design
 
+> **Warning.** Reclaiming a DMA buffer on a software timeout without first quiescing the device and invalidating its IOMMU translation creates a use-after-free write hazard: a late DMA completion can overwrite the physical frame after it has been reallocated to another process.
+
 A 4-core processor runs a kernel that is 90% parallel. Compute ideal speedup on 2, 4, 8, and unlimited cores. Then explain why a streaming kernel may stop scaling when memory bandwidth saturates. Give two layout or algorithm changes that could improve scaling without adding cores.
 
 The kernel receives data through DMA. Draw ownership states for a descriptor from free to ready, in-flight, completed, and reclaimed. Include cache synchronization for coherent and noncoherent systems, IOMMU mapping, invalid lengths, timeout, reset, generation tags, and buffer reuse. State the invariant that prevents a late completion from corrupting a new owner.
 
 ## Part VI: integrated design essay
 
+> **Remark.** An integrated architecture proposal is evaluated by whether its bit width, cache tile footprint, DMA buffer ring, and Roofline or CPI bottleneck model compose into a single falsifiable latency and correctness argument.
+
 Design a small processor-backed image-filter pipeline. Specify pixel representation, accumulator width, instruction operations, vector or multicore decomposition, cache tile, DMA buffers, queue policy, exception behavior, and security assumptions. Derive arithmetic work and a memory traffic estimate. Use either a roofline or CPI model to identify the bottleneck, then give one alternative design and a sensitivity analysis.
 
 Your essay must include a sequence diagram from device arrival to output completion, one correctness proof for a pixel or loop invariant, one performance experiment that could falsify your bottleneck claim, and one fault-injection test. Distinguish what is proved from what is simulated, benchmarked, or assumed.
 
 ## Diagnostic answer guide
+
+> **Remark.** Use the reference derivations below to verify your intermediate state transitions, bit widths, and cycle counts; full credit requires explicit invariants and units at every step, not merely matching the final scalar numbers.
 
 For Part I, the displacement range is $[-2048,2047]$ bytes. The 12-bit encoding of −16 is `0xff0`; extending its sign bit to 32 bits gives `0xfffffff0`. The branch base is `0x1004`, so the target is `0x1004 − 0x10 = 0x0ff4`, not `0x0ff0`. A load must check access and the stated alignment rule, assemble the bytes in the selected byte order, sign-extend the 16-bit value, and leave the destination unchanged on a fault. The faulting PC is retained for a restartable fault. Converting signed −1 to a 32-bit unsigned size produces 4,294,967,295; validate negativity before conversion, then check the upper bound and any multiplication used to compute allocation bytes.
 
@@ -108,6 +118,8 @@ For Part V, speedup is $1/(0.1+0.9/P)$: 1.82× on 2, 3.08× on 4, 4.71× on 8, a
 For Part VI, the strongest answers connect representation to overflow bounds, layout to cache-line reuse, vector width to tail handling, DMA protocol to security, and measured counters to the performance model. The alternative must change a real trade-off—arithmetic versus traffic, latency versus throughput, area versus frequency, or isolation versus sharing—and the sensitivity analysis must identify the measurement that would reverse the decision.
 
 ## Grading criteria
+
+> **Warning.** Answers that omit units, conflate local and global miss rates, or leave control/write-enable signals unspecified on fault and branch paths cannot receive full credit even when final register or AMAT numbers match.
 
 An A answer is self-contained, precise, and adversarial. It makes no silent assumptions about PC conventions, miss-rate definitions, signedness, memory ordering, ownership, or cache coherence. It derives quantitative results with units, gives transition tables or traces where state changes, and explains why the chosen implementation refines the abstract contract. A diagram without a written invariant, a benchmark without a boundary, or a proof that omits edge cases is not complete.
 

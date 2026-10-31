@@ -79,6 +79,8 @@ Completion without a crash demonstrates only that one execution reached its end.
 
 ## Choose one bounded option
 
+> **Warning.** Selecting a single option and keeping its treatment diff strictly separated from earlier lab checkpoints is mandatory: combining two treatments (for example, modifying the scheduler while redesigning the buffer cache) confounds causal attribution in paired trials.
+
 The hard exclusions are part of each option. A proposal that silently absorbs an excluded production feature is too broad.
 
 | option | required mechanism and contract | mandatory adversarial evidence | hard exclusions |
@@ -266,6 +268,8 @@ No. Preserve the rev5-rooted approved baseline so the course comparison remains 
 </details>
 
 ## Derive the mechanism from invariants
+
+> **Definition.** A kernel state transition $S \xrightarrow{o} S'$ is invariant-preserving if, for every concurrent interleaving and every failure cut permitted by the project's failure model, either all externally visible effects of $o$ satisfy the post-transition invariant $I(S')$ or cleanup restores an allowed pre-transition state satisfying $I(S)$.
 
 Do not organize the design memo around files changed. Organize it around state and transitions.
 
@@ -481,6 +485,8 @@ The performance hypothesis is rejected, but the project can still be rigorous. P
 
 ## Design memo
 
+> **Remark.** The design memo is evaluated as a falsifiable engineering argument: every claimed invariant must map to an assertion or test oracle, and every performance claim must pair pre-registered event predictions with raw trial distributions.
+
 Submit a concise memo whose structure follows the argument rather than the chronology of coding:
 
 1. **Claim and scope:** approved claim, option, contract, exclusions, and reviewer conditions.
@@ -496,6 +502,8 @@ Submit a concise memo whose structure follows the argument rather than the chron
 Include diagrams or state tables where they replace ambiguous prose. A screenshot of passing output without the command, exit status, and artifact identity is not useful evidence.
 
 ## Demo and defense
+
+> **Example.** In the interrupt-window defense prompt, if an interrupt arrives after the driver writes `avail->idx` but before the submitter sets `req.state = IN_FLIGHT`, the interrupt handler observes a completion for a slot still marked `PREPARED`. The invariant repair requires transitioning `req.state = IN_FLIGHT` while holding the queue lock *before* publishing `avail->idx`.
 
 The demo is a controlled falsification attempt, not a feature tour. In 12 minutes:
 
@@ -549,6 +557,8 @@ Not as verified evidence. Determine whether the raw file, manifest, or table cam
 </details>
 
 ## Integrity and assistance policy
+
+> **Warning.** Automated test passes never substitute for live authorship defense: every external source, tool, or generative model consultation must be logged in `ASSISTANCE.md` with its verification method, and the author must be able to re-derive any submitted control path under a modified assumption.
 
 Authorship means being able to explain and defend every submitted mechanism, test oracle, result, and source decision. It does not mean working without tools or feedback.
 
@@ -615,6 +625,8 @@ A complete answer separates correctness from performance. Contract and invariant
 </details>
 
 ## Connections and deliberate boundaries
+
+> **Remark.** By anchoring every project to pinned `xv6-riscv-rev5` commit `7d7adbb1b0acbd67c9766a20d0f9900fef2789fa`, the capstone trades production hardware breadth for complete mechanism inspectability across syscalls, synchronization, virtual memory, I/O, persistence, and observability.
 
 The chosen change must connect at least three mechanism layers without expanding into three projects:
 

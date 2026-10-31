@@ -78,7 +78,7 @@ $$
 
 until queueing, coalescing, or saturation invalidates the independent-event model. Equating the two gives a first-order crossover $\lambda^*=C_p/(P C_i)$. The result is meaningful only if the latency constraint permits period $P$ and the measured costs match the platform.
 
-### Worked choice: sparse control events
+### Worked example: sparse control events
 
 A device produces 200 events/s. One status poll costs 120 ns. The deadline requires detection within 50 µs, so choose $P=50$ µs for worst-case compliance. Polling consumes
 
@@ -108,6 +108,8 @@ Without batching, occupancy is `80,000 × 1.5 µs = 0.12`, or 12% of one CPU. Wi
 </details>
 
 ## DMA changes who moves bytes
+
+> **Example.** Under a linear CPU-cost model where programmed I/O costs $C_{\mathrm{PIO}}(n) = C_{\mathrm{setup}} + C_{\mathrm{irq}} + n \cdot c_{\mathrm{copy}}$ and DMA costs $C_{\mathrm{DMA}}(n) = C_{\mathrm{dma\_setup}} + C_{\mathrm{completion}}$, the byte-count crossover is $n^* = (C_{\mathrm{dma\_setup}} + C_{\mathrm{completion}} - C_{\mathrm{setup}} - C_{\mathrm{irq}}) / c_{\mathrm{copy}}$. Below $n^*$, setting up and tearing down the DMA mapping consumes more CPU cycles than copying the payload directly through registers.
 
 For a transfer of $n$ bytes, compare two CPU-busy models:
 
@@ -227,6 +229,8 @@ CPU publishes producer 15; device observes the new index and reads slot 6; slot 
 
 ## Coherence, synchronization, and IOMMU authority
 
+> **Warning.** Neither cache-coherent DMA nor an IOMMU prevents use-after-free corruption when a driver reclaims an in-flight buffer on timeout: if the physical frame is reallocated before the device is quiesced and its IOMMU mapping invalidated, a late device completion will overwrite the new owner's memory.
+
 A coherent DMA allocation lets CPU and device observe each other's writes without explicit cache-line cleaning for coherence, but coherent memory still needs barriers to order fields. A streaming DMA mapping may require explicit synchronization when ownership passes between CPU and device. Linux's DMA API documents separate `dma_sync_*_for_device` and `dma_sync_*_for_cpu` operations for reused streaming mappings.
 
 {/* Source tracking: Coherent-versus-streaming DMA and the requirement that coherent mappings still use memory barriers were verified against the Linux kernel Dynamic DMA Mapping Guide. */}
@@ -320,6 +324,8 @@ Any design that frees a timed-out DMA buffer before quiescence violates the owne
 </details>
 
 ## Deliberate boundary and source trail
+
+> **Remark.** This lesson establishes the fundamental producer-consumer ring and DMA ownership invariants required by the Device Driver Lab, deliberately deferring multi-queue interrupt steering (MSI-X), adaptive polling/interrupt switching (NAPI), and PCIe transaction-layer packet ordering to specialized systems references.
 
 The numerical model excludes queueing, cache misses, IOMMU costs, interrupt routing, power states, and device parallelism. The protocol model uses a generic ring plus Virtio as normative evidence; individual hardware requires its own data sheet. PCIe transaction layers, NAPI, MSI-X, IOMMU programming, and production reset flows remain bounded extensions.
 

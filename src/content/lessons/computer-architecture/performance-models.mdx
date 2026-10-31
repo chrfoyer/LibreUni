@@ -41,13 +41,31 @@ The formula is a decomposition, not a causal explanation. $IC$ depends on compil
 
 If a processor retires 3 billion instructions in 1.5 seconds at 2 GHz, then $IC=3\cdot10^9$, cycles $=3\cdot10^9$, and $CPI=1$. If a second implementation retires 2.4 billion instructions in 1.4 seconds at 2.5 GHz, its cycles are $3.5\cdot10^9$ and CPI is about 1.458. It is faster in wall-clock time despite a worse CPI because it performs fewer instructions and runs at a higher frequency. Reporting CPI alone would reverse the conclusion.
 
-Instruction count can be weighted by class: $CPI_{avg}=\sum_i f_i CPI_i$, where $f_i$ is the fraction of executed instructions in class $i$. In a pipeline, base CPI may approach one, but load-use stalls, branch mispredictions, cache misses, synchronization, and front-end starvation add terms. A model such as
-
 $$
 CPI=CPI_{base}+\alpha_{br}p_{br}+\alpha_{load}p_{load}+\alpha_{L1}p_{L1}+\cdots
 $$
 
-is useful only when $α$ represents the relevant frequency and $p$ the conditional penalty. Double-counting a miss penalty that is already embedded in a measured CPI produces a false diagnosis.
+is useful only when $\alpha$ represents the relevant frequency and $p$ the conditional penalty. Double-counting a miss penalty that is already embedded in a measured CPI produces a false diagnosis.
+
+<details>
+<summary><strong>Pause & Predict: Does lower CPI always imply faster execution?</strong></summary>
+
+Suppose an optimizing compiler eliminates 50% of the instructions in an inner loop. All eliminated instructions were simple 1-cycle integer additions; all long-latency memory loads remain.
+* What happens to the program's average $CPI$? Does it increase, decrease, or remain constant?
+* Does total execution time $T$ improve or degrade?
+
+**Commit your reasoning before opening the solution below.**
+
+---
+
+**Analysis:**
+The average $CPI$ actually **increases**!
+Suppose the original program had 100 instructions: 50 ALU ops (1 cycle each) and 50 cache-miss loads (20 cycles each).
+* Original cycles: $50(1) + 50(20) = 1050$ cycles. Original $CPI = 1050 / 100 = 10.5$.
+* New program: The 50 ALU ops are eliminated. Remaining instructions: 50 loads.
+* New cycles: $50(20) = 1000$ cycles. New $CPI = 1000 / 50 = 20.0$.
+Average $CPI$ nearly doubled from $10.5$ to $20.0$, yet total execution time dropped from 1050 cycles to 1000 cycles. Optimizing for CPI alone is a classic pitfall: total wall-clock time ($T = IC \cdot CPI / f$) is the only true figure of merit.
+</details>
 
 ## Latency, throughput, and queueing
 
@@ -96,7 +114,9 @@ where $I$ is arithmetic intensity. A low-intensity kernel is bandwidth-bound; ad
 
 A benchmark is an experiment, not a stopwatch call. Define the hypothesis, independent variable, dependent metric, controlled variables, repetitions, warm-up policy, and stopping rule. The timing boundary must exclude setup when measuring steady-state execution and include it when measuring end-to-end user experience. Report distribution and uncertainty, not only the fastest run.
 
-Warm-up may populate instruction/data caches, trigger JIT compilation, stabilize branch predictors, or move a frequency governor. Randomized input order can prevent an algorithm from receiving a pre-sorted favorable trace, but randomization itself must be reproducible and reported. CPU affinity, thread count, background load, thermal state, compiler flags, and allocator behavior can dominate small effects.
+Warm-up may populate instruction/data caches, trigger JIT compilation, stabilize branch predictors, or move a frequency governor. Randomized input order can prevent an algorithm from receiving a pre-sorted favorable trace, but randomization itself must be reproducible and reported.
+
+System-level confounders can dominate small architectural effects. CPU affinity, thread count, background OS load, thermal throttling, compiler optimization flags, and heap allocator behavior must all be tightly pinned and monitored.
 
 Use counters to test mechanisms. If a cache hypothesis predicts that row-major traversal lowers L1 misses, measure misses and bandwidth as well as time. If a branch hypothesis predicts misprediction stalls, measure branch events and compare a branchless variant. Counters are not infallible—multiplexing, sampling, speculative counting, and privilege restrictions matter—but they are stronger evidence than a narrative about “cache friendliness.”
 
@@ -108,9 +128,61 @@ Benchmark suites should include representative and adversarial workloads. A comp
 
 ## Energy and performance per watt
 
-Performance is not the only constraint. Dynamic energy is related to switching activity, capacitance, and voltage; leakage and static power matter at idle and high density. A higher frequency may require higher voltage and disproportionately increase power. Memory traffic often consumes more energy than an arithmetic operation, so a cache optimization can improve both time and energy, or increase energy by fetching large unused lines.
+Performance is not the only constraint. Dynamic energy is related to switching activity, capacitance, and voltage; leakage and static power matter at idle and high density. A higher frequency may require higher voltage and disproportionately increase power.
+
+Memory traffic often consumes more energy than an arithmetic operation. Consequently, a cache optimization can improve both time and energy, or increase energy by fetching large unused lines.
 
 Performance per watt is a ratio with a workload denominator. A design that finishes quickly but uses a high power burst may compare differently from one that runs longer at low power, depending on whether the system is energy-limited, thermally limited, or latency-limited. State the objective before optimizing.
+
+### Worked Trace: Multi-Component CPI Stall Decomposition & Frequency Trade-off
+
+Consider evaluating an architectural proposal to deepen a pipeline from 5 stages to 10 stages:
+* **Baseline Processor (Arch-A)**: Clock frequency $f_A = 2.0\text{ GHz}$ ($T_{cycle} = 0.5\text{ ns}$). Base $CPI = 1.0$.
+  * Branch instructions: 20% of workload, branch penalty is 2 cycles, misprediction rate $p_{br} = 5\%$.
+  * Memory load instructions: 25% of workload, L1 D-cache miss rate $p_{miss} = 8\%$, miss penalty 40 cycles.
+* **Proposed Processor (Arch-B)**: Deeper pipeline allows clock frequency to increase to $f_B = 3.0\text{ GHz}$ ($T_{cycle} = 0.333\text{ ns}$).
+  * Deeper pipeline increases branch misprediction penalty to 6 cycles.
+  * Higher frequency increases L1 D-cache miss penalty to 60 cycles (main memory latency in nanoseconds is constant at $20\text{ ns}$).
+
+**Step 1: Compute Effective CPI for Arch-A**:
+$$CPI_A = CPI_{base} + f_{br} \cdot p_{br} \cdot \text{Penalty}_{br, A} + f_{load} \cdot p_{miss} \cdot \text{Penalty}_{mem, A}$$
+$$CPI_A = 1.0 + (0.20 \cdot 0.05 \cdot 2) + (0.25 \cdot 0.08 \cdot 40) = 1.0 + 0.02 + 0.80 = 1.82.$$
+
+**Step 2: Compute Effective CPI for Arch-B**:
+$$CPI_B = CPI_{base} + f_{br} \cdot p_{br} \cdot \text{Penalty}_{br, B} + f_{load} \cdot p_{miss} \cdot \text{Penalty}_{mem, B}$$
+$$CPI_B = 1.0 + (0.20 \cdot 0.05 \cdot 6) + (0.25 \cdot 0.08 \cdot 60) = 1.0 + 0.06 + 1.20 = 2.26.$$
+
+**Step 3: Compare Wall-Clock Execution Time**:
+For an instruction trace of $IC = 10^9$ instructions:
+$$T_A = \frac{IC \cdot CPI_A}{f_A} = \frac{10^9 \cdot 1.82}{2.0 \times 10^9\text{ Hz}} = 0.910\text{ seconds}.$$
+$$T_B = \frac{IC \cdot CPI_B}{f_B} = \frac{10^9 \cdot 2.26}{3.0 \times 10^9\text{ Hz}} = 0.753\text{ seconds}.$$
+
+**Conclusion**:
+Even though Arch-B suffers a 24.2% penalty in CPI ($1.82 \to 2.26$) due to worse stall penalties in cycles, the 50% frequency increase ($2.0 \to 3.0\text{ GHz}$) dominates, producing an overall speedup of $\frac{0.910}{0.753} \approx 1.21\times$ (21% faster).
+
+---
+
+### Counterexample & Failure Mode: The MFLOPS / MIPS Mirage (The Algorithm vs Rate Trap)
+
+Can higher execution rate indicate worse performance?
+Consider multiplying two $N \times N$ dense matrices with $N = 1024$.
+
+1. **Standard Triple-Loop $O(N^3)$**:
+   * Operations: $2N^3 = 2(1024)^3 \approx 2.15 \times 10^9$ floating-point operations.
+   * Execution on a SIMD machine: Highly optimized BLAS achieves 80% peak compute ($800\text{ GFLOP/s}$), finishing in $2.68\text{ ms}$.
+
+2. **Strassen's Sub-Cubic Algorithm $O(N^{2.807})$**:
+   * Operations: Approximately $7^{\log_2 1024} = 7^{10} \approx 2.82 \times 10^8$ operations (nearly $7.6\times$ fewer operations).
+   * Execution on the same SIMD machine: Complex recursive memory layouts, matrix additions, and poor vector register utilization lower compute efficiency to only 20% peak ($200\text{ GFLOP/s}$).
+   * Wall time: $\frac{2.82 \times 10^8}{200 \times 10^9} \approx 1.41\text{ ms}$.
+
+3. **The Mirage Breakdown**:
+   * The standard algorithm sustains $800\text{ GFLOP/s}$.
+   * Strassen sustains only $200\text{ GFLOP/s}$—a $4\times$ worse "performance rate"!
+   * Yet Strassen finishes in $1.41\text{ ms}$ vs $2.68\text{ ms}$, running **nearly twice as fast**.
+   * **Rule**: Optimizing for MFLOPS, MIPS, or CPI without fixing the algorithmic work ($IC$) produces completely invalid engineering decisions.
+
+---
 
 ## Independent practice
 
@@ -126,17 +198,32 @@ Performance per watt is a ratio with a workload denominator. A design that finis
 <summary>Diagnostic solutions</summary>
 
 1. Use $T=IC\cdot CPI/f$. Cycles are $T f$ and CPI is cycles divided by IC. A lower CPI does not prove lower time when instruction count or frequency differs.
+
 2. Baseline fractions are 0.25, 0.15, and 0.60. New time fraction is $0.25/4+0.15/2+0.60=0.7375$, so speedup is about 1.356. The remaining compute fraction limits the result.
+
 3. Compute $B\cdot I$ and compare with peak compute. Increasing vector width raises compute ceiling; tiling, reuse, compression, and fewer bytes moved raise arithmetic intensity or effective bandwidth. Neither helps if another resource is already the bottleneck.
+
 4. Control matrix dimensions, element type, compiler, thread placement, frequency, allocator, warm-up, input values, and background load; measure time, cache misses, bandwidth, and repetitions. Compare dimensions crossing cache capacities.
+
 5. A cache or admission policy may improve common requests while causing rare large requests to queue behind evictions, increasing tail latency. Report the distribution rather than infer quality from the mean.
+
 6. Latency is request-to-result delay; initiation interval is spacing between accepted inputs; throughput is completed results per unit time; utilization is occupied capacity relative to its maximum. A four-cycle pipeline can have four-cycle latency and one-cycle initiation interval.
+
 7. The fastest run hides variability, warm-up state, scheduling, and outliers. The experiment should report all runs or a distribution, define warm-up, repeat enough times, and use counters or controlled conditions to test the proposed mechanism.
 
 </details>
 
+## Deliberate Omissions & Scope Boundaries
+
+* **Silicon Process & Gate-Level Delay Simulation**: We deliberately omit SPICE simulations, transistor threshold voltages, and wire RC delays, abstracting circuit timing into clock cycle times $T_{cycle}$ and setup/hold margins.
+* **Non-Uniform Memory Access (NUMA) Topology Graphs**: Detailed multi-socket cache-coherent interconnect protocols (e.g., UPI, Infinity Fabric) are treated in the Multicore & SIMD module.
+* **Speculative Execution Side Channels**: Spectre and Meltdown timing leakage models are deferred to the security specialization.
+
+---
+
 ## References & Further Reading
 
-* [MIT 6.004 Computation Structures: cost/performance and parallel processing notes](https://ocw.mit.edu/courses/6-004-computation-structures-spring-2009/resources/lecture-notes/)
-* [UC Berkeley CS 61C: memory hierarchy and AMAT](https://notes.cs61c.org/content/caches-intro/memory-hierarchy/)
-* [UC Berkeley CS 61C: memory hierarchy notes](https://notes.cs61c.org/content/caches-intro/memory-hierarchy/)
+* Hennessy, J. L., & Patterson, D. A. (2019). *Computer Architecture: A Quantitative Approach* (6th ed.), Chapter 1 ("Fundamentals of Quantitative Design and Analysis") & Appendix B. Morgan Kaufmann.
+* Williams, S., Waterman, A., & Patterson, D. (2009). *Roofline: An insightful visual performance model for multicore architectures*. Communications of the ACM, 52(4), 65-76.
+* Amdahl, G. M. (1967). *Validity of the single processor approach to achieving large scale computing capabilities*. AFIPS Conference Proceedings, Vol. 30, 483-485.
+

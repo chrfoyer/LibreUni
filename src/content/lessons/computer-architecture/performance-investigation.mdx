@@ -31,6 +31,8 @@ This laboratory treats a performance claim as a falsifiable engineering hypothes
 
 ## Question and model
 
+> **Definition.** A falsifiable performance hypothesis specifies (1) the workload regime $W$, (2) the mechanism intervention $T$ relative to baseline $B$, (3) the intermediate hardware event counter $E$ (such as L2 misses per element) predicted to change, and (4) the outcome that would reject the mechanism explanation.
+
 Suppose the kernel computes $C=A+B$ for square matrices of 32-bit values. A naive row-major implementation reads two values and writes one for each element. A column-major or poorly laid-out version may touch a new cache line for each access. The hypothesis is: “For matrices larger than the last-level cache, tiled row-major traversal reduces time by improving spatial and temporal locality, and the improvement will correlate with lower cache-miss traffic rather than merely higher clock frequency.”
 
 The hypothesis predicts several observations: cache misses per instruction should decrease, memory bandwidth may become more efficient, instructions per element may change modestly, and the effect should grow when dimensions exceed cache capacity but weaken when the entire matrix fits in a higher cache. If time improves while misses and bandwidth do not change, the proposed mechanism is incomplete; perhaps vector width, compiler unrolling, or frequency changed instead.
@@ -54,11 +56,15 @@ Repeat enough times to observe scheduling and thermal variation. Report median, 
 
 ## Measurement boundaries
 
+> **Warning.** Reading a timestamp counter (`rdcycle` / `rdtsc`) without compiler and pipeline serialization barriers allows out-of-order execution to sample the stop timestamp before slow memory stores or loop iterations have retired.
+
 Use a monotonic high-resolution timer or hardware cycle counter with a documented serialization method. The start must not be moved after work by compiler or CPU reordering; the end must not be read before stores complete if the result includes stores. A barrier or fence may be needed around timing, but its cost must be excluded or included consistently.
 
 Measure at least wall-clock time, cycles, retired instructions, cache references/misses at relevant levels, branch instructions/misses, and memory bandwidth if counters are available. Record CPU model, core, frequency, operating system, compiler, input dimensions, alignment, and thermal state. Hardware counter names and sampling may differ; report their interpretation rather than treating a counter label as a universal physical quantity.
 
 ## Workload matrix
+
+> **Example.** Worked calculation: for three `float32` matrices $A, B, C$ of dimension $N \times N$, the total active footprint is $3 \times 4 N^2 = 12 N^2$ bytes. Choosing $N = 32$ ($12\,\text{KiB}$, fits in 32 KiB L1), $N = 128$ ($192\,\text{KiB}$, exceeds L1 but fits in 256 KiB L2), and $N = 2048$ ($48\,\text{MiB}$, exceeds LLC) isolates each level of the memory hierarchy.
 
 Use dimensions that cross the cache hierarchy: small enough to fit L1, larger than L1 but within L2, larger than L2, and larger than the shared cache or memory capacity available to the process. Include non-square or leading-dimension cases if the implementation claims generality. Test dimensions aligned and misaligned to vector width and cache-line size. For tiled code, include tile sizes smaller than, near to, and larger than the candidate cache footprint.
 
@@ -66,17 +72,23 @@ For each dimension, compute the expected bytes of logical input and output. A si
 
 ## Statistical interpretation
 
+> **Remark.** Always pair central tendency (median cycles/element) with dispersion (interquartile range) and tail behavior (p99), and evaluate paired trial differences $(T_{B,i} - T_{A,i})$ across randomized block order rather than comparing single best runs.
+
 Plot normalized time per element or cycles per element against matrix size. A cache-capacity transition should appear as a change in slope or a step when the active working set exceeds a level, though prefetchers and replacement can smooth it. Plot cache misses per element and bandwidth alongside time. Use paired runs where both implementations execute under similar system conditions, but avoid alternating patterns that cause one version to inherit the other’s cache state unless that is the production scenario.
 
 Compute effect size and uncertainty. If implementation A takes 10.0 ± 0.2 ms and B takes 9.8 ± 0.2 ms with strongly overlapping paired variation, the 2% improvement needs more evidence. If B takes 7.0 ± 0.1 ms across stable repetitions, the mechanism and practical significance are clearer. Do not call a result “statistically significant” without stating the test and independence assumptions.
 
 ## Confounders
 
+> **Warning.** If the compiler auto-vectorizes the tiled loop with 8-wide SIMD while leaving the naive loop scalar, a 3× speedup may reflect instruction-count reduction rather than cache locality; always inspect disassembled loop bodies and retired instruction counts alongside cache-miss counters.
+
 Compiler vectorization can turn both source variants into similar machine code. Inspect generated assembly or compiler optimization reports. A different allocation can change page coloring and TLB behavior. Transparent huge pages can change translation reach. Frequency scaling can favor the version that keeps the core busy differently. NUMA placement can dominate large matrices. Background processes, interrupts, thermal throttling, garbage collection in a host runtime, and page faults can create outliers.
 
 A benchmark that fixes all confounders may no longer represent deployment. Therefore use two phases: a controlled mechanism experiment and a representative end-to-end experiment. The former supports causal understanding; the latter tests product value. Do not use the representative result to claim a cache mechanism without counters, or the controlled result to claim universal application speed.
 
 ## Correctness and adversarial cases
+
+> **Warning.** Never report timing from a kernel whose output has not been verified against an independent reference oracle across non-multiple-of-tile dimensions ($N = 1023$), misaligned base pointers, and aliased inputs (`C == A`).
 
 Compare outputs against a high-precision or reference implementation on random values, zeros, maximum and minimum representable values, NaNs if floating point is used, and dimensions that exercise tails. Vectorized code can read beyond logical bounds if masked loads are misunderstood. Tiled code can omit fringe rows or reuse a stale tile. A performance result from incorrect output is not a performance result.
 
@@ -88,7 +100,7 @@ Run four matrix sizes: 64×64, 256×256, 1024×1024, and 4096×4096, with three 
 
 If tiling helps only at 1024 and 4096 while L2/LLC misses per element fall, the cache hypothesis gains support. If it helps at all sizes with unchanged misses but lower instructions, vectorization or loop overhead is likely. If p50 improves but p99 worsens, investigate preemption, memory contention, or tile-size-dependent allocation. If the compiler emits identical loops, the source-level optimization has no measured implementation effect and the hypothesis must be revised.
 
-**Worked evidence calculation.** Consider this deliberately small fixture, where each row is one paired trial and the cache counter is normalized per element:
+**Worked example: paired-trial evidence calculation.** Consider this deliberately small fixture, where each row is one paired trial and the cache counter is normalized per element:
 
 | size | variant | median cycles/element | L2 misses/element | p99 cycles/element |
 | ---: | --- | ---: | ---: | ---: |

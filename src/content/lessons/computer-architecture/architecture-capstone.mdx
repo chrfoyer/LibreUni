@@ -30,6 +30,8 @@ This capstone integrates representation, instruction-set semantics, datapath/con
 
 ## System specification
 
+> **Definition.** The capstone service contract requires sustaining 30 frames/s of $1920 \times 1080$ four-channel 8-bit images with 99th-percentile end-to-end frame latency $T_{\mathrm{p99}} \le 25\,\text{ms}$ from frame availability to output completion while enforcing zero out-of-bounds DMA accesses and explicit overflow/saturation semantics.
+
 Assume a sensor produces 1920×1080 frames at 30 frames per second. Pixels arrive as four 8-bit channels; the filter applies a 3×3 kernel to each channel, clamps results to 0–255, and writes an output frame. The system has a 2 GHz 64-bit RISC-style core, 32 KiB 4-way L1 data cache with 64-byte lines, 256 KiB private L2, shared DRAM bandwidth of 20 GB/s, and a DMA-capable input device. These are modeling assumptions, not facts about one real processor; change them if your design justifies it.
 
 The service must sustain the input rate, keep 99th-percentile frame processing below 25 ms after the complete frame is available, reject malformed descriptors, and never allow the device to write outside an owned buffer. The output may be delayed by buffering, but the system must state its queue bound and behavior when input outruns processing. An energy-aware design should report memory traffic and active-core time rather than claim that SIMD is efficient.
@@ -53,6 +55,8 @@ This count is a first estimate, not a timing result. If the kernel coefficients 
 
 ## Representation and ISA choices
 
+> **Example.** Worked trace: for a $3 \times 3$ stencil with signed 8-bit weights $w_{i,j} \in [-127, 127]$ and unsigned 8-bit channels $p_{i,j} \in [0, 255]$, the worst-case magnitude $\sum |w_{i,j}| p_{i,j} = 9 \times 127 \times 255 = 291{,}465$ overflows a signed 16-bit accumulator ($[-32{,}768, 32{,}767]$), requiring at least a 20-bit signed accumulator (typically a 32-bit lane) before final clamping to $[0, 255]$.
+
 Specify whether pixels are stored interleaved RGBA or in separate channel planes. Interleaved layout is convenient when all channels of one pixel are processed together; planar layout can improve SIMD scans of one channel and simplify separable filters. State byte order, alignment, signedness of coefficients, accumulator width, and saturation behavior. A signed 8-bit coefficient multiplied by an unsigned 8-bit pixel can require a signed 32-bit accumulator to avoid intermediate overflow.
 
 The ISA needs loads/stores, integer or vector multiply-add, widening arithmetic, min/max or clamp, pointer increments, branches or masked operations, and a memory-ordering primitive for DMA ownership. If coefficients are programmable, define their encoding and validation. If the vector instruction saturates, verify whether it rounds, truncates, or wraps; using modular arithmetic where saturation is required produces visually subtle but systematic errors.
@@ -61,11 +65,15 @@ The ISA needs loads/stores, integer or vector multiply-add, widening arithmetic,
 
 ## Datapath and pipeline implications
 
+> **Warning.** If a pipelined multiply-accumulate unit has a 4-cycle latency and the inner loop accumulates all 9 taps into a single register, RAW data hazards serialize execution to one tap every 4 cycles; unrolling across multiple independent output pixels or channels is required to hide pipeline latency.
+
 A scalar core may load one pixel at a time, perform arithmetic, and store output. A vector core handles multiple pixels or channels per instruction, but boundary pixels, alignment, tails, and coefficient broadcast must be designed. A pipelined multiply-add has latency greater than one cycle, so independent accumulators or software scheduling are needed to maintain throughput. A dependent single accumulator can underutilize the pipeline even if the arithmetic unit accepts one operation per cycle.
 
 Branch handling matters at image boundaries. A branch per pixel for clamping or bounds can cause mispredictions and front-end pressure. Vector min/max or masked loads can make the inner loop regular. Separate a prologue, aligned steady-state kernel, and epilogue when the ISA and workload justify it; the code-size and maintenance cost belongs in the comparison.
 
 ## Memory hierarchy and tiling
+
+> **Example.** For a tile of $w = 64, h = 32$ four-byte RGBA pixels, the input Halo footprint is $4 \times (64+2)(32+2) = 8{,}976$ bytes and the output tile is $4 \times 64 \times 32 = 8{,}192$ bytes, totaling $17{,}168$ bytes—comfortably fitting within the 32 KiB L1 data cache while leaving ways free for stack and coefficient reads.
 
 The frame is far larger than L1 and L2, so a naive traversal may be bandwidth-bound. A tile should include enough neighboring rows for the 3×3 stencil and fit the chosen cache level with output and coefficient data. For a tile of width $w$ and height $h$, the input footprint is approximately $(w+2)(h+2)$ pixels and output footprint $wh$ pixels, adjusted for channels and layout. Choose $w,h$ so the footprint plus other active data fits with a safety margin; associativity conflicts can invalidate a capacity-only calculation.
 
@@ -75,11 +83,15 @@ Row-major layout favors a row-wise inner loop. A line of 64 bytes contains 16 fo
 
 ## DMA and buffering
 
+> **Warning.** Never allow the filter kernel to read an input frame buffer before checking the device completion status and executing the required memory/cache synchronization barrier, and never recycle an output buffer to the DMA ring while the display or output engine still holds in-flight read ownership.
+
 The input device writes into a ring of owned frame buffers. The driver validates descriptor addresses and lengths, maps them through an IOMMU if present, publishes ownership with the required memory barrier, and receives a completion with generation and length. The processing core must not read a buffer until completion is ordered and validated. After processing, ownership returns only after all CPU writes are visible to the output device or host.
 
 Double buffering permits one frame to arrive while another is processed; triple buffering absorbs jitter but increases memory. If processing time occasionally exceeds the frame period, the queue grows. A bounded system must choose drop-oldest, drop-newest, backpressure, or degraded-quality behavior. The policy is an architecture requirement because it affects memory capacity, latency, and user-visible correctness.
 
 ## Performance budget
+
+> **Definition.** Under the stage-budget decomposition $T_{\mathrm{frame}} = T_{\mathrm{DMA\_in}} + T_{\mathrm{queue}} + T_{\mathrm{compute}} + T_{\mathrm{memory\_stall}} + T_{\mathrm{DMA\_out}}$, meeting the 30 fps throughput constraint requires $\mathrm{E}[T_{\mathrm{stage}}] \le 33.3\,\text{ms}$ per pipeline stage, while meeting the tail constraint requires $P(T_{\mathrm{frame}} \le 25\,\text{ms}) \ge 0.99$.
 
 At 30 frames per second, the average frame budget is 33.3 ms, but the p99 requirement is 25 ms after availability. If one core handles 2 billion useful operations per second and the model requires 4.2 billion weighted operations per second, the design needs vectorization, multiple cores, lower arithmetic, or a hardware accelerator. Estimate instruction count and CPI separately from arithmetic count. Memory stalls and DMA wait time belong in the end-to-end timeline.
 
@@ -87,17 +99,23 @@ Use a stage budget: input completion, cache warm-up, compute, output write-back,
 
 ## Reliability and security
 
+> **Warning.** Multiplying untrusted descriptor `width * height * 4` in 32-bit unsigned arithmetic can wrap around and pass a buffer-size check while causing the filter loop or DMA engine to read or write past the allocated frame buffer.
+
 Validate every descriptor length against the allocated buffer, prevent integer overflow in stride and frame-size calculations, and reject unsupported dimensions before DMA. Device completion is untrusted input: a malformed length or status must not become an unchecked loop bound. Memory mappings must be revoked after device reset, and stale completions must be rejected by generation.
 
 If the image contains sensitive data, cache timing, DMA isolation, and buffer clearing become part of the threat model. A faster vector implementation that leaves pixels in a shared cache or recycled buffer may have a different security posture. State what confidentiality is required and which layers enforce it.
 
 ## Required submission
 
+> **Remark.** Every submitted diagram and table must pair quantitative estimates (operations, bytes transferred, cycle bounds) with explicit correctness and ownership invariants.
+
 Produce a block diagram and a sequence diagram from device arrival through output completion. Specify pixel representation, ISA operations, accumulator width, pipeline schedule, cache mapping, tile dimensions, DMA ownership, queue policy, exception behavior, and security assumptions. Give a baseline and at least two alternatives, with a table of arithmetic work, estimated bytes moved, memory ceilings, compute ceilings, area/energy implications, and unverified assumptions.
 
 Include a correctness argument for one output pixel, an invariant for buffer ownership, an AMAT or roofline calculation, and an experiment plan. The experiment must identify what would falsify the claim that the design is compute-bound, cache-bound, bandwidth-bound, or synchronization-bound. Report how you would measure p99 latency and how you would inject a delayed or malformed device completion.
 
 ## Assessment rubric
+
+> **Remark.** Submissions are graded on falsifiable engineering rigor: a slower design with a sound overflow proof, verified DMA ownership, and a discriminating Roofline/AMAT experiment outscores an unverified speedup claim.
 
 An excellent submission is precise about boundaries and uncertainty. It derives rather than asserts arithmetic cost, connects data layout to cache lines, distinguishes architectural guarantees from microarchitectural assumptions, handles tail and overflow cases, and proposes measurements that could disprove its own model. A diagram without invariants is incomplete; a benchmark without workload and measurement boundaries is weak evidence; a speedup claim without a baseline is not a result.
 

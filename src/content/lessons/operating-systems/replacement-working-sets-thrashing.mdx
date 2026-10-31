@@ -235,6 +235,8 @@ Frame 0: clear page 7 and advance. Frame 1: schedule page 2 writeback and advanc
 
 ## Production reclaim adds allocation and page classes
 
+> **Warning.** Evicting a dirty page is not a single-step free operation: reclaiming a dirty anonymous or file-backed frame requires asynchronous writeback to swap or the filesystem before the frame can be reassigned, whereas clean file-cache pages can be reclaimed immediately if unmodified.
+
 Real kernels cannot place every page in one undifferentiated queue:
 
 - anonymous pages may require swap before eviction;
@@ -328,6 +330,8 @@ An answer reporting only fault count earns at most 10 points because it cannot d
 </details>
 
 ## Deliberate boundary and source trail
+
+> **Remark.** Working-set theory $\sum_i |W_i(t, \tau)| \le M$ explains why local replacement policy changes cannot cure thrashing when aggregate active-page demand exceeds physical memory $M$; resolving thrashing requires admission control, working-set reduction, or per-cgroup memory isolation.
 
 The interactive and hand traces use equal-size pages, fixed reference strings, exact LRU, and one global frame pool. The broader analysis adds dirty cost and allocation scope but does not implement swap, compressed memory, NUMA reclaim, huge pages, or a production kernel's concurrency. Simulator output is therefore evidence about its model, not a direct kernel benchmark.
 

@@ -261,6 +261,8 @@ Award full credit only when the response states assumptions and legal states. De
 
 ## Mechanism connections and deliberate boundary
 
+> **Remark.** The three-level POSIX state model—per-process file descriptors, system-wide open file descriptions (holding offset and status flags), and underlying inodes (holding link count and data)—is a mandatory API contract that every storage backend in the subsequent implementation and journaling lessons must satisfy.
+
 The interface model constrains implementation. Directory lookup needs a representation for `(name, object-id)` entries; open references need reference counts independent of link counts; duplicated descriptors need a shared offset object; rename needs exclusion and a recoverable multi-block update; path confinement needs an authority model at every traversal edge. These are not implementation details that can be selected independently of the API contract.
 
 The model deliberately omits directory-cache algorithms, inode/block layout, journaling, remote cache consistency, ACL evaluation, leases, and mandatory labels. Those mechanisms answer different questions. The interface established here is the contract their implementations must preserve.

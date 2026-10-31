@@ -27,11 +27,17 @@ import PlantUML from '../../../components/PlantUML.astro';
   explanation="An ISA specifies the contract software targets. Multiple implementations may realize the same semantics with different pipelines, caches, and internal structures."
 />
 
-An instruction-set architecture (ISA) is the stable contract presented by a processor to software. It specifies the programmer-visible state, instruction semantics, encodings, addressing rules, memory-access behavior, privilege boundaries, and exceptional events. A microarchitecture may execute instructions in one cycle, in a deep pipeline, out of order, or through translation into internal operations; as long as it preserves the ISA’s specified observations, it remains a valid implementation. This abstraction is what lets one binary run across generations of hardware and lets compilers target a machine without knowing its transistor-level organization.
+An instruction-set architecture (ISA) is the stable contract presented by a processor to software. It specifies the programmer-visible state, instruction semantics, encodings, addressing rules, memory-access behavior, privilege boundaries, and exceptional events.
 
-The contract is narrower than “what the hardware happens to do.” Timing, cache size, branch-predictor state, and speculative execution are usually not architectural state, although they affect performance and can create side channels. Conversely, the exact behavior of an unaligned access, an overflow flag, a memory ordering operation, or an illegal instruction is architectural if software can observe it. A rigorous ISA lesson therefore separates *functional semantics* from *implementation accidents* and states what is guaranteed, permitted, or undefined.
+A microarchitecture may execute instructions in one cycle, in a deep pipeline, out of order, or through translation into internal operations; as long as it preserves the ISA’s specified observations, it remains a valid implementation. This abstraction is what lets one binary run across generations of hardware and lets compilers target a machine without knowing its transistor-level organization.
+
+The contract is narrower than “what the hardware happens to do.” Timing, cache size, branch-predictor state, and speculative execution are usually not architectural state, although they affect performance and can create side channels.
+
+Conversely, the exact behavior of an unaligned access, an overflow flag, a memory ordering operation, or an illegal instruction is architectural if software can observe it. A rigorous ISA specification therefore separates *functional semantics* from *implementation accidents* and states what is guaranteed, permitted, or undefined.
 
 ## Programmer-visible state
+
+> **Definition.** An ISA state tuple $\sigma = (\mathrm{PC}, R, M, \mathrm{CSR}, \mathrm{priv})$ comprises the program counter $\mathrm{PC}$, general-purpose and vector registers $R$, addressable memory $M$, architectural control/status registers $\mathrm{CSR}$, and current privilege level $\mathrm{priv}$. Each instruction word $w = M[\mathrm{PC}]$ defines a deterministic transition $\sigma' = \llbracket \mathrm{decode}(w) \rrbracket(\sigma)$ that either commits updated architectural state or traps to an exception vector with architectural cause metadata.
 
 The architectural state commonly includes a program counter (PC), a register file, memory, status/control registers, and privileged state. A register file has a finite set of named registers with a defined width. Some ISAs reserve a register whose reads always produce zero; others expose a stack pointer, link register, condition-code register, or vector register bank. The PC identifies the next instruction according to the ISA’s fetch convention. It may advance by a fixed instruction width, by an instruction-length decoder, or by a branch/jump target.
 
@@ -63,6 +69,26 @@ An instruction encoding partitions bits into fields: opcode, register identifier
 **Worked example: PC-relative branch.** Suppose a branch encodes a signed $k$-bit displacement in instruction units of four bytes. The signed displacement range is $[-2^{k-1},2^{k-1}-1]$ units, and the byte target is $PC+4d$ if the architecture defines the PC as the current instruction address. A compiler cannot assume that every label is reachable; the assembler or linker must synthesize a longer branch sequence when the displacement does not fit. Misunderstanding whether the base is current PC or next PC creates an off-by-one-instruction error that passes short tests and fails at range boundaries.
 
 Immediate encoding also interacts with sign extension. An instruction that adds a signed 12-bit immediate must interpret `0xFFF` as -1, not 4095. A separate unsigned-immediate instruction or zero-extension rule is needed when the latter is intended. The opcode’s semantic definition, not the bit pattern alone, determines the result.
+
+<details>
+<summary><strong>Pause & Predict: The 12-Bit Immediate Sign-Extension Trap</strong></summary>
+
+Suppose you execute `addi a0, zero, 0x800` on a 32-bit RISC-V processor where `addi` accepts a 12-bit immediate field `imm[11:0]`.
+What 32-bit hexadecimal value is stored in `a0`? Is it `0x00000800` ($+2048$) or `0xFFFFF800` ($-2048$)?
+
+**Commit your reasoning before opening the solution below.**
+
+---
+
+**Analysis:**
+The value stored is `0xFFFFF800` ($-2048$)!
+In standard RISC-V I-type instructions, the 12-bit immediate is strictly **sign-extended** to 32 bits.
+The hex value `0x800` has bit 11 equal to `1` (`0b1000_0000_0000`).
+The sign bit `imm[11]` is copied into all upper 20 bits:
+`imm[31:12] = 0b1111_1111_1111_1111_1111` (`0xFFFFF`).
+Thus, the machine sign-extends `0x800` to `0xFFFFF800`.
+To load an unsigned $+2048$ or construct larger 32-bit values, one must use `lui` (Load Upper Immediate) combined with `addi`, carefully adjusting for the negative sign bit.
+</details>
 
 For a hypothetical 32-bit, fixed-width register-add ISA with modular arithmetic and no flags, the decoded fields select a precise state transition. This is a semantic map, not a claim about execution stages; the source operands are read from the pre-state even when a destination aliases a source.
 
@@ -124,31 +150,76 @@ An ISA simulator is an executable reference model, but a simulator bug can repea
 
 Formal instruction proofs typically establish a refinement relation between microarchitectural state and architectural state. Internal pipeline registers, speculative values, and cache metadata are allowed to differ; at retirement, the visible state must match the reference transition. This relation explains why an implementation can execute instructions out of order while still satisfying a sequential ISA.
 
+### Counterexample & Failure Mode: The Unaligned Split-Access Trap & Atomicity Breakdown
+
+Does an ISA's memory access contract guarantee atomicity and fault isolation for arbitrary pointers?
+Consider executing a 32-bit load `lw x5, 0(x1)` where `x1 = 0x0FFF_FFFE`.
+
+1. **Boundary Breakdown**:
+   * The 4-byte word occupies addresses `[0x0FFF_FFFE, 0x0FFF_FFFF, 0x1000_0000, 0x1000_0001]`.
+   * These bytes straddle two distinct 4 KB virtual memory pages: Page 0 (`0x0FFF_F000`) and Page 1 (`0x1000_0000`).
+
+2. **Split Fault Failure Mode**:
+   Suppose Page 0 is resident in RAM with read permissions, but Page 1 is unmapped or paged out to disk.
+   * A naive microarchitecture that reads bytes 0 and 1 before translating Page 1 will encounter a **Page Fault** on the second half of the instruction!
+   * If the core partially wrote the destination register `x5` with the first two bytes, the architectural state is corrupted prior to exception entry, violating **precise exception semantics**.
+
+3. **Multicore Atomicity Collapse**:
+   Even if both pages are resident, an unaligned access straddling a 64-byte cache line boundary cannot be fulfilled by a single L1 cache tag match. It requires two distinct bus/interconnect transactions.
+   * If another core executes a concurrent store to the same cache line, it can interleave between the two halves.
+   * The load reads bytes 0-1 from before the store, and bytes 2-3 from after the store, observing a "torn read" word that never existed in memory.
+   * **ISA Contract Guarantee**: This is why strict RISC ISAs specify that misaligned accesses either raise an Address-Misaligned Trap or are explicitly non-atomic across cache boundaries.
+
+---
+
 ## Independent practice
 
 1. Specify the complete architectural transition for a signed load, including address calculation, alignment, permission, byte order, sign extension, PC update, and fault behavior.
-2. Design a 32-bit fixed-width encoding for three register operands, a 12-bit signed immediate instruction, and a conditional branch. Account for opcode and function bits and state what cannot fit.
+
+2. Design a 32-bit fixed-width encoding for an ISA with 32 general-purpose registers that supports: (a) 16 three-register (R-type) arithmetic/logic operations, (b) 8 two-register (I-type) operations with a 12-bit signed immediate, and (c) 8 two-register (B-type) word-aligned conditional branches with a 12-bit signed displacement. Account for every bit in all three formats and state what immediate/displacement range cannot fit.
+
 3. Prove the array-sum invariant for the assembly loop described above. Include the empty-array case and a length large enough to overflow a 32-bit accumulator.
+
 4. Construct a short multiprocessor program whose result differs under sequential consistency and a weak ordering model. State the fence or atomic operation needed to establish the intended message-passing order.
+
 5. Explain why precise exceptions constrain out-of-order retirement. Give an example in which a younger store must not become architecturally visible before an older instruction faults.
+
 6. Design an ABI for a tiny language with integer arguments, a struct return value, recursion, and 16-byte stack alignment. State preservation rules and draw one stack frame.
+
 7. Create a differential-test suite for an instruction that sign-extends a 12-bit immediate. Include ordinary values, boundaries, negative values, and a random property.
 
 <details>
 <summary>Diagnostic solutions</summary>
 
 1. Compute $EA$, check privilege and alignment, translate or fault, read the specified number of bytes in the specified order, sign-extend to the register width, commit the destination, and update PC. On a fault, the destination and later architectural effects must not commit, and the handler must receive a restartable PC and cause.
+
 2. Three 5-bit register fields consume 15 bits, leaving 17 bits for opcode/function/immediate in a 32-bit word. A 12-bit immediate format can use five opcode bits and preserve room for mode bits; a branch displacement must additionally state alignment and PC base. There is no single correct allocation without an instruction inventory, but every allocation must account for every bit.
+
 3. Initially $k=0$, the accumulator is the empty sum, and the pointer is the array base. One iteration adds element $k$, advances the pointer, and makes the invariant true for $k+1$. At termination, $k=n$, so the accumulator is the sum. If the accumulator wraps, the proof is valid only for modular arithmetic; a mathematical integer-sum specification requires widening or overflow detection.
+
 4. A producer stores data then sets a flag; a consumer reads the flag then data. Weak ordering may expose the flag before the data unless a release store and acquire load, or an appropriate fence, orders the operations. The exact instruction depends on the ISA memory model.
+
 5. If an older load faults while a younger store has already changed memory, the handler observes a state that could not arise from sequential execution at the fault point. A reorder buffer or equivalent mechanism delays younger stores until all older instructions are known to retire successfully.
+
 6. A sound ABI assigns the first arguments to registers, returns small integers in a result register, places larger struct returns in caller-provided storage, saves return address and callee-saved registers in a frame, and rounds the stack pointer to 16 bytes. Recursion works because every invocation owns a distinct frame.
+
 7. Test immediate 0, 1, -1, 2047, -2048, bit patterns with only the sign bit, and random 12-bit values. The property is that decoding bits $b$ equals $b$ for nonnegative values and $b-4096$ when the top bit is set, after extension to the destination width.
 
 </details>
 
+## Deliberate Omissions & Scope Boundaries
+
+> **Remark.** This lesson defines the functional ISA contract ($\sigma \to \sigma'$) that compilers target and hardware must refine; cycle-by-cycle datapath multiplexing, pipeline hazard forwarding, and out-of-order register renaming are microarchitectural realizations developed in the subsequent datapath and pipeline lessons.
+
+* **Binary Translation & Dynamic JIT Compilation**: Software-managed dynamic binary translation (such as Rosetta or QEMU TCG) between mismatched ISAs is omitted in favor of native bare-metal execution.
+* **Hardware Hypervisor Extensions**: Virtual machine control blocks, nested page table walks (stage-2 translation), and hypervisor trap delegation are treated in advanced operating systems.
+* **Microcode ROM State Machines**: Legacy CISC multistep microcode sequencers are omitted to maintain focus on hardwired RISC control logic.
+
+---
+
 ## References & Further Reading
 
-* [MIT 6.004 Computation Structures: lecture notes and examinations](https://ocw.mit.edu/courses/6-004-computation-structures-spring-2009/resources/lecture-notes/)
-* [MIT 6.004 learning objectives](https://ocw.mit.edu/courses/6-004-computation-structures-spring-2009/9eb784caa9feb81f6ec09da09a427384_MIT6_004s09_syll_objectives.pdf)
-* [Cornell CS 3410: Computer System Organization and Programming](https://www.cs.cornell.edu/courses/cs3410/2015sp/)
+* Patterson, D. A., & Hennessy, J. L. (2020). *Computer Organization and Design: The Hardware/Software Interface (RISC-V Edition)* (2nd ed.), Chapter 2 ("Instructions: Language of the Computer"). Morgan Kaufmann.
+* Waterman, A., & Asanović, K. (Eds.). (2019). *The RISC-V Instruction Set Manual, Volume I: User-Level ISA (Document Version 20191213)*. RISC-V International.
+* Weaver, D. L., & Germond, T. (1994). *The SPARC Architecture Manual (Version 9)*. Prentice Hall.
+

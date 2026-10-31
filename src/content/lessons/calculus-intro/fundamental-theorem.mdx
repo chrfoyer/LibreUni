@@ -55,6 +55,37 @@ This completes the proof.
 
 </MathProof>
 
+### Counterexample: Discontinuity Destroys Differentiability
+
+The continuity of $f$ in FTC Part 1 is strictly necessary, not an optional convenience.
+
+> **Counterexample.** Consider the signum step function on $[-1, 1]$:
+> $$
+> f(t) = \begin{cases} -1 & t < 0 \\ 1 & t \ge 0 \end{cases}
+> $$
+> Its accumulation function $F(x) = \int_{-1}^x f(t) \, dt = |x| - 1$ is continuous everywhere, but has a sharp corner at $x = 0$ where $F'(0)$ does not exist. Thus $F'(0) \neq f(0)$. Differentiability of the accumulation function requires $f$ to be continuous.
+
+**Worked trace: variable limits of integration with the Chain Rule.**
+Compute the derivative of $G(x) = \int_1^{x^3} \sqrt{1 + t^4} \, dt$.
+1. Let $u = g(x) = x^3$ and define $F(u) = \int_1^u \sqrt{1 + t^4} \, dt$.
+2. By FTC Part 1, $\frac{dF}{du} = \sqrt{1 + u^4}$.
+3. By the Chain Rule, $\frac{dG}{dx} = \frac{dF}{du} \cdot \frac{du}{dx} = \sqrt{1 + u^4} \cdot (3x^2)$.
+4. Substitute $u = x^3$:
+   $$
+   G'(x) = 3x^2 \sqrt{1 + (x^3)^4} = 3x^2 \sqrt{1 + x^{12}}.
+   $$
+
+**Prediction — answer before expanding.** What happens if we apply FTC Part 2 blindly to $\int_{-1}^1 \frac{1}{x^2} \, dx$ using the antiderivative $-1/x$? What is the fatal flaw in the calculation?
+
+<details>
+<summary>Reveal the paradox and explanation</summary>
+
+A naive substitution gives $\left[ -\frac{1}{x} \right]_{-1}^1 = (-1) - (1) = -2$.
+However, the integrand $1/x^2 > 0$ everywhere, so its integral cannot be negative!
+The fatal flaw: FTC Part 2 strictly requires $f$ to be continuous on the entire interval $[a, b]$. Because $1/x^2$ has an infinite discontinuity at $x = 0$, it is not Riemann integrable on $[-1, 1]$ without improper integral regularization (which diverges to $+\infty$).
+
+</details>
+
 ---
 
 ## FTC Part 2: Evaluation of Definite Integrals
@@ -154,12 +185,22 @@ print(f"Numerical value: {float(definite_integral):.6f}")
 # Rearranging terms gives the Integration by Parts formula:
 # ∫(u * v') dx = u * v - [!blank!]`}
   answers={["∫(u' * v) dx"]}
-  explanation="The formula is $\int u\,dv=uv-\int v\,du$, which is exactly $\int uv'\,dx=uv-\int u'v\,dx$."
+  explanation="Integrating the product rule d/dx(u · v) = u' · v + u · v' and rearranging gives ∫(u · v') dx = u · v - ∫(u' · v) dx."
 />
+
+## Deliberate Omissions & Course Scope Boundaries
+
+> **Remark.** In the Riemann setting, FTC Part 1 requires $f$ to be continuous at $x$ so that the average value on $[x, x+h]$ converges to $f(x)$; in Lebesgue theory, an absolutely continuous function $F$ is differentiable almost everywhere with $\int_a^b F'(t)\,dt = F(b) - F(a)$.
+
+* **Lebesgue Integration & Measure Zero Sets**: We deliberately restrict our scope to standard Darboux/Riemann integrability for continuous and piecewise continuous functions. Lebesgue's dominated convergence theorem and the almost-everywhere differentiability of bounded variation functions are deferred to real analysis.
+* **Path Integrals & Multivariable Stokes/Green/Divergence Theorems**: The fundamental theorems of multivariable vector calculus generalize FTC to differential forms ($\int_{\partial \Omega} \omega = \int_\Omega d\omega$), which is formally treated in multivariable calculus.
+* **Unbounded Intervals & Improper Integrals**: Cauchy principal values, contour integration, and improper convergence tests ($\int_a^\infty f(x)\,dx$) are reserved for the specialized applications module.
 
 ---
 
 ## References & Further Reading
-* Spivak, M. (2008). *Calculus* (4th ed.). Publish or Perish.
-* Rudin, W. (1976). *Principles of Mathematical Analysis* (3rd ed.). McGraw-Hill.
-* [Wikipedia: Fundamental theorem of calculus](https://en.wikipedia.org/wiki/Fundamental_theorem_of_calculus) (CC-BY-SA 3.0)
+
+* Spivak, M. (2008). *Calculus* (4th ed.), Chapters 13–14 ("Integrals" and "The Fundamental Theorem of Calculus"). Publish or Perish.
+* Apostol, T. M. (1967). *Calculus, Volume 1: One-Variable Calculus, with an Introduction to Linear Algebra* (2nd ed.), Chapter 5. Wiley.
+* Rudin, W. (1976). *Principles of Mathematical Analysis* (3rd ed.), Chapter 6 ("The Riemann-Stieltjes Integral"). McGraw-Hill.
+

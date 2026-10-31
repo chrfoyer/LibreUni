@@ -31,6 +31,8 @@ When a single instruction stream cannot provide enough parallel work, architects
 
 ## Parallel speedup and its limits
 
+> **Theorem.** For a fixed workload with serial fraction $s \in (0, 1]$ and parallelizable fraction $1 - s$ across $P$ homogeneous processors, Amdahl's law bounds speedup by $S(P) = \frac{1}{s + (1 - s)/P} < \frac{1}{s}$.
+
 Let a fraction $s$ of a program be inherently serial and the remaining $1-s$ be perfectly parallel. With $P$ processors, Amdahl’s law gives
 
 $$
@@ -92,6 +94,8 @@ The variables have independent writers, but a cache-line ownership request cover
 
 ## SIMD semantics
 
+> **Warning.** Counterexample: vectorizing `for (i = 1; i < N; i++) a[i] = a[i - 1] + b[i]` with a 4-lane SIMD load of `a[i-1 .. i+2]` produces wrong results because each iteration depends on the previous iteration's updated `a[i - 1]` (a loop-carried RAW dependence of distance 1).
+
 SIMD represents a vector as lanes of equal-width elements. A vector add performs lane-wise addition, optionally with masking, saturation, widening, or narrowing. The compiler can vectorize a loop when iterations are independent, memory accesses are regular enough, and the chosen operation has matching semantics.
 
 For `for i: c[i]=a[i]+b[i]`, four-lane SIMD loads four values from each array, performs four additions, and stores four results. The scalar remainder handles a length not divisible by four unless the ISA provides masked operations. Alignment may be required or merely performance-relevant depending on the instruction. Aliasing can block vectorization: if `c` overlaps `a`, a vector store might overwrite values that later scalar iterations still need.
@@ -100,11 +104,15 @@ Floating-point vectorization can change results because reassociation is not gen
 
 ## Branches and masks
 
+> **Example.** In a 8-lane SIMD loop with predicate mask $m = \texttt{0b00101101}$, predicated execution evaluates the vector instruction across all lanes and suppresses register/memory writes where $m_k = 0$, eliminating branch misprediction penalties at the cost of executing wasted lane work when $m$ is sparse.
+
 Data-dependent branches reduce SIMD efficiency because lanes may require different control paths. Masked execution computes both or selectively disables lanes. If only one lane satisfies a condition, executing the operation for all lanes may still be cheaper than scalarizing, but the cost depends on operation latency and branch predictability.
 
 **Worked conditional example.** To compute `max(a[i],0)`, a vector compare produces a mask, and a blend selects each lane from the input or zero. No branch is needed. For a rare expensive function `f(x)` taken by one lane, evaluating `f` for all lanes may be wasteful; compaction or scalar fallback may be better. The algorithmic condition is the same, but the hardware cost model differs.
 
 ## Reduction and synchronization patterns
+
+> **Warning.** Reassociating an IEEE 754 floating-point reduction from a sequential left-fold into a SIMD/multicore tree reduction changes rounding order and can alter low-order bits or overflow behavior; bit-reproducible parallel reductions require either a fixed tree topology independent of thread scheduling or an widened/exact accumulator.
 
 A reduction such as summing an array has a dependency chain if written as one accumulator. SIMD uses partial sums in lanes, then combines them in a tree. A multicore reduction gives each thread a chunk, computes a local sum, and combines partials. The tree reduces span from $O(n)$ to $O(\log n)$ after parallel work, but floating-point order changes and synchronization/combination costs remain.
 
@@ -112,17 +120,23 @@ Barrier synchronization lets threads exchange a phase boundary: no thread procee
 
 ## Scheduling and load balance
 
+> **Definition.** In the work-span task-graph model with total work $T_1 = W$ and critical-path span $T_\infty = D$, execution time $T_P$ on $P$ processors satisfies the lower bound $T_P \ge \max(W/P, D)$ and greedy-scheduler upper bound $T_P \le W/P + D$.
+
 Static partitioning assigns predictable chunks and has low overhead, but uneven work creates idle cores. Dynamic scheduling distributes tasks from a shared queue, improving balance at synchronization and contention cost. Work stealing lets idle workers take tasks from others, often scaling better for recursive irregular workloads but complicating locality and determinism.
 
 The critical path or span limits parallel speedup. If a task graph has total work $W$ and span $D$, an ideal lower bound with $P$ processors is at least $\max(W/P,D)$; scheduling overhead adds more. Amdahl’s serial fraction is one coarse view of span; a task graph exposes parallelism at finer granularity.
 
 ## Memory bandwidth and locality
 
+> **Example.** For STREAM triad `A[i] = B[i] + s * C[i]` on 8-byte doubles (24 bytes moved per 2 FLOPs, or 32 bytes with write-allocate), arithmetic intensity is at most $2/24 = 0.083\,\text{FLOP/byte}$. On a socket with $40\,\text{GB/s}$ DRAM bandwidth, throughput is capped at $3.3\,\text{GFLOP/s}$ even if 16 cores provide $500\,\text{GFLOP/s}$ of vector compute.
+
 Adding cores can saturate shared memory bandwidth before compute units are full. A streaming loop may already approach the bandwidth ceiling on one or a few cores. Tiling, reuse, compression, and reducing bytes per result can improve scaling more than adding cores. NUMA systems make locality explicit: memory access cost depends on which socket owns the page, so first-touch allocation and thread placement matter.
 
 SIMD and multicore often amplify cache concerns. A four-lane vector accesses 16 bytes or more per instruction; multiple cores can evict each other’s lines or saturate a shared cache. Performance analysis should measure bandwidth, cache misses, coherence traffic, and utilization rather than infer scalability from core count.
 
 ## Verification and determinism
+
+> **Remark.** Parallel verification must establish data-race freedom under the target memory model (every conflicting access pair ordered by happens-before) separately from numerical determinism across thread counts and SIMD widths.
 
 Parallel programs may be functionally nondeterministic even when each execution is legal. A race-free reduction with associative integer addition is deterministic in value; floating-point reduction may vary by order. Testing one schedule is insufficient. Stress tests vary thread placement, delays, input sizes, and scheduling; race detectors and model checkers can expose missing synchronization but depend on coverage and memory-model assumptions.
 

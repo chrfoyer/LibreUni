@@ -31,6 +31,8 @@ Locks cannot repair this failure. They constrain live interleavings, but a crash
 
 ## The crash model is part of the theorem
 
+> **Definition.** Under the bounded atomic-sector crash model, a storage state transition from pre-crash write set $W_{\text{issued}}$ to post-crash durable state $S_{\text{crash}}$ permits any subset of unbarried writes to be present or absent in arbitrary order, subject to two axioms: (1) every write preceding an acknowledged barrier is present, and (2) each individual sector holds either its complete old value or its complete new value.
+
 Use a bounded block-device model unless a problem states otherwise:
 
 - a block write may be delayed or reordered before stable acknowledgement;
@@ -224,6 +226,8 @@ Admission must remain safe if every active operation reaches its worst case afte
 
 ## Production contrast: ext4 modes are different contracts
 
+> **Example.** When a process appends 4 KiB to a file and the system crashes immediately after the JBD2 metadata transaction commits: under `data=writeback`, the updated inode size is replayed even if the new data block never reached disk, exposing uninitialized or stale disk contents to post-reboot readers; under `data=ordered`, JBD2 forces the dirty data block to stable storage before writing the metadata commit record, preventing stale-block disclosure without journaling the data bytes twice.
+
 Linux ext4 uses JBD2 to journal metadata updates. The journal contains descriptors, logged blocks, and a commit record; replay applies transactions with valid commits. The documented data modes differ:
 
 | mode | journaled content | relevant promise boundary |
@@ -273,6 +277,8 @@ A diagram without the state set earns no crash-enumeration credit. A test that k
 </details>
 
 ## Connections and deliberate boundary
+
+> **Remark.** Physical redo logging in xv6 establishes the core write-ahead invariant—log records stable before commit, commit stable before home installation, and home installation stable before log reuse—while leaving physiological redo/undo logging (ARIES), copy-on-write tree publication, and distributed consensus to advanced storage and database courses.
 
 Filesystem layout determines the blocks one logical operation must update. The syscall interface determines what concurrent visibility and synchronization users may request. Device semantics determine whether barriers and acknowledgements support the persistence proof. Testing must inject failure at named state transitions; random power cuts alone rarely establish coverage.
 

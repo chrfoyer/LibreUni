@@ -31,6 +31,8 @@ An in-order scalar pipeline issues at most one instruction per cycle and waits w
 
 ## Limits of instruction-level parallelism
 
+> **Definition.** Within a finite instruction window of $N$ instructions with true data-dependence DAG $G = (V, E)$ weighted by execution latencies $l(v)$, the achievable Instructions Per Cycle on a $W$-wide machine is bounded above by $\mathrm{IPC} \le \min\!\bigl(W,\, N / L_{\mathrm{crit}}(G)\bigr)$, where $L_{\mathrm{crit}}(G)$ is the longest latency-weighted RAW path in $G$.
+
 The dependence graph determines the parallelism available in a finite instruction window. Independent additions can execute concurrently; a chain `r1=r2+r3; r4=r1+r5; r6=r4+r7` has a critical path of three additions even if the core has many ALUs. Memory aliases, branches, exceptions, and finite registers limit how far the processor can look ahead.
 
 Superscalar width $W$ is an upper bound on issue per cycle, not a guarantee. If a workload has insufficient independent instructions, one functional unit is busy while others idle. The effective IPC is bounded by dependencies, front-end fetch/decode width, execution-unit availability, cache misses, and retirement bandwidth.
@@ -51,6 +53,36 @@ the second instruction writes `r2` after the first reads it, a WAR anti-dependen
 Renaming does not remove RAW dependencies. If a later instruction reads the architectural register after a new mapping is installed, it receives the producer’s physical register and waits for its readiness. The rename map is speculative state: a branch checkpoint records enough mapping information to restore the pre-branch name map if prediction fails.
 
 Physical registers need reclamation. When a new mapping replaces an old architectural mapping and no in-flight instruction can still read the old physical register, the old register can return to the free list. Reference tracking, retirement maps, or equivalent mechanisms prevent premature reuse. A physical-register leak eventually stalls dispatch even when execution units are idle.
+
+<details>
+<summary><strong>Pause & Predict: Can Renaming Accelerate a Pure RAW Chain?</strong></summary>
+
+Suppose you have an infinite supply of execution units and physical registers, and you run the following code:
+```asm
+add a0, a1, a2
+add a0, a0, a3
+add a0, a0, a4
+add a0, a0, a5
+```
+Will register renaming allow these four instructions to execute concurrently?
+**Commit your reasoning before opening the solution below.**
+
+---
+
+**Analysis:**
+**No! Not by a single cycle.**
+Register renaming eliminates only **name dependencies**:
+* Write-After-Read (WAR / anti-dependence)
+* Write-After-Write (WAW / output dependence)
+
+It does **not** eliminate Read-After-Write (RAW / true data dependence). Each instruction strictly consumes the mathematical value produced by its predecessor. Renaming will assign physical registers:
+* `P1 = a1 + a2`
+* `P2 = P1 + a3` (must wait for P1 to be computed)
+* `P3 = P2 + a4` (must wait for P2 to be computed)
+* `P4 = P3 + a5` (must wait for P3 to be computed)
+
+The critical path remains exactly 4 serial addition latencies. Only algorithmic reassociation (e.g. tree reduction $(a1+a2) + (a3+a4)$) or compiler loop unrolling can expose true ILP from serialized chains.
+</details>
 
 <CaseStudy client:load
   title="Execute early, retire in order"
@@ -136,31 +168,118 @@ An out-of-order implementation is verified against a reference ISA model at reti
 
 Formal refinement abstracts away issue order. It relates each microarchitectural state to a sequence of retired architectural states. Internal execution can be arbitrary when it produces no prohibited external effect; retirement must correspond to the next reference transition. This proof style explains why caches, predictors, and speculative values need not appear in the ISA.
 
+### Worked Trace: Cycle-by-Cycle Tomasulo Renaming & Out-of-Order Execution
+
+Consider four floating-point instructions dispatched in program order on a 2-way superscalar out-of-order processor:
+```asm
+I1: fld    f0, 0(x1)        # Load: 2 execution cycles (address gen + cache hit)
+I2: fmul.d f4, f0, f2        # Multiply: 4 execution cycles (RAW on f0 from I1)
+I3: fsub.d f2, f6, f8        # Subtract: 1 execution cycle (WAR on f2 with I2)
+I4: fadd.d f6, f4, f2        # Add: 1 execution cycle (RAW on f4 from I2 and f2 from I3)
+```
+
+Suppose physical registers initially map architectural $f0 \to P_0, f2 \to P_2, f4 \to P_4, f6 \to P_6, f8 \to P_8$, with a free list of $\{P_{10}, P_{12}, P_{14}, \dots\}$.
+
+1. **Cycle 1 (Dispatch I1 & I2)**:
+   * I1 destination $f0$ renamed to $P_{10}$.
+   * I2 destination $f4$ renamed to $P_{12}$. Source $f0$ mapped to $P_{10}$ (not ready), source $f2$ mapped to $P_2$ (ready).
+   * I1 issues to Load Queue; I2 enters Reservation Station waiting for $P_{10}$.
+
+2. **Cycle 2 (Dispatch I3 & I4)**:
+   * I3 destination $f2$ renamed to $P_{14}$! (Notice: WAR hazard eliminated—I3 writes $P_{14}$ without affecting I2's read of $P_2$).
+   * I4 destination $f6$ renamed to $P_{16}$. Sources: $P_{12}$ (from I2) and $P_{14}$ (from I3).
+   * I3 has both operands ready ($P_6, P_8$), so I3 issues immediately!
+   * I1 completes memory access; broadcast tag $P_{10}$ ready on Common Data Bus (CDB).
+
+3. **Cycle 3**:
+   * I1 writes back $P_{10}$ to CDB and ROB. I2's reservation station wakes up!
+   * I3 completes subtraction, broadcasts $P_{14}$ ready on CDB.
+   * I1 is at ROB head and retires (commits).
+
+4. **Cycle 4**:
+   * I2 issues to FP Multiplier unit (executes during cycles 4, 5, 6, 7).
+   * I4 reservation station captures $P_{14}$, but still waits for $P_{12}$ from I2.
+
+5. **Cycle 7–8**:
+   * Cycle 7: I2 completes execution, broadcasts $P_{12}$.
+   * Cycle 8: I2 writes back. I4 wakes up and issues to FP Adder. I2 retires.
+   * Cycle 9: I4 completes, writes back $P_{16}$. I3 and I4 retire in program order.
+
+**Key Insight**: Out-of-order execution allowed I3 to execute at cycle 2—**two cycles before I2 even began execution**—because renaming completely eradicated the WAR hazard on $f2$.
+
+---
+
+### Counterexample & Failure Mode: Memory Disambiguation Violation (Speculative Load Bypass Hazard)
+
+Unlike registers where dependencies are explicitly encoded in instruction bitfields, memory addresses are computed dynamically at runtime.
+
+Consider the following program sequence:
+```asm
+I1: sw  x5, 0(x1)     # Store word: address depends on high-latency cache miss for x1
+I2: lw  x6, 0(x2)     # Load word: address x2 is known immediately
+I3: add x7, x6, x8    # Dependent consumer
+```
+
+1. **Speculative Execution Decision**:
+   Because `x1` is stalled on a cache miss, an aggressive memory disambiguator speculates that `x1 != x2` (no memory aliasing). The processor executes the load `I2` immediately out-of-order and feeds `x6` to `I3`.
+
+2. **The Hazard Manifestation**:
+   Five cycles later, `x1` arrives from L2 cache, and the hardware evaluates `0(x1)`. Crucially, `x1 == x2`!
+   * `I1` was supposed to store the new value into memory location `0(x1)`.
+   * `I2` speculatively read the **stale** value prior to `I1`'s write!
+   * `I3` and all downstream instructions computed with corrupt, unarchitectural data.
+
+3. **Required Microarchitectural Recovery**:
+   If the Load-Store Queue (LSQ) fails to detect this address collision when `I1` resolves, a silent data corruption bug occurs. A correct out-of-order core must snoop the store address against all younger speculative loads in the LSQ. Upon collision detection, the core must trigger a **pipeline squash**: flush `I2`, `I3`, and all younger instructions from the ROB, roll back the rename table to `I1`'s retirement checkpoint, and replay `I2` with the forwarded data from `I1`.
+
+---
+
 ## Independent practice
 
 1. Rename a sequence containing RAW, WAR, and WAW dependencies and draw the physical-register mappings.
+
 2. Schedule four instructions on two ALUs with one three-cycle multiply and one dependent consumer. State issue, completion, and retirement cycles.
+
 3. Explain why an older unresolved store can prevent a younger load from executing even when the load’s register operands are ready.
+
 4. Trace ROB state for an exception at the head with two younger completed instructions.
+
 5. Derive the expected IPC effect of a branch frequency, prediction accuracy, and recovery cost.
+
 6. Identify the state that must be checkpointed for branch recovery.
+
 7. Give three assertions that would catch premature physical-register reuse.
 
 <details>
 <summary>Diagnostic solutions</summary>
 
 1. Allocate fresh physical destinations for every write, while each read uses the mapping visible at dispatch. WAR and WAW disappear; a consumer still waits for the physical register produced by its true source instruction.
+
 2. The multiply can issue alongside an independent add if units and operands are ready. Its consumer cannot issue until three-cycle completion. Retirement remains in program order even if the independent add finishes first.
+
 3. The store address may equal the load address. Executing the load first could read an older value and violate program order. The queue can prove nonaliasing, forward from the store, or wait and replay if speculation fails.
+
 4. Older instructions before the head retire; the faulting head records cause; younger completed entries do not retire and are discarded. Architectural register and memory state contains no younger effects.
+
 5. Branch cost is frequency times misprediction probability times penalty. IPC or CPI must then be combined with base issue width and clock period; a lower CPI does not automatically mean lower wall-clock time.
+
 6. Save the rename map or a recoverable checkpoint, the ROB boundary/branch mask, speculative store state, and fetch PC/target state. Predictor updates may use a separate policy but cannot allow wrong-path architectural effects.
+
 7. Assert that a physical register is allocated only when free, not allocated while referenced by any in-flight source, and not returned to the free list until retirement has removed every architectural and speculative reference.
 
 </details>
 
+## Deliberate Omissions & Scope Boundaries
+
+* **Simultaneous Multithreading (SMT) Thread Partitions**: Dynamic partitioning vs sharing of reservation stations, ROB entries, and store buffers between hardware threads (hyper-threads) is addressed in the Multicore module.
+* **Micro-Op Fusion & Loop Stream Detectors**: CISC x86 frontend decoding engines and $\mu$op cache decoders are omitted to focus on canonical RISC out-of-order pipelines.
+* **Transistor-Level CAM Match Circuits**: Detailed electrical circuit structures of Content-Addressable Memory (CAM) arrays used in associative queue wakeups are treated in VLSI design courses.
+
+---
+
 ## References & Further Reading
 
-* [MIT 6.004 Computation Structures: pipeline and parallel-processing notes](https://ocw.mit.edu/courses/6-004-computation-structures-spring-2009/resources/lecture-notes/)
-* [MIT 6.004 learning objectives](https://ocw.mit.edu/courses/6-004-computation-structures-spring-2009/9eb784caa9feb81f6ec09da09a427384_MIT6_004s09_syll_objectives.pdf)
-* [Cornell CS 3410: Computer System Organization and Programming](https://www.cs.cornell.edu/courses/cs3410/2015sp/)
+* Hennessy, J. L., & Patterson, D. A. (2019). *Computer Architecture: A Quantitative Approach* (6th ed.), Chapter 3 ("Instruction-Level Parallelism and Its Exploitation"). Morgan Kaufmann.
+* Tomasulo, R. M. (1967). *An efficient algorithm for exploiting multiple arithmetic units*. IBM Journal of Research and Development, 11(1), 25-33.
+* Yeager, K. C. (1996). *The MIPS R10000 superscalar microprocessor*. IEEE Micro, 16(2), 28-40.
+

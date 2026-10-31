@@ -29,7 +29,6 @@ const colorModes = COLOR_MODES.map((mode) => mode.id);
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600;7..72,700;7..72,800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script is:inline src="https://cdn.jsdelivr.net/pyodide/v314.0.5/full/pyodide.js"></script>
     <script>
       // Force hoisted script generation
       console.log("LibreUni: Production bundle active");
@@ -267,6 +266,15 @@ const colorModes = COLOR_MODES.map((mode) => mode.id);
             const diagramRender = target.closest('.diagram-overlay-content .diagram-render');
             if (diagramRender) {
                 diagramRender.classList.toggle('zoomed');
+            }
+        });
+
+        // Ensure tables are keyboard accessible when scrollable
+        document.querySelectorAll('table').forEach((table) => {
+            if (!table.hasAttribute('tabindex')) {
+                table.setAttribute('tabindex', '0');
+                table.setAttribute('role', 'region');
+                table.setAttribute('aria-label', table.getAttribute('aria-label') || 'Data table');
             }
         });
     </script>

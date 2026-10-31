@@ -58,7 +58,7 @@ The stable log prefix ending at 904 supports T1's commit. A crash before 905 bec
 
 ### Prediction — a page beats its log
 
-A page reflecting LSN 911 reaches storage, but the log is durable only through 910. Why is this an error even if the update happens to be correct?
+A page reflecting LSN 911 reaches storage, but the log is durable only through 910. Why is this STEAL-without-WAL failure mode an error even if the update happens to be correct?
 
 <ExerciseSolution hint="Recovery needs a durable explanation for every durable page effect.">
 The durable page contains an effect whose redo/undo record may be absent. After a crash, recovery cannot determine whether the change belonged to a committed transaction, reconstruct an overwritten older value, or repeat the operation safely on another page. WAL forbids this ordering; correctness is not established by observing one lucky final value.

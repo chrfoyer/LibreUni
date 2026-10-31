@@ -2,6 +2,12 @@ import { useState } from 'react';
 import InteractivePlayground from '../InteractivePlayground';
 import { PlotFrame, polyline } from './plot';
 
+export function leftRiemannSum(n: number) {
+  const f = (x: number) => 0.28 * (x + 1) ** 2 + 0.55;
+  const width = 3.4 / n;
+  return Array.from({ length: n }, (_, i) => f(-1 + i * width) * width).reduce((sum, area) => sum + area, 0);
+}
+
 function Riemann({ n }: { n: number }) {
   const xScale = (x: number) => 76 + (x + 1) * 180;
   const yScale = (y: number) => 276 - y * 62;

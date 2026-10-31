@@ -36,6 +36,36 @@ For $y=x$ and $y=x^2$, the intersections are $x=0,1$, and the line is above the 
 
 $$A=\int_0^1(x-x^2)\,dx=\left[\frac{x^2}{2}-\frac{x^3}{3}\right]_0^1=\frac16.$$
 
+<details>
+<summary><strong>Pause & Predict: Crossing Curves & The Vanishing Net Area Trap</strong></summary>
+
+Consider computing the geometric area between $f(x) = \sin(x)$ and $g(x) = \cos(x)$ on $[0, 2\pi]$.
+What happens if you directly evaluate $\int_0^{2\pi} (\sin x - \cos x)\,dx$ without finding intersection points?
+
+**Commit your answer before checking.**
+
+---
+
+**Analysis:**
+Directly integrating gives:
+$$\int_0^{2\pi} (\sin x - \cos x)\,dx = [-\cos x - \sin x]_0^{2\pi} = (-1 - 0) - (-1 - 0) = 0!$$
+The naive algebraic integral yields **zero** because the positive region between $x = \pi/4$ and $x = 5\pi/4$ is exactly cancelled by the opposite regions on $[0, \pi/4]$ and $[5\pi/4, 2\pi]$.
+Geometric area is *strictly positive*: one must split at the intersection points $x = \pi/4, 5\pi/4$ to integrate $|f(x) - g(x)|$:
+$$A = \int_0^{\pi/4} (\cos x - \sin x)\,dx + \int_{\pi/4}^{5\pi/4} (\sin x - \cos x)\,dx + \int_{5\pi/4}^{2\pi} (\cos x - \sin x)\,dx = 4\sqrt{2} \approx 5.6568.$$
+</details>
+
+<Quiz client:load
+  title="Curve Crossing Check"
+  question="If $f(x)=x^3$ and $g(x)=x$ on $[-1, 1]$, what is the true enclosed geometric area?"
+  options={[
+    { id: '1', text: "0", isCorrect: false },
+    { id: '2', text: "0.5", isCorrect: true },
+    { id: '3', text: "1.0", isCorrect: false },
+    { id: '4', text: "0.25", isCorrect: false }
+  ]}
+  explanation="By symmetry around x=0, f(x)-g(x) is an odd function so the raw integral is 0. But the geometric area is $2\int_0^1 (x - x^3)\,dx = 2[x^2/2 - x^4/4]_0^1 = 2(1/2 - 1/4) = 0.5$."
+/>
+
 ## Volumes by Slicing
 
 Let a solid have cross-sectional area $A(x)$ perpendicular to the $x$-axis. If $A$ is integrable, Cavalieri's slicing principle gives
@@ -76,6 +106,43 @@ $$S=2\pi\int_a^b f(x)\sqrt{1+[f'(x)]^2}\,dx.$$
 
 These integrals frequently have no elementary antiderivative; numerical quadrature is then part of the mathematical solution, not a failure of the model.
 
+### Worked Trace: Exact Arc Length Evaluation for $y = \frac{2}{3} x^{3/2}$
+
+Consider finding the exact arc length of the curve $y = \frac{2}{3} x^{3/2}$ on the interval $[0, 3]$.
+
+1. **Differentiate the Curve**:
+   $$\frac{dy}{dx} = \frac{2}{3} \cdot \frac{3}{2} x^{1/2} = \sqrt{x}.$$
+
+2. **Formulate the Arc Length Differential**:
+   $$ds = \sqrt{1 + \left(\frac{dy}{dx}\right)^2}\,dx = \sqrt{1 + (\sqrt{x})^2}\,dx = \sqrt{1 + x}\,dx.$$
+
+3. **Set Up the Definite Integral**:
+   $$L = \int_0^3 \sqrt{1 + x}\,dx.$$
+
+4. **Integrate via Substitution**:
+   Let $u = 1 + x$, so $du = dx$. When $x = 0$, $u = 1$; when $x = 3$, $u = 4$:
+   $$L = \int_1^4 u^{1/2}\,du = \left[ \frac{2}{3} u^{3/2} \right]_1^4 = \frac{2}{3} (4^{3/2} - 1^{3/2}) = \frac{2}{3} (8 - 1) = \frac{14}{3} \approx 4.6667.$$
+
+---
+
+### Counterexample & Failure Mode: Gabriel's Horn (Finite Volume, Infinite Surface Area)
+
+When integration applications are extended to unbounded domains, geometric intuition can break down dramatically. Consider revolving $f(x) = \frac{1}{x}$ on the interval $[1, \infty)$ about the $x$-axis.
+
+1. **Volume via Disk Slicing**:
+   $$V = \pi \int_1^\infty [f(x)]^2\,dx = \pi \int_1^\infty \frac{1}{x^2}\,dx = \pi \lim_{b \to \infty} \left[ -\frac{1}{x} \right]_1^b = \pi \lim_{b \to \infty} \left( 1 - \frac{1}{b} \right) = \pi.$$
+   The volume is finite! It could be filled with exactly $\pi$ cubic units of paint.
+
+2. **Surface Area via Revolving Bands**:
+   $$S = 2\pi \int_1^\infty \frac{1}{x} \sqrt{1 + \left(-\frac{1}{x^2}\right)^2}\,dx = 2\pi \int_1^\infty \frac{1}{x} \sqrt{1 + \frac{1}{x^4}}\,dx.$$
+   Because $\sqrt{1 + \frac{1}{x^4}} > 1$ for all $x \ge 1$:
+   $$S > 2\pi \int_1^\infty \frac{1}{x}\,dx = 2\pi \lim_{b \to \infty} [\ln x]_1^b = 2\pi \lim_{b \to \infty} \ln b = \infty.$$
+
+3. **The Painter's Paradox Breakdown**:
+   The surface area diverges to infinity while the volume remains strictly finite ($\pi$). This paradox demonstrates that three-dimensional measure (volume $\sim \int x^{-2}$) converges much faster than two-dimensional boundary measure (surface area $\sim \int x^{-1}$), warning against conflating surface and volume scalings on unbounded regimes.
+
+---
+
 ## Mass, Work, and Average Value
 
 For a one-dimensional object with linear density $\rho(x)$, a slice of width $dx$ has mass $dm=\rho(x)\,dx$, giving
@@ -96,12 +163,11 @@ $$f_{\mathrm{avg}}=\frac{1}{b-a}\int_a^b f(x)\,dx.$$
   title="Model selection"
   question="A region is revolved around the $y$-axis. Which expression describes the volume when a vertical strip at $x$ has height $h(x)$?"
   options={[
-    "$\\pi \\int h(x)\\,dx$",
-    "$2\\pi \\int xh(x)\\,dx$",
-    "$\\pi \\int h(x)^2\\,dx$",
-    "$\\int x/h(x)\\,dx$"
+    { id: '1', text: "$\\pi \\int h(x)\\,dx$", isCorrect: false },
+    { id: '2', text: "$2\\pi \\int xh(x)\\,dx$", isCorrect: true },
+    { id: '3', text: "$\\pi \\int h(x)^2\\,dx$", isCorrect: false },
+    { id: '4', text: "$\\int x/h(x)\\,dx$", isCorrect: false }
   ]}
-  correctIndex={1}
   explanation="A vertical strip becomes a cylindrical shell with radius $x$, circumference $2\pi x$, and height $h(x)$, so its volume contribution is $2\pi xh(x)\,dx$."
 />
 
@@ -117,8 +183,17 @@ volume = np.pi * np.trapz(([!blank!])**2 - (x**2)**2, x)`}
   explanation="The line y=x lies above y=x² on [0,1], so its distance from the x-axis is the outer radius."
 />
 
+## Deliberate Omissions & Course Scope Boundaries
+
+* **Multivariate Vector Slicing & Fubini's Theorem**: Higher-dimensional volumes defined via double and triple iterated integrals ($\iint_R f(x, y)\,dA$) are formally developed in Multivariable Calculus.
+* **Non-Smooth Fractured Boundaries**: Arc length of non-rectifiable curves (such as the Koch snowflake or Brownian paths) requires Hausdorff dimension and measure theory, which exceeds Riemann integration.
+* **Fluid Dynamics & Hydrostatic Force Vectors**: Generalized 2D/3D pressure tensors and Navier-Stokes boundary conditions are omitted in favor of standard 1D scalar hydrostatic integrals.
+
+---
+
 ## References & Further Reading
 
-* [OpenStax, *Calculus Volume 1*, Chapter 6: Applications of Integration](https://openstax.org/books/calculus-volume-1/pages/6-key-concepts) (CC BY 4.0)
-* [OpenStax, Section 6.4: Arc Length of a Curve and Surface Area](https://openstax.org/books/calculus-volume-1/pages/6-4-arc-length-of-a-curve-and-surface-area) (CC BY 4.0)
-* [MIT OpenCourseWare, 18.01SC: Introduction to Arc Length](https://ocw.mit.edu/courses/18-01sc-single-variable-calculus-fall-2010/6a49976889ea6a91722f0caf8e32c828_MIT18_01SCF10_Ses78a.pdf)
+* Spivak, M. (2008). *Calculus* (4th ed.), Chapter 18 ("The Logarithm and Exponential Functions") & Chapter 19. Publish or Perish.
+* Apostol, T. M. (1967). *Calculus, Volume 1: One-Variable Calculus, with an Introduction to Linear Algebra* (2nd ed.), Chapter 5 ("Applications of Integration"). Wiley.
+* Stewart, J. (2015). *Calculus: Early Transcendentals* (8th ed.), Chapter 6 ("Applications of Integration"). Cengage.
+

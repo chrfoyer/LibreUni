@@ -72,7 +72,7 @@ Leaves after an insert must be `[4, 7]` and `[9, 13]`. Which value can be a sepa
 
 This is lexicographic order, not a slogan about “leading columns.” It also explains why a query returning most of a table can prefer a sequential scan: an index may locate every tuple but require many scattered heap reads. Clustering, cache state, visibility, and selectivity decide the trade.
 
-### Worked application — an access path proposal
+### Worked example — an access path proposal
 
 For:
 

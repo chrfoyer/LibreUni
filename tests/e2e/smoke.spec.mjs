@@ -119,10 +119,10 @@ test.describe('production smoke checks', () => {
     await expect(databaseCard).toBeVisible();
   });
 
-  test('catalog exposes only the three active courses and excludes archived routes', async ({ page, request }) => {
+  test('catalog exposes active courses and excludes archived routes', async ({ page, request }) => {
     await page.goto('http://127.0.0.1:4321/courses.html', { waitUntil: 'domcontentloaded' });
     const cards = page.locator('.course-card');
-    await expect(cards).toHaveCount(3);
+    await expect(cards).toHaveCount(4);
     await expect(page.locator('body')).not.toContainText(/Algorithms|Data Structures|Software Engineering/i);
     for (const retired of ['algorithms', 'data-structures', 'software-engineering']) {
       const response = await request.get(`http://127.0.0.1:4321/courses/${retired}.html`);

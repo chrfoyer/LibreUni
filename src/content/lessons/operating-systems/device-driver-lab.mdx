@@ -119,7 +119,7 @@ Inspect these files and record the named state each contributes:
 | `kernel/syscall.c`, `kernel/sysproc.c`, `user/user.h`, `user/usys.pl` | test-only control/stat syscall path |
 | `Makefile` | kernel/user objects, programs, CPU count, QEMU invocation |
 
-The baseline request trace is:
+The baseline worked trace of a single block request is:
 
 <PlantUML
   code={`@startuml
@@ -386,6 +386,8 @@ I9 cannot be audited: the trace does not show that generation 7's descriptor/tab
 
 ## Milestone F — deterministic fault injection
 
+> **Warning.** Fault-injection hooks must be compiled strictly under an explicit build guard (`VDISK_FAULT_TEST`) and must never free or recycle DMA-owned descriptors on a simulated timeout while the device may still write to the physical buffer.
+
 Compile fault controls only in an explicit test build such as `VDISK_FAULT_TEST`. A normal build must not expose a user-controlled kernel fault surface. A test-only control call should arm one mode for the $n$th matching event, report whether it fired, and reset to a known disabled state at boot.
 
 Required modes:
@@ -528,6 +530,8 @@ The conclusion should identify which evidence discriminates mechanisms, not sele
 
 ## Design memo
 
+> **Remark.** Every claim in the design memo must point to a concrete state transition, memory barrier, or deterministic fault-injection log; narrative summaries without happens-before edges or trace evidence do not satisfy the proof obligation.
+
 Use these headings; each section must cite code, trace events, or test output.
 
 ### Baseline and threat model
@@ -560,6 +564,8 @@ Name at least three untested assumptions, including post-reuse stale IDs, device
 
 ## Defense questions
 
+> **Example.** For Question 9 (16-bit index wrap): if `avail_idx = 65535` (`0xFFFF`) and `used_idx = 65527` (`0xFFF7`), the in-flight count in unsigned 16-bit modular arithmetic is `(uint16_t)(65535 - 65527) = 8` (full 8-slot ring). Publishing one more request wraps `avail_idx` to `0`, and `(uint16_t)(0 - 65528) = 8`, whereas an empty ring has `avail_idx == used_idx` (`0`). Storing only indices modulo 8 (`M_MODULO_COUNTERS`) collapses both `0` and `8` to `0`, making full and empty indistinguishable.
+
 The reviewer chooses at least six and may change constants or point to a trace.
 
 1. Why does one indirect descriptor increase request capacity without increasing main-ring size?
@@ -582,6 +588,8 @@ The reviewer chooses at least six and may change constants or point to a trace.
 An answer may consult source and traces. Guessing an undocumented guarantee is worse than identifying the boundary.
 
 ## Grading rubric
+
+> **Warning.** Any implementation that reuses a descriptor or buffer while DMA ownership remains active, or reports success on a nonzero Virtio status byte, triggers an automatic publication blocker regardless of point totals in other rubric categories.
 
 | Dimension | Points | Full-credit evidence |
 | --- | ---: | --- |
@@ -608,6 +616,8 @@ Publication blockers regardless of points:
 
 ## Suggested work allocation and exit evidence
 
+> **Remark.** Treat the six work units as a strict dependency chain: do not begin indirect-descriptor allocation until the synthetic feature-negotiation matrix passes in direct fallback mode.
+
 | Work unit | Planned minutes | Exit evidence |
 | --- | ---: | --- |
 | environment and baseline trace | 75 | commit/build/test record; one read and write trace |
@@ -622,6 +632,8 @@ Exit evidence, not elapsed time, completes a work unit. A failed invariant retur
 
 ## Extension work
 
+> **Remark.** Optional extensions are evaluated by the same mutation-killing standard as the core lab: every added capability (such as queue reset or `VIRTIO_RING_F_EVENT_IDX`) must include a dedicated fault mode and a mutant that fails when its safety check is removed.
+
 Extensions are considered only after the core reaches 100-point behavior:
 
 - implement Virtio queue reset when the feature/transport supports it, with proof that old DMA ownership ended;
@@ -634,6 +646,8 @@ Extensions are considered only after the core reaches 100-point behavior:
 Each extension needs new mutants and failure oracles. Feature count is not quality evidence.
 
 ## Deliberate boundary and source trail
+
+> **Remark.** This lab bounds its scope to split virtqueues and MMIO transport in xv6-riscv rev5 under QEMU so every descriptor state transition is directly inspectable; production drivers must additionally coordinate IOMMU page tables, MSI-X per-queue interrupts, and transport-level bus reset protocols.
 
 The core lab targets QEMU's Virtio MMIO block device and xv6-riscv revision 5. It improves descriptor capacity, observability, and lifecycle validation but deliberately stops at fail-stop handling for protocol corruption and timeout. It does not claim production recovery, hardware performance, IOMMU isolation, or a complete error-propagating storage stack.
 

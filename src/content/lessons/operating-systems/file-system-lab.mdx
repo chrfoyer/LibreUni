@@ -293,6 +293,8 @@ The name can exist while its inode is unallocated, its source name also remains,
 
 ## Required invariant checker
 
+> **Definition.** A quiescent filesystem image satisfies the rename consistency predicate $\mathrm{ValidFS}(S)$ if and only if (1) every allocated regular inode $i$ has $\mathrm{nlink}(i) = |\{(d, e) \in \mathrm{DirEntries}(S) : e.\mathrm{inum} = i\}|$, (2) the block-ownership mapping from allocated inodes to data/indirect blocks is injective and matches the bitmap, and (3) the namespace edge set equals either the exact pre-rename state or the exact post-rename state.
+
 Write a separate checker or a bounded kernel diagnostic that operates on a quiescent image. It must report evidence rather than repair silently.
 
 Required checks:
@@ -308,6 +310,8 @@ Required checks:
 The checker must distinguish reserved filesystem blocks from leaked data blocks. It must not count `.` as a regular-file hard link or apply regular-file link rules blindly to directory parent links.
 
 ## Public behavior matrix
+
+> **Example.** In case `P3` (replacing an open regular file `D`), `rename("old", "new")` unlinks `D`'s directory entry and decrements `D`'s on-disk `nlink` from $1$ to $0$, while `D`'s in-memory reference count `ref` remains $1$ because a process still holds an open file descriptor to `D`. Consequently, `new` immediately resolves to `S`'s inode, existing reads on the open descriptor continue returning `D`'s displaced blocks, and `iunlockput`/`iput` frees `D`'s blocks and inode only when that descriptor is closed.
 
 Implement deterministic tests for all rows. Each test starts from a fresh image or creates and removes its own fixtures without depending on test order.
 
@@ -329,6 +333,8 @@ Implement deterministic tests for all rows. Each test starts from a fresh image 
 Tests may expose inode numbers through a test-only `stat` field or checker; do not infer identity only from equal bytes.
 
 ## Mutation tests against named wrong implementations
+
+> **Warning.** A test suite that passes a mutated kernel (`M1`–`M8`) provides zero evidence for the invariant that mutant violates; every mutant must fail deterministically with the predicted invariant-checker or behavioral oracle diagnostic.
 
 Create temporary faulty branches or patch toggles. The correct test suite must kill each mutant for the stated reason:
 
@@ -385,6 +391,8 @@ Answer with code locations and traces:
 
 ## Transparent rubric
 
+> **Warning.** Any submission that bypasses `log_write` for a metadata update, acquires parent locks in caller-argument order without canonical `(dev, inum)` sorting, or leaves a mixed pre/post crash state triggers a non-compensable failure regardless of passing normal-execution tests.
+
 | dimension | weight | full-credit evidence |
 | --- | ---: | --- |
 | interface and namespace behavior | 15 | all P1–P9 results and exact no-change-on-error states |
@@ -402,6 +410,8 @@ The submission cannot pass if its start point does not descend reproducibly from
 
 ## Defense prompts and diagnostic outcomes
 
+> **Example.** For the `MAXOPBLOCKS = 10` defense prompt: if destination directory growth crosses from direct block 11 into indirect block 0, the operation can dirty the indirect map block, the new directory data block, the bitmap block, the destination directory inode block, the source directory data block, the source directory inode block, and the displaced target's inode block—7 unique blocks in the worst case, which satisfies $7 \le \mathrm{MAXOPBLOCKS} = 10$ only because `log_write` absorbs multiple updates to the same buffer into a single log slot.
+
 An evaluator selects two without advance disclosure:
 
 - Change destination from absent to a second hard link of the source. Predict every count before running code.
@@ -414,6 +424,8 @@ An evaluator selects two without advance disclosure:
 The defense is diagnostic. Failure to explain the submitted lock order or crash oracle triggers focused re-review; the website does not infer mastery from test output.
 
 ## Scope boundary and handoff
+
+> **Remark.** Restricting the core lab to regular-file rename isolates two-parent canonical locking, worst-case log-slot accounting, and deferred open-inode reclamation; directory rename adds tree-cycle detection (verifying the source directory is not an ancestor of the destination parent) and `..` link-count maintenance.
 
 Directory rename requires cycle prevention, `..` updates, parent link-count changes, ancestor locking, and a stronger namespace model. Cross-filesystem rename requires a copy/delete protocol rather than one atomic local transaction. Symbolic-link policy changes path resolution and attacker control. None is an optional bonus hidden inside this brief; each needs a separately reviewed contract.
 

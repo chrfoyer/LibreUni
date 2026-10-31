@@ -105,8 +105,20 @@ pyodide_http.patch_all()
     updateLoading("Preparing Python runtime", 18);
     
     try {
-      const pyodide = await window.loadPyodide({
-        indexURL: "https://cdn.jsdelivr.net/pyodide/v314.0.5/full/"
+      if (!(window as any).loadPyodide) {
+        updateLoading("Fetching Python runtime...", 10);
+        await new Promise<void>((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/pyodide/v0.27.3/full/pyodide.js';
+          s.async = true;
+          s.onload = () => resolve();
+          s.onerror = () => reject(new Error('Failed to load Pyodide script'));
+          document.head.appendChild(s);
+        });
+      }
+
+      const pyodide = await (window as any).loadPyodide({
+        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.3/full/"
       });
 
       window.pyodideInstance = pyodide;

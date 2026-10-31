@@ -88,7 +88,7 @@ At 7,200 RPM, one revolution is 8.33 ms and average rotational latency under the
 
 {/* Source tracking: Mechanical seek and rotation definitions were checked against Seagate magnetic-drive product manuals; numeric examples below are declared teaching assumptions, not claims about a current product. */}
 
-### Worked service-time estimate
+### Worked trace: service-time estimate
 
 Assume a magnetic disk with measured 8 ms seek for a particular distance, 7,200 RPM, sustained transfer 200 MB/s, no queueing, and no controller-cache hit. A 64 KiB request has
 
@@ -150,6 +150,8 @@ For the prediction, SSTF has the least movement on the fixed mixed batch, while 
 
 ## FCFS, SSTF, SCAN, and deadlines optimize different contracts
 
+> **Example.** Suppose read requests at cylinders `52, 54, 56` arrive continuously while a read at cylinder `180` has been queued for 45 ms. Pure SSTF services `52, 54, 56` first and starves `180`; a deadline scheduler maintains both a sector-sorted tree and a FIFO expiration list (e.g., 50 ms read expiration), switching from sector-ordered dispatch to the expired FIFO head as soon as `180`'s age crosses the deadline threshold.
+
 | Policy | Useful property | Failure boundary | Repair direction |
 | --- | --- | --- | --- |
 | FCFS | transparent arrival order | long seeks and convoy effects | merge/batch without erasing age |
@@ -174,6 +176,8 @@ A magnetic drive receives 4 KiB interactive reads with a 20 ms start-service obj
 The design is incomplete without queue-depth and arrival assumptions. A deadline cannot be guaranteed if admitted work exceeds device capacity and no request can be rejected or degraded.
 
 ## SSDs replace a head with translation and parallelism
+
+> **Definition.** A Flash Translation Layer (FTL) maintains a dynamic mapping $\mathrm{LBA} \mapsto \mathrm{PPA}$ from host logical block addresses to physical flash pages, writing updated blocks out-of-place into erased pages, marking old physical pages stale, and asynchronously compacting valid pages across erase blocks via garbage collection.
 
 NAND flash cannot overwrite a programmed page in place. A flash translation layer (FTL) maps host logical blocks to physical flash pages, writes updates out of place, and reclaims erase blocks through garbage collection. Thus consecutive logical addresses need not remain physically adjacent, and background firmware work can produce variable latency.
 
@@ -229,6 +233,8 @@ The two measured values imply average outstanding work `150,000 × 0.0006 = 90`,
 </details>
 
 ## Boundary cases that defeat one-number policies
+
+> **Warning.** Optimizing a storage scheduler solely for aggregate IOPS or cylinder distance breaks correctness or tail-latency contracts when upper layers require write-barrier durability (`REQ_PREFLUSH` / `REQ_FUA`), when virtual-disk layers hide an underlying SSD or network store, or when aggressive request merging delays small latency-critical reads.
 
 ### Writes have ordering and durability semantics
 
@@ -302,6 +308,8 @@ An answer that applies cylinder distance to the SSD cannot receive more than 15 
 </details>
 
 ## Deliberate boundary and source trail
+
+> **Remark.** This lesson bridges the low-level device ring protocols of Device I/O, Interrupts, and DMA with the persistent data layouts and crash-recovery logs of the filesystem sequence: the scheduler may reorder independent requests for throughput or fairness, but must never violate explicit persistence barriers required by write-ahead logging.
 
 The interactive model is limited to one magnetic head and cylinder movement. The SSD discussion describes host-visible scheduling constraints, FTL consequences, and queue observations without claiming a universal internal controller design. RAID, zoned command sets, filesystem allocation, persistent memory, and detailed flash error correction remain outside scope.
 

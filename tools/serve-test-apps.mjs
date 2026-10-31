@@ -14,6 +14,8 @@ const CONTENT_TYPES = {
   '.pdf': 'application/pdf',
 };
 
+const servers = [];
+
 function createStaticServer({ name, root, port }) {
   const rootDir = path.resolve(process.cwd(), root);
   if (!fs.existsSync(rootDir)) throw new Error(`Build output missing: ${rootDir}`);
@@ -31,10 +33,17 @@ function createStaticServer({ name, root, port }) {
   return server;
 }
 
-const servers = [];
 try {
   servers.push(createStaticServer({ name: 'LibreUni', root: 'dist', port: Number(process.env.MAIN_PORT ?? 4321) }));
 } catch (e) { console.error(e.message); process.exit(1); }
 
-process.on('SIGINT', () => { servers.forEach(s => s.close()); process.exit(0); });
-process.on('SIGTERM', () => { servers.forEach(s => s.close()); process.exit(0); });
+function cleanup() {
+  servers.forEach(s => {
+    s?.closeAllConnections?.();
+    s?.close();
+  });
+  process.exit(0);
+}
+
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);

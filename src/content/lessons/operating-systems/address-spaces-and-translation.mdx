@@ -346,6 +346,8 @@ An answer that gives only numeric addresses earns at most 8 points because the a
 
 ## Deliberate boundary and source trail
 
+> **Remark.** This lesson treats address translation as an architecturally precise function $\mathrm{VA} \mapsto \mathrm{PA} \cup \{\text{fault}\}$ and intentionally separates the abstract $\mathrm{VPN} \mapsto \mathrm{PFN}$ mapping from hardware radix-tree representation (covered in Page Tables and TLBs) and microarchitectural transient execution (such as Meltdown-class speculative loads across supervisor permission bits).
+
 The analysis treats translation as architecturally precise and ignores speculative accesses that may leave microarchitectural traces after an architecturally denied operation. It also postpones multilevel page-table encoding, translation-cache timing, page replacement, NUMA placement, and device address spaces. Those mechanisms require additional state and cannot be compressed into the VPN→PFN function without hiding their failure modes.
 
 {/* Source tracking: The translation and protection model follows the RISC-V Privileged Architecture's supervisor address-translation rules; no specification text is copied. */}

@@ -32,6 +32,8 @@ The distinction between latency and throughput is fundamental. *Latency* is the 
 
 ## A pipeline as a timed refinement
 
+> **Definition.** A $k$-stage pipeline partitions the single-cycle instruction transition into stage registers $R_1, \dots, R_{k-1}$ such that an ideal sequence of $N$ independent instructions completes in $k + N - 1$ clock cycles at clock period $T_{\text{pipe}} \ge \max_{1 \le i \le k}(d_i + r_i)$, while retiring architectural state updates identical to sequential execution.
+
 Suppose an unpipelined datapath performs fetch, decode/register read, execute, memory, and write-back in one cycle. Insert pipeline registers between these phases. The registers carry both data and control: an instruction’s destination register, ALU operation, memory direction, and write-back choice must travel with the values they govern. A common five-stage model is IF, ID, EX, MEM, and WB.
 
 At cycle $t$, instruction $I_0$ may be in EX while $I_1$ is in ID and $I_2$ is in IF. The hardware is not executing three complete instructions independently; it is executing three slices of three different instruction transitions. Correctness requires that each slice’s data and controls remain aligned. A classic bug is to pipeline the operand value but not its destination register, causing a result to be written into the wrong architectural register several cycles later.
@@ -72,6 +74,8 @@ Splitting a path into more stages helps only if the new maximum decreases enough
 
 ## Pipeline registers and control propagation
 
+> **Warning.** Every instruction's destination register index `rd` and control signals (`RegWrite`, `MemRead`, `MemWrite`, `ResultSrc`) must advance through `ID/EX`, `EX/MEM`, and `MEM/WB` lockstep with its data values; driving the write-back stage's `rd` port directly from `IF/ID` overwrites a younger instruction's register with an older instruction's result.
+
 A pipeline register is a typed bundle. In IF/ID, it may hold the fetched instruction and `PC`. ID/EX holds operands, immediate, destination identifiers, and decoded controls. EX/MEM holds ALU result, store data, destination, and memory controls. MEM/WB holds loaded data or ALU result, destination, and register-write control. Every field must have a defined value when the associated instruction is valid.
 
 Validity is itself state. A bubble is an invalid pipeline entry that performs no architectural side effect. Reset typically fills the pipeline with invalid entries; a flush converts younger entries to bubbles. Treating a bubble as an instruction with arbitrary opcode is unsafe if control decode can assert writes. A valid bit must gate register writes, memory writes, exceptions, and retirement.
@@ -100,15 +104,19 @@ add  r3, r1, r4
 
 the load’s data becomes available only after MEM, but the dependent add needs it in EX in the immediately following cycle. A one-cycle bubble lets the load reach its data-producing point before forwarding to the add. The hazard detector must freeze the PC and IF/ID register, insert a bubble into ID/EX, and then allow progress. Freezing everything would deadlock; advancing everything would compute with stale data.
 
-**Worked hazard schedule.** With a load-use pair, cycle 3 has `lw` in EX and `add` in ID. The detector sees `ID/EX.MemRead=1` and `ID/EX.rd` equal to the add’s source. In cycle 4, keep the add in ID, keep the PC and fetched instruction stable, and place a no-op control bundle in EX. In cycle 5, the load is in WB or its value is available for forwarding, while the add enters EX. The bubble costs one cycle and preserves architectural semantics.
+**Worked trace: load-use hazard schedule.** With a load-use pair, cycle 3 has `lw` in EX and `add` in ID. The detector sees `ID/EX.MemRead=1` and `ID/EX.rd` equal to the add’s source. In cycle 4, keep the add in ID, keep the PC and fetched instruction stable, and place a no-op control bundle in EX. In cycle 5, the load is in WB or its value is available for forwarding, while the add enters EX. The bubble costs one cycle and preserves architectural semantics.
 
 ## Structural hazards
+
+> **Example.** When instruction fetch (`IF`) and a data load (`MEM`) contend for a single-ported memory in cycle 4, the memory arbiter grants `MEM` (the older instruction) so the pipeline drains forward while holding `PC` and injecting a bubble into `IF/ID`; prioritizing `IF` over `MEM` would livelock `MEM` whenever fetches arrive every cycle.
 
 A structural hazard occurs when two stages need a resource simultaneously. A single-ported unified memory cannot fetch the next instruction while a load or store accesses data in the MEM stage. Solutions include separate instruction and data caches, multiported memory, scheduling that inserts a stall, or a pipeline organization that separates requests in time. Hardware duplication increases area and power but can increase throughput.
 
 Structural hazards are not data hazards and should not be hidden under a generic “stall.” The cause determines the proof: a data stall waits for a value; a structural stall waits for ownership of a resource. A valid/ready protocol makes the resource conflict explicit and prevents the controller from assuming a response that was never accepted.
 
 ## Control hazards and speculation
+
+> **Definition.** For branch frequency $f_{\mathrm{br}}$, predictor misprediction rate $m_{\mathrm{br}} = 1 - a$, and flush penalty $p$ cycles, control hazards add $\Delta \mathrm{CPI}_{\mathrm{br}} = f_{\mathrm{br}} \cdot m_{\mathrm{br}} \cdot p$ cycles per instruction and require annulling the `valid` bits of all $p$ younger wrong-path pipeline slots upon misprediction resolution.
 
 A conditional branch creates a control hazard because the next PC depends on a comparison that may not be resolved until EX. Meanwhile, the fetch stage has already fetched sequential instructions. The simplest policy stalls until the branch resolves or predicts not taken and flushes wrong-path instructions when taken. If the branch resolves after $r$ stages and there are $q$ younger wrong-path instructions, the recovery cost includes those invalidated cycles and any front-end refill.
 
@@ -118,11 +126,15 @@ Branch prediction guesses direction and sometimes target. A static predictor use
 
 ## Exceptions in a pipeline
 
+> **Warning.** Because a younger instruction in `IF` (e.g., an instruction-fetch page fault) can detect an exception on an earlier clock cycle than an older instruction in `MEM` (e.g., a data-access fault), the pipeline must record exceptions in each instruction's stage bundle and take them strictly in program order at the commit boundary.
+
 An exception may be detected in one stage while younger instructions have advanced. Precise exception handling requires all older instructions to retire, the faulting instruction to be represented at the specified boundary, and all younger instructions to become bubbles. A page fault on a load must not allow a younger store to modify memory before the handler observes the faulting state.
 
 Pipeline control therefore has three distinct actions: stall, which holds an instruction in place; bubble, which inserts invalid work into a stage; and flush, which discards younger work. Confusing them produces subtle bugs. On a load-use hazard, older stages continue, the dependent instruction is held, and one bubble is inserted. On a taken branch, younger instructions are flushed and a target fetch begins. On an exception, the precise recovery boundary is determined by the ISA and retirement design.
 
 ## Performance model
+
+> **Remark.** Pipelining reduces clock period $T$ at the cost of hazard stalls and branch-flush penalties, so wall-clock time per instruction $\mathrm{TPI} = \mathrm{CPI} \times T = (1 + \mathrm{CPI}_{\mathrm{stall}} + \mathrm{CPI}_{\mathrm{flush}}) \times T$ must be evaluated as a product rather than optimizing $T$ or $\mathrm{CPI}$ in isolation.
 
 For a pipeline with clock period $T$, ideal time for $N$ instructions is $(k+N-1)T$. Add stall cycles $S$ and flush/recovery cycles $B$:
 

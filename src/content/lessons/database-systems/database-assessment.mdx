@@ -137,7 +137,7 @@ Record DBMS version, relevant settings, fixture distribution, query parameters, 
 
 > **Example.** Two staff members can each read “instrument free,” then create overlapping bookings for the same interval. Different booking rows do not make the interval invariant safe.
 
-Draw a complete trace for concurrent requests A and B that overlap on one instrument. State the isolation level or explicit locking/exclusion mechanism, the conflict point, transaction outcomes, and whether either client can retry. Then extend the trace:
+Draw a complete worked trace for concurrent requests A and B that overlap on one instrument. State the isolation level or explicit locking/exclusion mechanism, the conflict point, transaction outcomes, and whether either client can retry. Then extend the trace:
 
 - A commits a booking and outbox event;
 - the worker calls the deposit provider with an idempotency key;

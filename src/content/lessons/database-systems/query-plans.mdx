@@ -77,7 +77,7 @@ Suppose `orders` contains 10,000,000 rows and 1% are failed. The filter estimate
 
 Vary selectivity and page count, then predict before revealing a plan. The model exposes a bounded scan/index/join trade-off; it does not claim a real DBMS uses its exact coefficients. Its value is making the hidden assumption visible: a selective access path becomes worse when the matching set approaches a scan.
 
-### Worked calculation — two plans
+### Worked example — two plans
 
 Assume a 1,000-page `orders` table, a 20-page `customer` table, and a predicate that returns 2 orders. A nested-loop plan that probes an index for two customers may be excellent. If stale statistics estimate 2 but actual rows are 200,000, the same plan can perform 200,000 probes; a hash join with a 20-page customer build may dominate. The logical query did not change. The cardinality claim did.
 

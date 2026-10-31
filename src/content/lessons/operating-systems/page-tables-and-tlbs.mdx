@@ -255,6 +255,8 @@ Track an address-space CPU mask that conservatively includes every hart that may
 
 ## Counterexamples that separate the mechanisms
 
+> **Warning.** Never equate a TLB miss with a page fault or a PTE write with immediate access revocation: a TLB miss is resolved in hardware or firmware when the leaf PTE is valid, and revoking permissions in memory leaves stale writable authority cached in remote harts' TLBs until shootdown completes.
+
 | Claim | Counterexample | Correct distinction |
 | --- | --- | --- |
 | “TLB miss means the page is on storage.” | present PTE absent from TLB | cache miss versus not-present fault |
@@ -298,6 +300,8 @@ Treating the TLB as a data cache without permissions caps the score at 12 points
 </details>
 
 ## Deliberate boundary and source trail
+
+> **Remark.** Baseline Sv39 radix trees and ASID-tagged TLBs provide the concrete hardware mechanism for process isolation; when a leaf PTE is marked invalid (`V=0`) or lacks write permission (`W=0`) for a legal region, control transfers to the trap handler studied in Page Faults, Copy-on-Write, and Memory-Mapped Files.
 
 The cost model excludes caches, page-walk caches, overlap, speculative execution, and page faults. The architectural analysis uses baseline Sv39 rather than Sv48/Sv57, hypervisor two-stage translation, or extension-specific A/D behavior. These omissions prevent a tractable walk from being misreported as a universal performance model.
 

@@ -52,12 +52,12 @@ end note
 
 The diagram has two authority claims: who is the caller, and which rows may this execution read or modify. The API should authenticate and derive tenant scope from a trusted session/token mapping. The database role should have only the permissions its code path requires. A database policy can add defense in depth, but it must be tested with the actual runtime role and with privileged bypass behavior explicitly understood.
 
-### Prediction — find the bypass
+### Prediction — find the bypass and counterexample
 
-An API filters every query by a client-supplied tenant ID. A scheduled export job connects with an owner-like database role and has no tenant predicate. Which path is the security boundary failure?
+An API filters every query by a client-supplied tenant ID. A scheduled export job connects with an owner-like database role and has no tenant predicate. Which path is the security boundary failure mode?
 
 <ExerciseSolution>
-The export job is an alternate path that can read every tenant, and the client-supplied tenant ID is not a trustworthy authority source. Derive tenant identity server-side, give the job a narrow role and explicit export scope, and enforce tenant ownership again in the database where practical. A correct public endpoint does not compensate for an overprivileged internal role.
+Both paths fail as a worked example of incomplete boundary design: the export job is an alternate path that can read every tenant, and the client-supplied tenant ID is not a trustworthy authority source. Derive tenant identity server-side, give the job a narrow role and explicit export scope, and enforce tenant ownership again in the database where practical. A correct public endpoint does not compensate for an overprivileged internal role.
 </ExerciseSolution>
 
 ## Query construction and authorization solve different problems

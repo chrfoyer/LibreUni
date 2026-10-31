@@ -13,7 +13,24 @@ const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const temp = mkdtempSync(join(tmpdir(), 'libreuni-os-models-'));
 const modules = {};
 try {
-  for (const name of ['SchedulerPlayground', 'PageReplacementPlayground', 'PageTablePlayground', 'CrashConsistencyPlayground']) {
+  for (const name of [
+    'SchedulerPlayground',
+    'PageReplacementPlayground',
+    'PageTablePlayground',
+    'CrashConsistencyPlayground',
+    'ConditionVariablePlayground',
+    'IsolationBoundaryPlayground',
+    'DeviceIOPlayground',
+    'InterleavingPlayground',
+    'LockScalabilityPlayground',
+    'DiskSchedulingPlayground',
+    'SystemCallPathPlayground',
+    'AllocationFailurePlayground',
+    'AmdahlPlayground',
+    'EpsilonDeltaPlayground',
+    'TangentPlayground',
+    'RiemannPlayground',
+  ]) {
     const outfile = join(temp, `${name}.mjs`);
     buildSync({ entryPoints: [join(repositoryRoot, 'src/components/playgrounds', `${name}.tsx`)], bundle: true, format: 'esm', platform: 'node', outfile });
     modules[name] = await import(outfile);
@@ -53,6 +70,78 @@ try {
   assert.match(recover('unsafe', diskAtCrash('unsafe', 1)).verdict, /Inconsistent/);
   assert.match(recover('journal', diskAtCrash('journal', 1)).verdict, /ignored/);
   assert.match(recover('cow', diskAtCrash('cow', 1)).verdict, /Old root/);
+
+  // Condition variable protocol: correct trace finishes cleanly, lost wakeup
+  // leaves consumer sleeping beside buffered data, and if-check violates safety.
+  const cvTraces = modules.ConditionVariablePlayground.traces;
+  assert.equal(cvTraces.correct.states.at(-1).consumerA, 'done');
+  assert.equal(cvTraces.correct.states.at(-1).buffer.length, 0);
+  assert.equal(cvTraces.lost.states.at(-1).consumerA, 'sleeping');
+  assert.deepEqual(cvTraces.lost.states.at(-1).buffer, ['X']);
+  assert.equal(cvTraces.ifcheck.states.at(-1).consumerB, 'running');
+  assert.equal(cvTraces.ifcheck.states.at(-1).buffer.length, 0);
+
+  // Isolation boundary blast radius: tenant compromise stays local, shared
+  // kernel/VMM compromise affects sibling tenant, substrate affects all layers.
+  const { blastRadius } = modules.IsolationBoundaryPlayground;
+  assert.deepEqual(blastRadius('container', 0).map(c => c.affected), [true, false, false, false]);
+  assert.deepEqual(blastRadius('container', 1).map(c => c.affected), [true, true, true, false]);
+  assert.deepEqual(blastRadius('vm', 2).map(c => c.affected), [true, true, true, true]);
+
+  // Device I/O timing: polling busy-waits during device latency, interrupt
+  // avoids busy-wait but pays copy cycles, DMA removes byte-copy cycles.
+  const ioModel = modules.DeviceIOPlayground.model;
+  assert.ok(ioModel('polling', 4096, 1, 100).busyWaitCycles > 0);
+  assert.equal(ioModel('interrupt', 4096, 1, 100).busyWaitCycles, 0);
+  assert.equal(ioModel('interrupt', 4096, 1, 100).copyCycles, 8192);
+  assert.equal(ioModel('dma', 65536, 1, 100).copyCycles, 0);
+  assert.ok(ioModel('dma', 65536, 1, 100).busyMs < ioModel('interrupt', 65536, 1, 100).busyMs);
+
+  // Interleaving schedules: unsafe interleaving loses one increment, while
+  // serialized critical sections and atomic fetch-add both reach 2.
+  const { schedules: interleavingSchedules, run: runInterleaving } = modules.InterleavingPlayground;
+  assert.equal(runInterleaving(interleavingSchedules.lost.operations, 6).counter, 1);
+  assert.equal(runInterleaving(interleavingSchedules.serial.operations, 6).counter, 2);
+  assert.equal(runInterleaving(interleavingSchedules.atomic.operations, 2).counter, 2);
+
+  // Lock scalability: global lock is bounded by 1/f, sharding improves over
+  // global lock, and read-heavy RCU scales beyond 8-way sharding at 16 cores.
+  const lockSpeedup = modules.LockScalabilityPlayground.speedup;
+  assert.equal(lockSpeedup('global', 1, 0.1, 0.9), 1);
+  assert.ok(lockSpeedup('global', 64, 0.1, 0.9) < 10);
+  assert.ok(lockSpeedup('sharded', 16, 0.1, 0.9) > lockSpeedup('global', 16, 0.1, 0.9));
+  assert.ok(lockSpeedup('rcu', 16, 0.1, 0.9) > lockSpeedup('global', 16, 0.1, 0.9));
+  assert.ok(lockSpeedup('rcu', 64, 0.3, 0.98) > lockSpeedup('sharded', 64, 0.3, 0.98));
+
+  // Disk scheduling: SSTF reduces seek distance relative to FCFS on mixed
+  // queue, and SCAN sweeps to 199 before reversing.
+  const { workloads: diskWorkloads, route: diskRoute, distance: diskDistance } = modules.DiskSchedulingPlayground;
+  assert.equal(diskDistance(diskRoute(diskWorkloads.mixed, 53, 'FCFS')), 640);
+  assert.equal(diskDistance(diskRoute(diskWorkloads.mixed, 53, 'SSTF')), 236);
+  const scanPath = diskRoute(diskWorkloads.mixed, 53, 'SCAN');
+  assert.ok(scanPath.includes(199));
+  assert.equal(diskDistance(scanPath), 331);
+
+  // System call path: starts in user mode, crosses hardware trap into kernel,
+  // and returns via hardware sret.
+  const syscallStages = modules.SystemCallPathPlayground.stages;
+  assert.equal(syscallStages[0].mode, 'user');
+  assert.equal(syscallStages[2].mode, 'hardware');
+  assert.equal(syscallStages[4].mode, 'kernel');
+  assert.equal(syscallStages.at(-1).mode, 'hardware');
+
+  // Allocation failure ownership: direct assignment leaks on failure, while
+  // temporary-pointer pattern keeps original block reachable.
+  const { ownershipState } = modules.AllocationFailurePlayground;
+  assert.deepEqual(ownershipState(false, true, 96), { pointer: 'NULL', allocation: 'original 32-byte block', reachable: false });
+  assert.deepEqual(ownershipState(true, true, 96), { pointer: '0x7f20', allocation: 'original 32-byte block', reachable: true });
+
+  // Architecture Amdahl and Calculus playgrounds:
+  assert.equal(modules.AmdahlPlayground.speedup(0.9, 1), 1);
+  assert.ok(modules.AmdahlPlayground.speedup(0.9, 64) < 10);
+  assert.equal(modules.EpsilonDeltaPlayground.deltaWindow(0.45), 0.15);
+  assert.ok(Math.abs(modules.TangentPlayground.tangentSlope(0) - (-0.5)) < 1e-12);
+  assert.ok(modules.RiemannPlayground.leftRiemannSum(32) > modules.RiemannPlayground.leftRiemannSum(4));
 
   // Scheduler lab contract: weight affects debt, ties are deterministic, and
   // child placement cannot restart below the global service frontier.

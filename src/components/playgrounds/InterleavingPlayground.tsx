@@ -4,7 +4,7 @@ import InteractivePlayground from '../InteractivePlayground';
 type ThreadId = 'A' | 'B';
 type Operation = { thread: ThreadId; op: 'load' | 'add' | 'store' | 'atomic'; label: string };
 
-const schedules: Record<string, { name: string; operations: Operation[] }> = {
+export const schedules: Record<string, { name: string; operations: Operation[] }> = {
   lost: {
     name: 'Lost update',
     operations: [
@@ -36,7 +36,7 @@ const schedules: Record<string, { name: string; operations: Operation[] }> = {
   },
 };
 
-function run(operations: Operation[], count: number) {
+export function run(operations: Operation[], count: number) {
   const state: { counter: number; registers: Record<ThreadId, number | null>; completed: Record<ThreadId, boolean>; trace: string[] } = {
     counter: 0,
     registers: { A: null, B: null },

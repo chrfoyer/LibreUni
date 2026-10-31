@@ -33,6 +33,8 @@ This chapter develops the representations used by a small processor. It treats u
 
 ## Bits, words, and interpretation
 
+> **Definition.** A $w$-bit word $b_{w-1}\dots b_1 b_0 \in \{0,1\}^w$ has no intrinsic type; its numerical meaning is determined by an explicit decoding map such as the unsigned bijection $U_w(b) = \sum_{i=0}^{w-1} b_i 2^i \in [0, 2^w - 1]$ or the two's-complement bijection $T_w(b) = -b_{w-1} 2^{w-1} + \sum_{i=0}^{w-2} b_i 2^i \in [-2^{w-1}, 2^{w-1} - 1]$.
+
 A bit is an element of the set $\{0,1\}$. A $w$-bit word is an element of $\{0,1\}^w$. If the bits are written from most significant to least significant as $b_{w-1}\dots b_1b_0$, the conventional unsigned interpretation is
 
 $$
@@ -111,6 +113,8 @@ Predict the unsigned and signed interpretations of input 128 at width 8, then ch
 
 ## Sign extension, zero extension, and truncation
 
+> **Warning.** Counterexample: passing a negative signed 32-bit length `len = -1` (`0xFFFFFFFF`) into a bounds check `if ((size_t)len < buf_size)` converts `-1` to `4294967295` via unsigned reinterpretation; if a narrow signed variable is instead zero-extended or truncated before validation, the sign boundary collapses and permits out-of-bounds memory access.
+
 Changing width is not a neutral operation. To preserve an unsigned value when moving from $w$ to $k>w$ bits, prepend zeros; this is *zero extension*. To preserve a two’s-complement signed value, replicate the sign bit; this is *sign extension*. For example, the 8-bit signed value `11110110` is $-10$. Sign-extending to 16 bits gives `11111111 11110110`, which is still $-10$. Zero-extending it gives `00000000 11110110`, which is 246.
 
 The same bit pattern can therefore change value solely because the type used for extension changed. This is a common source of security bugs when a signed length or index is converted to an unsigned size before bounds checking. In a C-like language, the expression’s *usual arithmetic conversions* may perform an implicit conversion that makes a negative value appear very large. A safe design makes the domain and conversion explicit, checks the sign before conversion, and checks multiplication or addition for range overflow before allocating or indexing.
@@ -122,6 +126,8 @@ Truncation from $k$ bits to $w<k$ bits discards high bits and preserves the resu
 The 16-bit signed value is $-128$, because the bit pattern is $65536-128$. Sign extension produces `0xFFFFFF80`, still $-128$. Zero extension produces `0x0000FF80`, which is 65408 as an unsigned 32-bit value. Truncation produces `0x80`; that is 128 unsigned or -128 signed. The final answer is intentionally two-valued until the target type is named.
 
 ## Shifts and bit fields
+
+> **Example.** Arithmetic right shift on a two's-complement negative odd integer rounds toward $-\infty$ (floor division), not toward $0$: shifting 8-bit `-5` (`11111011`) right arithmetically by 1 bit yields `11111101` (`-3`), whereas C integer division `-5 / 2` truncates toward zero to yield `-2`.
 
 Logical left shift by $k$ positions multiplies an unsigned value by $2^k$ modulo $2^w$ when bits shifted out are discarded. Logical right shift inserts zeros and computes floor division by $2^k$ for an unsigned value. Arithmetic right shift inserts copies of the sign bit and approximates division by a power of two for negative two’s-complement values, but the exact rounding rule must be specified by the ISA.
 
@@ -138,6 +144,8 @@ To insert a new unsigned field value $v$, first validate $0\le v<2^r$, clear the
 Bit-field layout creates an interface boundary. A producer and consumer must agree on width, signedness, reserved values, byte order, and whether unknown bits must be zero. The safest parser rejects impossible encodings rather than treating reserved patterns as future-compatible by accident.
 
 ## Fixed-point and floating-point numbers
+
+> **Warning.** Counterexample to floating-point associativity: in IEEE 754 binary32 ($p = 24$), $(2^{24} + 1.0) - 2^{24}$ evaluates to $0.0$ because $2^{24} + 1.0$ lies halfway between $2^{24}$ and $2^{24} + 2$ and rounds to even ($2^{24}$), whereas $2^{24} + (-2^{24} + 1.0)$ evaluates to $1.0$.
 
 Fixed-point representation allocates a fixed number of fractional bits. With $f$ fractional bits, an integer storage value $n$ represents $n/2^f$. It gives uniform spacing and predictable integer operations, which is valuable in embedded control and financial formats, but its range and precision are fixed globally. Multiplying two values with $f$ fractional bits produces a value scaled by $2^{2f}$ and requires a rescaling shift, with rounding policy made explicit.
 
@@ -159,6 +167,8 @@ Numerical stability is therefore an architectural concern as well as a mathemati
 
 ## Representation at software boundaries
 
+> **Warning.** Never compute buffer allocation sizes as `width * height * bytes_per_pixel` in fixed-width 32-bit arithmetic before checking `width <= SIZE_MAX / (height * bytes_per_pixel)`; modular wraparound turns a huge dimension pair into a small allocation followed by a heap buffer overflow.
+
 The representation contract becomes especially fragile at boundaries. A memory-mapped device may define bit 7 as a write-one-to-clear status flag, so a read-modify-write intended to update bit 0 can accidentally clear an event. A file format may store a 32-bit length in network byte order, while the host CPU is little-endian. A compiler may assume signed overflow is impossible in a language mode where the programmer expected modular wraparound. A cryptographic protocol may require canonical serialization so that two byte strings cannot encode the same signed message.
 
 The remedy is not “be careful” but to define boundary functions. A decoder should accept bytes, validate length and reserved fields, and return a typed value or an error. An encoder should reject values outside field ranges. Arithmetic that can cross a representational boundary should use checked, saturating, or explicitly modular operations according to the requirement. Tests should include the minimum, maximum, zero, sign transition, one-past-the-end, endian reversal, NaN, infinity, and malformed encodings where applicable.
@@ -166,6 +176,8 @@ The remedy is not “be careful” but to define boundary functions. A decoder s
 **Worked boundary example.** Suppose an image header contains width and height as unsigned 32-bit values, followed by `width*height*4` bytes of pixels. If the multiplication is performed in a 32-bit type, dimensions such as 70,000 by 70,000 wrap before allocation. A later write based on the mathematical product can overflow the allocated buffer. A safe decoder first checks each dimension against a policy limit, promotes to a wider type, checks `width <= SIZE_MAX/(height*4)`, and only then allocates. The representation lesson is that the bit width of an intermediate expression is part of the security proof.
 
 ## Summary of invariants
+
+> **Remark.** These six representation invariants underpin every subsequent hardware layer: ALU flags in ISA semantics, immediate sign-extension in datapaths, address-offset extraction in caches, and descriptor bounds checking in I/O.
 
 The central invariants are compact:
 

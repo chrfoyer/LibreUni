@@ -31,6 +31,8 @@ Input/output architecture connects a general-purpose processor to components who
 
 ## Device register models
 
+> **Warning.** Reading a memory-mapped status or FIFO register can clear pending interrupt bits or dequeue hardware data as a physical side effect; MMIO regions must be mapped uncached and accessed with explicit width and ordering rather than ordinary speculative memory loads.
+
 Programmed I/O exposes control, status, data, and interrupt registers. A control register may start an operation; a status register may report ready, busy, error, or completion; a data register may consume a byte on read or clear an event on write. These side effects make repeated reads and read-modify-write operations semantically significant. A compiler optimization that repeats an ordinary memory read cannot be applied blindly to a device register.
 
 Memory-mapped I/O assigns device registers addresses in the processor’s address space. Port I/O uses a separate instruction space on some ISAs. In either model, the ISA defines ordering, width, alignment, privilege, and caching attributes. A 32-bit load from a register documented as 8-bit may trigger an invalid access or read adjacent state. The driver must use the device’s access width and avoid speculative or prefetching accesses when the mapping forbids them.
@@ -58,11 +60,13 @@ An interrupt handler should do the minimum urgent work: identify and acknowledge
 
 ## Queues and descriptors
 
+> **Definition.** In a producer-consumer descriptor ring of capacity $N$ indexed by unsigned monotonic counters $\mathrm{prod}$ and $\mathrm{cons}$, the in-flight occupancy is $k = \mathrm{prod} - \mathrm{cons} \in [0, N]$; the driver must execute a release memory barrier between writing descriptor fields at slot $\mathrm{prod} \bmod N$ and publishing $\mathrm{prod} \leftarrow \mathrm{prod} + 1$.
+
 High-throughput devices use rings rather than one register per item. A descriptor contains an address, length, operation, flags, ownership, and completion status. The producer publishes descriptors by writing fields first and advancing a producer index last. The consumer reads only published descriptors, performs the operation, writes completion fields, and advances a completion index.
 
 The ring has a capacity invariant. If producer and consumer counters are monotonic, occupancy is `producer - consumer`; the producer may advance only when occupancy is below capacity, and the consumer may advance only when occupancy is positive. If counters wrap, use a sufficiently wide counter or sequence bits so full and empty are distinguishable. A single shared “valid” bit without ownership semantics can be observed in the wrong order.
 
-**Worked ownership trace.** A network transmit descriptor is `FREE`, then `READY`, then `IN_FLIGHT`, then `DONE`, then `FREE`. The CPU may write the buffer in `READY` preparation but must not modify it in `IN_FLIGHT`. The device may write completion status only in `IN_FLIGHT`. The driver checks `DONE`, validates length and error status, and returns ownership. A timeout does not prove the device stopped; reclaiming the buffer before reset or cancellation completes can cause a late DMA to corrupt a new owner.
+**Worked trace: descriptor ownership.** A network transmit descriptor is `FREE`, then `READY`, then `IN_FLIGHT`, then `DONE`, then `FREE`. The CPU may write the buffer in `READY` preparation but must not modify it in `IN_FLIGHT`. The device may write completion status only in `IN_FLIGHT`. The driver checks `DONE`, validates length and error status, and returns ownership. A timeout does not prove the device stopped; reclaiming the buffer before reset or cancellation completes can cause a late DMA to corrupt a new owner.
 
 ## DMA and IOMMUs
 
@@ -80,11 +84,15 @@ At 4096 bytes and 1 ms latency, the device consumes 1.04096 ms; the CPU consumes
 
 ## Device state machines
 
+> **Example.** When a driver transitions a device from `RUNNING` to `RESET` after a watchdog timeout, it must hold all `IN_FLIGHT` DMA buffers pinned until the hardware reset-complete status bit asserts and the IOMMU page-table entries are invalidated, transitioning to `QUIESCED` before any buffer returns to the page allocator.
+
 A driver should model the device as a state machine rather than a collection of register writes. States may include `RESET`, `CONFIGURED`, `RUNNING`, `STOPPING`, `ERROR`, and `QUIESCED`. Events include reset completion, command acceptance, completion, timeout, hot-unplug, and fatal error. Each transition must specify which queues are valid, which interrupts are enabled, and which buffers the device may access.
 
 **Worked recovery sequence.** If a network device stops responding, the driver disables new submissions, masks interrupts, records outstanding descriptors, requests a device reset, waits for reset completion with a bounded timeout, invalidates device mappings, reinitializes rings, and either reconciles or fails outstanding operations. Reusing descriptors before the device is quiesced creates a race between old and new commands. Recovery is successful only when the state machine proves no old agent retains ownership.
 
 ## Timeouts and failure interpretation
+
+> **Warning.** A software timer expiration proves only that the CPU has not yet observed completion; it does not revoke the device's ability to perform DMA into the buffer or prevent a delayed interrupt from arriving for an earlier generation.
 
 A timeout is evidence that an expected event did not occur by a deadline; it is not proof of device termination. The device may be slow, the interrupt may be lost, the request may be queued, or the completion may be visible but unread because of a cache/order bug. Recovery must be idempotent or use a device generation number so a late completion from an old operation cannot satisfy a new request.
 
@@ -92,11 +100,15 @@ Generation tags are useful when descriptors are reused. A completion includes th
 
 ## Virtualization and emulated devices
 
+> **Remark.** Paravirtualized ring interfaces (such as Virtio) amortize expensive VM-exit traps across batches of descriptors in shared guest-physical memory, while direct PCIe device assignment (VFIO) eliminates data-path exits only when paired with hardware IOMMU translation and interrupt remapping.
+
 A virtual machine may see a virtual device whose registers are implemented by a hypervisor. Traps, shared-memory queues, or paravirtual interfaces carry requests between guest and host. The guest driver still needs a device contract, but performance depends on exit frequency, batching, and shared-page synchronization. A virtual interrupt can be delayed or coalesced, so guest timeouts must account for scheduling.
 
 Device assignment to a guest requires isolation. An assigned device may DMA into guest memory only through an IOMMU context; interrupt remapping prevents it from targeting arbitrary host vectors. Reset and teardown are especially important because a device can retain in-flight state across ownership changes.
 
 ## Verification and testing
+
+> **Remark.** Driver verification requires deterministic fault injection at descriptor publication, completion decoding, and timeout boundaries rather than relying solely on happy-path device emulation.
 
 Test drivers with delayed responses, duplicate interrupts, out-of-order completions, malformed lengths, queue-full conditions, device reset during DMA, and concurrent teardown. A device model or simulator can inject these cases deterministically. Assertions should check ownership, descriptor bounds, index arithmetic, one-time completion, and state transitions.
 

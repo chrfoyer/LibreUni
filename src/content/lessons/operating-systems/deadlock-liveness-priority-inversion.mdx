@@ -44,7 +44,7 @@ These categories overlap in symptoms, not definitions. “The service hung” su
 | two polite workers repeatedly release and retry in synchrony | livelock | both run and mutate state; neither commits |
 | high-priority H waits for a mutex held by low-priority L while medium M preempts L | priority inversion | M delays the owner that could unblock H |
 
-**Retrieval.** A low-priority thread is preempted for 2 ms while holding a mutex needed by a high-priority thread. Is that fact alone deadlock, starvation, or priority inversion?
+**Prediction — answer before expanding.** A low-priority thread is preempted for 2 ms while holding a mutex needed by a high-priority thread. Is that fact alone deadlock, starvation, or priority inversion? Predict the classification and required evidence before revealing the answer.
 
 <details>
 <summary>Answer</summary>
@@ -79,7 +79,7 @@ end note
 
 In a wait-for graph where every resource has one instance and blocked requests cannot be withdrawn, a directed cycle is necessary and sufficient for deadlock among the cycle's threads. With multiple interchangeable instances, a cycle is necessary but may not be sufficient: a thread outside the cycle can release another instance and satisfy a request. State the resource model before interpreting a cycle.
 
-**Worked graph.** A holds one of two database connections and waits for a log slot. B holds the log slot and waits for a database connection. The graph contains A→B and B→A if edges are projected only through the currently observed connection owner. Yet a third thread C can return the second connection, allowing B to proceed. The projected cycle did not prove deadlock because the resource had another instance and another release path.
+**Worked trace: multi-instance wait-for graph.** A holds one of two database connections and waits for a log slot. B holds the log slot and waits for a database connection. The graph contains A→B and B→A if edges are projected only through the currently observed connection owner. Yet a third thread C can return the second connection, allowing B to proceed. The projected cycle did not prove deadlock because the resource had another instance and another release path.
 
 The four classical conditions describe a resource regime in which deadlock can arise:
 

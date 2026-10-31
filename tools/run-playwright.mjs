@@ -3,6 +3,8 @@ import process from 'node:process';
 
 const env = { ...process.env, FORCE_COLOR: '0' };
 delete env.NO_COLOR;
+env.no_proxy = 'localhost,127.0.0.1,::1' + (env.no_proxy ? `,${env.no_proxy}` : '');
+env.NO_PROXY = env.no_proxy;
 
 const child = spawn(
   process.execPath,

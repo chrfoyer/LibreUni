@@ -31,11 +31,13 @@ The processor is one participant in a system that includes DRAM, persistent stor
 
 ## Interconnect transactions
 
+> **Definition.** A split-transaction interconnect decouples request transmission from response completion by tagging each request with a transaction identifier (`TID`) and flow-control credits, allowing multiple non-blocking reads and posted writes to be in flight simultaneously while responses return in arbitrary order.
+
 An interconnect transaction generally contains an address or route, command, attributes, write data or a response identifier, and completion information. A memory read request may be split from a later response; a posted write may have no immediate response. Credits, ready/valid handshakes, or request IDs control flow and prevent a fast producer from overrunning a receiver.
 
 Ordering is a protocol property. A system may guarantee that requests from one source preserve order, allow reads to pass writes, or permit responses to return out of order with IDs. The CPU’s memory model, cache coherence protocol, device DMA rules, and interconnect ordering must compose. A memory fence that orders ordinary cacheable stores may not order a device transaction unless the address space and ISA explicitly assign that meaning.
 
-**Worked transaction trace.** A CPU stores a descriptor, rings a device doorbell, and expects the device to read the descriptor. The descriptor write must become visible to the device before the doorbell write is observed. A release fence or device-memory ordering operation establishes this. If the doorbell passes the descriptor on the interconnect, the device may fetch uninitialized fields even though the CPU executed the stores in source order.
+**Worked trace: descriptor and doorbell ordering.** A CPU stores a descriptor, rings a device doorbell, and expects the device to read the descriptor. The descriptor write must become visible to the device before the doorbell write is observed. A release fence or device-memory ordering operation establishes this. If the doorbell passes the descriptor on the interconnect, the device may fetch uninitialized fields even though the CPU executed the stores in source order.
 
 ## Buses, links, and topologies
 
@@ -54,11 +56,15 @@ Topology determines contention and failure domains. A link with peak bandwidth $
 
 ## DRAM behavior
 
+> **Example.** Accessing an already open DRAM row in an active bank requires only the column-access strobe delay ($t_{\mathrm{CAS}} \approx 14\,\text{ns}$), whereas accessing a different row in the same bank (a row-buffer conflict) must first precharge the bitlines and activate the new row ($t_{\mathrm{RP}} + t_{\mathrm{RCD}} + t_{\mathrm{CAS}} \approx 42\,\text{ns}$), tripling access latency.
+
 DRAM stores charge in cells that must be refreshed and accessed through rows and columns. A row-buffer hit can be faster than opening a different row; bank-level parallelism allows multiple outstanding operations when addresses distribute well. The memory controller schedules reads, writes, refreshes, and priorities while respecting timing constraints.
 
 A sequential stream benefits from burst transfers and row locality. Random accesses expose activate/precharge and queueing costs. Two threads can interfere by targeting the same bank or row, so per-thread bandwidth is workload-dependent. The controller’s policy may favor row hits for throughput or aging requests for fairness and tail latency.
 
 ## Persistent storage
+
+> **Definition.** End-to-end storage service time decomposes as $T_{\mathrm{I/O}} = T_{\mathrm{queue}} + T_{\mathrm{cmd}} + T_{\mathrm{media}} + T_{\mathrm{transfer}} + T_{\mathrm{completion}}$, where $T_{\mathrm{media}}$ is dominated by mechanical seek plus rotational delay on magnetic disks and by flash page read/program plus FTL garbage-collection stalls on SSDs.
 
 Storage devices add controller queues, translation layers, flash erase blocks, wear leveling, garbage collection, and firmware scheduling. A solid-state drive may complete small random reads quickly relative to a disk, but latency still varies with queue depth, garbage collection, thermal state, and whether data is resident in a device cache. A disk’s seek and rotation make sequential access much cheaper than random access.
 
@@ -93,11 +99,15 @@ end note
 
 ## Cache coherence and DMA
 
+> **Warning.** On an interconnect where posted DMA writes and interrupt-message writes travel over separate virtual channels or paths, a completion interrupt can reach the CPU before the last DMA data cache lines become visible unless the device or bridge orders data visibility ahead of interrupt assertion.
+
 A coherent DMA device participates in the cache-coherence domain or uses a coherent interconnect, so CPU and device copies follow a defined protocol. A noncoherent device requires explicit cache clean/invalidate operations. For a CPU-to-device buffer, dirty CPU cache lines must be written back before the device reads. For a device-to-CPU buffer, stale CPU cache lines must be invalidated before the CPU reads. The exact operation order depends on direction and platform.
 
 A descriptor ring has two agents updating different fields: the producer publishes a descriptor, and the consumer observes it and later returns ownership. Use release/acquire ordering or the platform’s DMA primitives. Do not infer safety from interrupt delivery alone; an interrupt can arrive before earlier writes become visible to the CPU if the architecture permits that ordering.
 
 ## Interrupts, polling, and completion queues
+
+> **Example.** At $2\times 10^6$ packets/s, taking one interrupt per packet at $1.5\,\mu\text{s}$ per handler requires $3.0\,\text{CPU seconds/s}$ (saturating 3 cores in interrupt overhead alone); polling a completion ring in batches of 64 entries amortizes notification overhead across 64 descriptors.
 
 Interrupts reduce CPU waste when events are infrequent, but each interrupt has entry, save/restore, scheduling, and cache costs. A high-rate device can cause an interrupt storm, so drivers batch completions, coalesce interrupts, or switch to polling under load. Polling reduces notification latency and can improve throughput at the expense of a busy core.
 
@@ -105,11 +115,15 @@ A completion queue decouples device progress from handler execution. The produce
 
 ## Reliability and error handling
 
+> **Definition.** Single-Error Correcting, Double-Error Detecting (SECDED) Hamming codes add parity bits to each 64-bit DRAM word (typically 8 ECC bits for a 72-bit codeword of Hamming distance 4), correcting any 1-bit flip transparently and raising a synchronous machine-check exception on any 2-bit flip.
+
 Interconnects and storage controllers detect corruption with parity, ECC, CRC, retries, or end-to-end checksums. A corrected error may be logged; an uncorrectable error may raise an exception, return a failed request, or mark a device block bad. Software must distinguish transient retry from permanent failure and must not report durable success before the relevant persistence guarantee holds.
 
 ECC memory can correct a one-bit error and detect certain multi-bit patterns depending on code. The architectural consequence may be transparent correction or a machine-check exception. Redundancy improves reliability but does not make silent corruption impossible; end-to-end checksums detect errors that occur outside the protected segment or in software.
 
 ## Durability and ordering
+
+> **Warning.** A posted write completion from a PCIe/interconnect controller or volatile drive DRAM cache means the request was accepted into a buffer, not that the bytes survived power loss; crash durability requires an explicit storage flush/FUA barrier down to non-volatile media.
 
 A write reaching a controller’s volatile cache is visible to the issuing software but may disappear on power loss. A flush, force-unit-access operation, capacitor-backed cache, or storage protocol may provide stronger persistence. Filesystem and database durability depend on the entire chain: CPU ordering, cache write-back, interconnect completion, device cache, flash translation layer, and power-failure behavior.
 

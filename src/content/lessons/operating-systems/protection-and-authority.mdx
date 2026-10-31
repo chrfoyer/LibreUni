@@ -90,6 +90,8 @@ The caller supplied a **designation**—a string interpreted in a mutable namesp
 
 ## Derive the reference monitor obligations
 
+> **Definition.** A reference monitor mediates an access request $(s, o, r)$ soundly only if it satisfies three properties simultaneously: **complete mediation** (no access path bypasses the check or uses stale unrevoked cached authority), **tamper resistance** (untrusted subjects cannot modify policy state or forge references), and **verifiability** (the trusted enforcement boundary is small and analyzable).
+
 A protection decision is trustworthy only if every relevant access path passes through a mechanism that policy controls. Three obligations follow:
 
 1. **Complete mediation:** every security-relevant access is checked against current or validly cached authority.
@@ -223,6 +225,8 @@ The operation count needs non-forgeable, race-free mutable state shared by all c
 
 ## ACLs and capabilities fail in different ways
 
+> **Warning.** Storing permissions by object (ACLs) simplifies central revocation and auditing of who can access an object, but encourages ambient authority and confused-deputy bugs when callers pass forgeable names; storing unforgeable references by subject (capabilities) binds designation to authority, but requires explicit indirection or revocation trees to claw back delegated access.
+
 Consider an object store with one million objects and short-lived workers:
 
 | question | ACL-centered pressure | capability-centered pressure |
@@ -283,6 +287,8 @@ Responses lose substantial credit for equating authentication with authorization
 </details>
 
 ## Connections and deliberate boundary
+
+> **Remark.** Object capabilities and access-control lists are dual representations of the abstract access matrix $A: S \times O \to \mathcal{P}(R)$; subsequent lessons on containers and virtual machines examine how the operating system enforces resource and fault boundaries when subjects also distrust the shared runtime or kernel.
 
 Path resolution determines whether a name can be attacker-controlled between validation and use. Process creation determines descriptor and credential inheritance. Containers reshape namespace views and resource policy while sharing a kernel. Virtual machines insert a VMM and hardware boundary below a guest. Kernel architecture determines the size of the trusted computing base and where authority checks execute.
 

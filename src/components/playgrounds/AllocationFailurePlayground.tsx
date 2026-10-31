@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import InteractivePlayground from '../InteractivePlayground';
 
-function OwnershipPanel({ safe, failed, size }: { safe: boolean; failed: boolean; size: number }) {
+export function ownershipState(safe: boolean, failed: boolean, size: number) {
   const pointer = failed && !safe ? 'NULL' : '0x7f20';
   const allocation = failed ? 'original 32-byte block' : `${size}-byte block`;
   const reachable = !failed || safe;
+  return { pointer, allocation, reachable };
+}
+
+function OwnershipPanel({ safe, failed, size }: { safe: boolean; failed: boolean; size: number }) {
+  const { pointer, allocation, reachable } = ownershipState(safe, failed, size);
   return <div className={`rounded-xl border p-4 ${reachable ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-rose-500/30 bg-rose-500/5'}`}>
     <div className="mb-3 text-sm font-black">{safe ? 'Temporary-pointer pattern' : 'Direct assignment'}</div>
     <div className="grid grid-cols-[5rem_1fr] items-center gap-3 text-sm">

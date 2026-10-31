@@ -84,6 +84,21 @@ $$R_k(x) = \frac{f^{(k+1)}(c)}{(k+1)!} (x - a)^{k+1}.$$
 
 </MathStatement>
 
+<details>
+<summary><strong>Pause & Predict: Does $f \in C^\infty$ guarantee convergence to $f(x)$?</strong></summary>
+
+Suppose a function $f: \mathbb{R} \to \mathbb{R}$ has continuous derivatives of all orders ($f \in C^\infty(\mathbb{R})$), and its Taylor series $\sum_{n=0}^\infty \frac{f^{(n)}(0)}{n!} x^n$ converges for all $x \in \mathbb{R}$ (radius of convergence $R = \infty$).
+Does the sum of the series necessarily equal $f(x)$ for all $x$?
+
+**Commit your intuition before revealing the answer.**
+
+---
+
+**Analysis:**
+**No!** Having infinitely many derivatives does *not* imply that the Taylor series reconstructs the original function away from the expansion point.
+A function is called **real-analytic** ($C^\omega$) only if its Taylor series actually converges to $f(x)$ in a neighborhood of $a$. There exist infinitely differentiable functions ($C^\infty$) that are *not* analytic: their remainder term $R_k(x)$ fails to vanish as $k \to \infty$. We analyze this profound counterexample below.
+</details>
+
 Increasing the degree adds local information: each Taylor polynomial agrees with the function and more derivatives at the center.
 
 <TikZ code={String.raw`\draw[->] (-3,0) -- (3,0) node[right] {$x$};
@@ -172,6 +187,55 @@ print(f"Error (order 8): {abs(cos_approx(np.pi, 8) - exact):.6f}")
 
 ---
 
+### Worked Trace: Rigorous Lagrange Error Bound for $e^x$
+
+Suppose we approximate $e = e^1$ using the Maclaurin polynomial $P_k(1) = \sum_{n=0}^k \frac{1}{n!}$, and we require the approximation error to be strictly less than $10^{-6}$.
+
+1. **Formulate the Lagrange Remainder**:
+   By Taylor's Theorem, for $f(x) = e^x$, the $(k+1)$-th derivative is $f^{(k+1)}(x) = e^x$. The remainder at $x = 1$ is:
+   $$R_k(1) = \frac{e^c}{(k+1)!} (1 - 0)^{k+1} = \frac{e^c}{(k+1)!}, \quad \text{for some } c \in (0, 1).$$
+
+2. **Establish a Rigorous Upper Bound**:
+   Because $e^x$ is strictly increasing, $c < 1 \implies e^c < e^1 < 3$ (using the elementary bound $e < 3$). Therefore:
+   $$|R_k(1)| < \frac{3}{(k+1)!}.$$
+
+3. **Determine the Required Degree $k$**:
+   We require:
+   $$\frac{3}{(k+1)!} < 10^{-6} \iff (k+1)! > 3 \times 10^6 = 3{,}000{,}000.$$
+
+4. **Factorial Growth Trace**:
+   * For $k = 8$: $(8+1)! = 9! = 362{,}880 \le 3{,}000{,}000$ (insufficient).
+   * For $k = 9$: $(9+1)! = 10! = 3{,}628{,}800 > 3{,}000{,}000$ (condition satisfied).
+
+5. **Conclusion**:
+   A 9th-degree Taylor polynomial $P_9(1) = \sum_{n=0}^9 \frac{1}{n!}$ guarantees an error strictly bounded by $\frac{3}{3{,}628{,}800} \approx 8.27 \times 10^{-7} < 10^{-6}$ without needing to know the true value of $e$ in advance.
+
+---
+
+### Counterexample & Failure Mode: Cauchy's Smooth Non-Analytic Function
+
+Does $f \in C^\infty(\mathbb{R})$ imply that the Taylor series converges to $f(x)$?
+Consider Augustin-Louis Cauchy's classical function:
+$$f(x) = \begin{cases} e^{-1/x^2} & \text{if } x \neq 0 \\ 0 & \text{if } x = 0 \end{cases}$$
+
+1. **Derivatives at the Origin**:
+   For $x \neq 0$, the $n$-th derivative has the form $f^{(n)}(x) = P_n(1/x) e^{-1/x^2}$, where $P_n$ is a polynomial.
+   Using the substitution $u = 1/x$, as $x \to 0$ ($u \to \pm\infty$):
+   $$\lim_{x \to 0} \frac{e^{-1/x^2}}{x^k} = \lim_{u \to \infty} \frac{u^k}{e^{u^2}} = 0 \quad \text{for every integer } k \ge 0.$$
+   By induction and the definition of the derivative, $f^{(n)}(0) = 0$ for every $n = 0, 1, 2, \dots$.
+
+2. **Taylor Series Collapse**:
+   The Maclaurin series of $f(x)$ around $a = 0$ is:
+   $$\sum_{n=0}^\infty \frac{f^{(n)}(0)}{n!} x^n = \sum_{n=0}^\infty 0 \cdot x^n = 0.$$
+   This power series converges for every $x \in \mathbb{R}$ (radius of convergence $R = \infty$), with sum identically zero.
+
+3. **Breakdown Analysis**:
+   For any $x \neq 0$, $f(x) = e^{-1/x^2} > 0 \neq 0 = \sum_{n=0}^\infty \frac{f^{(n)}(0)}{n!} x^n$.
+   Thus, the Taylor series agrees with $f(x)$ **only at the single point $x = 0$**!
+   The function is infinitely differentiable ($C^\infty$) on all of $\mathbb{R}$, yet fails to be analytic ($C^\omega$) at the origin because the remainder term $R_k(x)$ does not converge to zero as $k \to \infty$.
+
+---
+
 ## Euler's Formula via Maclaurin Series
 
 By substituting $ix$ into the Maclaurin series of $e^z$, we can derive the fundamental connection between complex exponentiation and trigonometry.
@@ -216,10 +280,19 @@ $$e^{ix} = \cos(x) + i\sin(x).$$
   explanation="The n-th term in the Maclaurin expansion of e^x is x^n / n!."
 />
 
+## Deliberate Omissions & Course Scope Boundaries
+
+> **Remark.** Although $f(x) = \frac{1}{1+x^2}$ is smooth ($C^\infty$) on the entire real line $\mathbb{R}$, its Maclaurin series $\sum_{n=0}^\infty (-1)^n x^{2n}$ has radius of convergence $R = 1$ because its complex extension $f(z) = \frac{1}{1+z^2}$ has singularities at $z = \pm i$ at distance $1$ from the origin.
+
+* **Analytic Continuation & Complex Singularities**: Explaining why $\frac{1}{1+x^2}$ has radius of convergence $R=1$ on the real line despite having no real singularities requires analyzing poles at $\pm i$ in the complex plane, which belongs to Complex Analysis.
+* **Integral Form of the Remainder**: We utilize the Lagrange mean-value form $R_k(x) = \frac{f^{(k+1)}(c)}{(k+1)!}(x-a)^{k+1}$. The integral remainder $R_k(x) = \frac{1}{k!}\int_a^x (x-t)^k f^{(k+1)}(t)\,dt$ and Cauchy's derivative form are deferred to advanced real analysis.
+* **Multivariate Taylor Expansions & Hessian Matrices**: Expanding functions $f(\mathbf{x})$ of multiple variables using gradient vectors and symmetric Hessian tensors is reserved for Multivariable Calculus.
+
 ---
 
 ## References & Further Reading
-* Spivak, M. (2008). *Calculus* (4th ed.). Publish or Perish.
-* Rudin, W. (1976). *Principles of Mathematical Analysis* (3rd ed.). McGraw-Hill.
-* [Wikipedia: Taylor series](https://en.wikipedia.org/wiki/Taylor_series) (CC-BY-SA 3.0)
-* [Wikipedia: Taylor's theorem](https://en.wikipedia.org/wiki/Taylor%27s_theorem) (CC-BY-SA 3.0)
+
+* Spivak, M. (2008). *Calculus* (4th ed.), Chapter 20 ("Approximation by Polynomial Functions"). Publish or Perish.
+* Rudin, W. (1976). *Principles of Mathematical Analysis* (3rd ed.), Chapter 5 ("Taylor's Theorem") & Chapter 8. McGraw-Hill.
+* Apostol, T. M. (1967). *Calculus, Volume 1: One-Variable Calculus, with an Introduction to Linear Algebra* (2nd ed.), Chapter 7 ("Taylor's Formula"). Wiley.
+

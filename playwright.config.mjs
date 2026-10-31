@@ -4,6 +4,8 @@ import { defineConfig, devices } from '@playwright/test';
 // settings. Node warns whenever NO_COLOR is present alongside FORCE_COLOR.
 delete process.env.NO_COLOR;
 process.env.FORCE_COLOR = '0';
+process.env.no_proxy = 'localhost,127.0.0.1,::1' + (process.env.no_proxy ? `,${process.env.no_proxy}` : '');
+process.env.NO_PROXY = process.env.no_proxy;
 
 const isCI = Boolean(process.env.CI);
 
@@ -25,6 +27,7 @@ export default defineConfig({
   use: {
     actionTimeout: 10_000,
     baseURL: 'http://127.0.0.1:4321',
+    ignoreHTTPSErrors: true,
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
     video: 'retain-on-failure',

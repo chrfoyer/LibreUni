@@ -79,7 +79,7 @@ A lost update can produce 13 from initial stock 20 when both transactions read 2
 
 A weak implementation reads stock in the application and executes an unconditional write. A row-local repair puts the condition and decrement in one SQL statement: **update stock only when stock is at least the requested amount**. The affected-row count distinguishes reservation from rejection. A lock or serializable protocol can also serialize the read-modify-write, but the conditional statement expresses the invariant directly.
 
-### Application — complete the repair trace
+### Worked trace — complete the repair trace
 
 Assume T1 performs the conditional decrement first and commits. T2 performs the same conditional decrement after T1. Fill in T2's affected-row outcome and final stock.
 

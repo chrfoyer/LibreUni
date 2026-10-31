@@ -247,6 +247,8 @@ Assume 99% lookups, 1% insertion/removal, a skewed key distribution, and a targe
 - XNU's current source contains subsystem-specific locks and scalable-memory-reclamation structures; a claim requires tracing the selected path rather than extrapolating from “hybrid.”
 - a seL4 system chooses whether metadata is in one server, sharded servers, shared memory with capabilities, or another arrangement; the kernel does not decide the data structure.
 
+> **Example.** Suppose 64 cores repeatedly resolve `/usr/bin/env`. If each lookup acquires even a shared reader-writer lock, every core atomically increments and decrements a shared reader counter, bouncing that cache line across all 64 cores in Modified/Invalid states. Under an RCU read-side critical section (`rcu_read_lock()` / `rcu_read_unlock()`), readers issue no shared-memory writes at all during traversal, allowing the dentry cache lines to remain Shared in every core's L1 cache while writers publish replacement nodes and defer reclamation until a grace period elapses.
+
 {/* Source tracking: Linux RCU and VFS behavior is supported by the official RCU and VFS documentation. XNU claims are limited to structures visible in Apple's source tree; no unmeasured comparative throughput is asserted. */}
 
 ### Worked experiment design
@@ -264,6 +266,8 @@ For each configuration:
 If one system batches 100 lookups per IPC while another issues one syscall per lookup, report both operation and transition counts. “IPC count” is not a workload-normalized metric.
 
 ## Architecture labels fail as predictors
+
+> **Warning.** High-level taxonomy labels ("monolithic", "microkernel", "hybrid") do not determine either the effective Trusted Computing Base (TCB) or multicore scalability. A system's fault blast radius and latency distribution are functions of the concrete authority graph, DMA isolation, and shared-cache-line write set along the executed path.
 
 Counterexamples:
 
@@ -312,6 +316,8 @@ There is no universally correct system choice. There are correct and incorrect a
 </details>
 
 ## Deliberate boundary
+
+> **Remark.** This lesson restricts comparative claims to four inspectable reference architectures (xv6-riscv rev5, Linux, XNU, and seL4) under fixed workload models so every mechanism claim can be traced to concrete source files or formal specifications rather than marketing taxonomies.
 
 The comparison excludes chronology and product popularity because neither explains a mechanism. Windows NT, FreeBSD, QNX, Fuchsia, real-time kernels, unikernels, formally verified user stacks, and distributed operating systems deserve the same source-backed configuration treatment; adding one paragraph per name would reduce quality.
 

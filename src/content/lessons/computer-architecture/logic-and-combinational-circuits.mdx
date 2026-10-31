@@ -31,6 +31,8 @@ Digital design is the refinement of a mathematical function into a physical netw
 
 ## Boolean functions as specifications
 
+> **Definition.** A combinational logic block refines a pure mathematical function $f: \{0,1\}^n \to \{0,1\}^m$: for any input vector $x \in \{0,1\}^n$ held stable for at least the propagation delay $t_{\mathrm{pd}}$, the physical output settles to $f(x)$ independently of prior input history.
+
 The simplest specification is a Boolean function $f:\{0,1\}^n\to\{0,1\}^m$. A truth table lists all $2^n$ input combinations and the required output. A circuit is correct when, for every input row, its stable output equals the specified output. This exhaustive definition is practical for small circuits and becomes the semantic foundation for symbolic simplification, formal equivalence checking, and test generation for larger ones.
 
 The primitive operations are NOT ($\lnot x$), AND ($x\land y$), and OR ($x\lor y$). NAND and NOR are *functionally complete*: every Boolean function can be built from either one alone. For example, $\lnot x=x\operatorname{NAND}x$, $x\land y=\lnot(x\operatorname{NAND}y)$, and $x\lor y=(\lnot x)\operatorname{NAND}(\lnot y)$. Functional completeness is an expressiveness result; it does not imply that a NAND-only implementation is fastest, smallest, or easiest to verify.
@@ -65,6 +67,8 @@ Karnaugh maps expose adjacent minterms that differ in one variable. Grouping pow
 />
 
 ## Multiplexers and decoders
+
+> **Definition.** A $2^k$-to-$1$ multiplexer implements indexed selection $y = d_{\mathrm{unsigned}(s_{k-1}\dots s_0)}$ via a tree of $2^k - 1$ two-input mux stages of depth $k$, while a $k$-to-$2^k$ decoder asserts the one-hot minterm $y_i = 1 \iff \mathrm{unsigned}(s_{k-1}\dots s_0) = i$.
 
 A 2-to-1 multiplexer is the conditional operator of hardware:
 
@@ -125,6 +129,8 @@ For `(1,0,1)`, $p=1$, $g=0$, $q=1$, sum is 0, and carry-out is 1: the input carr
 
 ## Comparators and predicates
 
+> **Lemma.** In $w$-bit two's-complement arithmetic, $A <_{\text{signed}} B$ holds if and only if $(S_{\text{sub}} \oplus V_{\text{sub}}) = 1$, where $S_{\text{sub}}$ is the sign bit of $(A - B) \bmod 2^w$ and $V_{\text{sub}} = c_{w-1} \oplus c_w$ is the signed subtraction overflow flag; for unsigned values, $A <_{\text{unsigned}} B$ holds if and only if the adder carry-out of $A + \lnot B + 1$ is $0$.
+
 Equality of two $w$-bit words is the AND of bitwise equivalences:
 
 $$
@@ -137,6 +143,8 @@ Predicates are often more valuable than numeric results. The ALU’s output may 
 
 ## Timing, hazards, and physical reality
 
+> **Warning.** Two algebraically identical Boolean expressions can have different transient behavior: in $F = ab + \bar{a}c$ with $b = c = 1$, toggling $a$ from $1 \to 0$ can briefly drop $F$ to $0$ (a static-1 hazard) if the $ab$ gate turns off before the inverter on $\bar{a}$ turns on, unless the redundant consensus term $bc$ is included or the output is sampled only after $t_{\mathrm{pd}}$.
+
 Boolean equivalence describes the stable function, but a physical circuit also has propagation delay. If an output feeds another gate before it has settled, the receiving logic can observe a transient value. The longest input-to-output path is the critical path and bounds the maximum clock frequency when the circuit lies between registers. Gate count is only a rough area proxy; fanout, wire length, loading, and technology-specific delays matter.
 
 Unequal path delays can produce a *glitch*: an output briefly changes even though the logically correct value before and after the transition is the same. For example, in $F=ab+\bar ac$, changing $a$ while $b=c=1$ should leave $F=1$, but the direct and inverted paths may not switch simultaneously, producing a temporary zero. Adding the consensus term $bc$ yields a hazard-resistant two-level form for this transition, at the cost of an extra product. Whether a glitch matters depends on the receiver: a level-sensitive combinational consumer may ignore it after settling, while an asynchronous control input or clock edge can capture it.
@@ -145,11 +153,15 @@ Static timing analysis uses arrival and required times to verify that paths meet
 
 ## CMOS and implementation cost
 
+> **Remark.** Because static CMOS inverting gates (NAND, NOR, NOT) restore full voltage rails in a single stage whereas non-inverting AND/OR gates require an inverting stage followed by an inverter, De Morgan transformations naturally map two-level Sum-of-Products expressions (`AND-OR`) into lower-delay `NAND-NAND` networks.
+
 At the transistor level, complementary CMOS uses networks of p-type and n-type devices to implement logic with low static power in steady states. A NAND gate is naturally efficient: the pull-down network places nMOS devices in series for the AND condition, while the pull-up network is the dual parallel structure. A NOR gate has the opposite topology and often different delay characteristics because series and parallel transistor arrangements load differently.
 
 The same Boolean expression can map to different physical costs. Factoring reduces repeated logic but may increase fanout; a NAND-NAND implementation can exploit the technology’s native gate; a balanced tree reduces depth but increases wiring. Modern synthesis tools optimize against timing, area, power, and testability objectives. Architectural reasoning remains necessary because the tool only optimizes within the constraints and library the designer supplies.
 
 ## Verification strategy
+
+> **Remark.** Combinational verification combines structural equivalence checking against a reference specification with boundary-value vectors (`0x00000000`, `0xFFFFFFFF`, `0x7FFFFFFF`, `0x80000000`) that exercise full carry-chain propagation and sign-bit transitions.
 
 For a small combinational block, exhaustive simulation covers all inputs. For a 32-bit ALU, exhaustive testing is impossible, so verification combines equivalence checking, constrained random tests, directed corner cases, and compositional proofs. Directed cases should include all-zero and all-one operands, one-hot patterns, sign transitions, carry chains, alternating bits, and illegal control encodings.
 

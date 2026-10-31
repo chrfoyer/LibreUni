@@ -197,6 +197,8 @@ The tested padding did not remove the dominant measured bottleneck under that wo
 
 ## Sharding changes the proof
 
+> **Lemma.** If every operation that acquires multiple shard locks from a partitioned table $\{L_0, L_1, \dots, L_{K-1}\}$ acquires its required subset in strictly ascending shard-index order $i_1 < i_2 < \dots < i_m$, then the shard wait-for graph is a directed acyclic graph and no deadlock cycle can form among shard locks.
+
 Partition a table by $h(key)\bmod K$. A single-key operation locks one shard. A two-key operation may need two. Canonical shard order prevents deadlock, but atomic multi-key semantics may still require a version, global sequence, or retry protocol.
 
 The critical invariants are:
@@ -311,6 +313,8 @@ Observe lock hold/wait distributions tied to call paths and inspect counter addr
 
 ## Reproducible scaling experiment
 
+> **Warning.** Reporting single-run throughput or hardware PMU counts without checking `time_enabled` versus `time_running` (counter multiplexing) and tracing perturbation overhead can attribute measurement artifacts to kernel scalability.
+
 A defensible experiment records:
 
 1. source revision, configuration, compiler, kernel, firmware, and microcode where relevant;
@@ -352,6 +356,8 @@ Passing a throughput threshold without invariant tests or an explanation of meas
 </details>
 
 ## Connections and deliberate boundary
+
+> **Remark.** Amdahl's law and lock-contention counters bound the maximum speedup of a serialized critical section, while hardware cache-coherence invalidations explain why even lock-free or sharded structures fail to scale when independent cores write to the same cache line.
 
 Synchronization defines correctness; cache coherence and topology define communication costs; scheduling defines waiter and interrupt placement; filesystems and networking supply shared kernel objects; containers and VMs change accounting and observation scope. Observability connects these mechanisms to evidence but cannot replace the mechanism argument.
 

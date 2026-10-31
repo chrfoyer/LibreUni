@@ -71,7 +71,7 @@ $$
 
 Scheduler and switch work may keep the CPU physically busy while reducing $U_{useful}$. Report both if the distinction matters.
 
-### Metric reconstruction — a preempted job
+### Worked trace — metric reconstruction for a preempted job
 
 Job $P$ arrives at 2, runs on intervals $[4,6)$ and $[10,13)$, blocks on I/O during $[6,8)$, and completes at 13. Compute response, turnaround, service, blocked time, and ready-wait.
 
@@ -137,10 +137,18 @@ Responses are A=5, B=0, C=1, D=1; mean response and waiting are 1.75. Mean turna
 
 ### Proof boundary — construct starvation
 
-One long job of service 100 waits from time 0. Starting at time 0, a service-1 job arrives just before every scheduling decision. What happens under non-preemptive SJF? Which theorem assumption did **not** fail?
+Suppose a long job $L$ with service 100 is ready. Can an arrival stream of short jobs (service 1) starve $L$ indefinitely? Distinguish non-preemptive SJF from preemptive SRTF:
+
+1. **Non-preemptive SJF with $L$ alone at time 0:** If $L$ is the sole ready job at $t=0$, non-preemptive SJF immediately dispatches $L$. Because the policy is non-preemptive, subsequent arrivals cannot displace $L$; it runs uninterrupted from $t=0$ to $t=100$. Starvation does **not** occur.
+2. **True starvation under non-preemptive SJF:** Requires that at $t=0$, another job $S_0$ is already running or ready, and before each short job finishes, a new short job arrives. At every scheduling decision boundary, the scheduler sees at least one shorter job ready, so $L$ is never selected.
+3. **Starvation under preemptive SRTF:** If short jobs arrive with remaining service $< \text{remaining}(L)$, $L$ is repeatedly preempted or delayed, suffering unbounded waiting.
 
 <ExerciseSolution>
-The long job can starve forever because a shorter ready job is always available. Service times may be known exactly and scheduling may be non-preemptive; those assumptions still hold. The failed theorem scope is the finite simultaneous-arrival batch. With an unbounded arrival stream, minimizing local short-job delay offers no bound for the long job. Aging or a maximum-wait constraint changes the policy objective.
+Under non-preemptive SJF, a long job ready at time 0 cannot starve if it is selected first; once running, non-preemption protects it. Unbounded starvation requires either:
+(a) under non-preemptive SJF: at time 0, a short job $S_0$ is dispatched, and before each $S_k$ completes, $S_{k+1}$ arrives so the ready queue is never empty of shorter jobs at any decision point; or
+(b) under preemptive SRTF: frequent short arrivals repeatedly preempt $L$.
+
+The simultaneous-arrival batch theorem ($b_i \le b_j$) does not prevent starvation because its foundational assumption—a finite, closed batch arriving simultaneously at $t=0$—is violated by continuous dynamic arrivals. Real systems prevent this via dynamic priority aging.
 </ExerciseSolution>
 
 ## SRTF and the value of preemption

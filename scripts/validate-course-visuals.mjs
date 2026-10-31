@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const activeCourses = ['computer-architecture', 'operating-systems', 'database-systems'];
+const activeCourses = ['calculus-intro', 'computer-architecture', 'operating-systems', 'database-systems'];
 const failures = [];
 const componentNames = new Set(['Quiz', 'CodeRunner', 'CodeExercise', 'CaseStudy', 'PlantUML', 'PythonDiagram', 'TikZ', 'Math', 'MathStatement', 'MathProof', 'ExerciseSolution', ...fs.readdirSync(path.join(root, 'src/components/playgrounds')).filter((name) => name.endsWith('.tsx')).map((name) => path.basename(name, '.tsx'))]);
 

@@ -27,8 +27,9 @@ const modules = lessons.reduce<{ title: string; lessons: OrderedLesson[] }[]>((g
   return groups;
 }, []);
 
-const category = 'Computer Science';
-const categoryClass = 'cs';
+const isMath = course.id.startsWith('calculus') || course.id.includes('math');
+const category = isMath ? 'Mathematics' : 'Computer Science';
+const categoryClass = isMath ? 'math' : 'cs';
 const lessonSlugs = lessons.map((lesson) => lesson.id);
 const firstLesson = lessons[0];
 const formatMinutes = (minutes: number) => {

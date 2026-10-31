@@ -42,7 +42,23 @@ $$L(f, P) = \sum_{i=1}^n m_i \Delta x_i \quad \text{and} \quad U(f, P) = \sum_{i
 
 </MathStatement>
 
-Clearly, for any partition $P$, $L(f, P) \le U(f, P)$. If we refine a partition (add more points), the lower sum increases (or stays same) and the upper sum decreases (or stays same).
+<details>
+<summary><strong>Pause & Predict: Partition Refinement Behavior</strong></summary>
+
+Suppose you take a partition $P$ of $[a, b]$ and insert exactly one new division point $x^*$, forming refinement $P^* = P \cup \{x^*\}$.
+* Does the lower sum $L(f, P^*)$ increase, decrease, or stay the same relative to $L(f, P)$?
+* Does the Darboux gap $U(f, P^*) - L(f, P^*)$ expand or contract?
+
+**Commit your reasoning before opening the solution below.**
+
+---
+
+**Analysis:**
+Suppose $x^* \in (x_{k-1}, x_k)$. On the original interval $[x_{k-1}, x_k]$, the infimum is $m_k$. On the subintervals $[x_{k-1}, x^*]$ and $[x^*, x_k]$, the infima $m'_k = \inf_{x \in [x_{k-1}, x^*]} f(x)$ and $m''_k = \inf_{x \in [x^*, x_k]} f(x)$ must satisfy $m'_k \ge m_k$ and $m''_k \ge m_k$ because the infimum over a subset cannot decrease.
+Since $(x^* - x_{k-1}) + (x_k - x^*) = \Delta x_k$, we have:
+$$m'_k(x^* - x_{k-1}) + m''_k(x_k - x^*) \ge m_k \Delta x_k.$$
+Thus, adding points monotonically increases (or maintains) the lower sum ($L(f, P) \le L(f, P^*)$) and monotonically decreases (or maintains) the upper sum ($U(f, P^*) \le U(f, P)$). Refinements strictly squeeze the upper and lower Darboux bounds closer together.
+</details>
 
 <RiemannPlayground client:load />
 
@@ -112,9 +128,54 @@ for n in n_values:
 
 ---
 
+### Worked Trace: Exact Analytical Evaluation of $\int_0^b x^2\,dx$ via Darboux Sums
+
+To see the Darboux machinery in action without relying on the Fundamental Theorem of Calculus, consider $f(x) = x^2$ on $[0, b]$ partitioned into $n$ equal subintervals of width $\Delta x = \frac{b}{n}$, with division points $x_i = \frac{i b}{n}$ for $i = 0, 1, \dots, n$.
+
+1. **Subinterval Bounds**: Because $f(x) = x^2$ is strictly increasing on $[0, b]$, on each interval $[x_{i-1}, x_i]$:
+   * $m_i = \inf_{x \in [x_{i-1}, x_i]} f(x) = f(x_{i-1}) = \left(\frac{(i-1)b}{n}\right)^2$
+   * $M_i = \sup_{x \in [x_{i-1}, x_i]} f(x) = f(x_i) = \left(\frac{ib}{n}\right)^2$
+
+2. **Evaluating Upper and Lower Sums**:
+   Using the summation identity $\sum_{i=1}^n i^2 = \frac{n(n+1)(2n+1)}{6}$:
+   $$U(f, P_n) = \sum_{i=1}^n M_i \Delta x = \sum_{i=1}^n \left(\frac{ib}{n}\right)^2 \frac{b}{n} = \frac{b^3}{n^3} \frac{n(n+1)(2n+1)}{6} = \frac{b^3}{6} \left(2 + \frac{3}{n} + \frac{1}{n^2}\right)$$
+   
+   Similarly, for the lower sum:
+   $$L(f, P_n) = \sum_{i=1}^n m_i \Delta x = \sum_{i=1}^n \left(\frac{(i-1)b}{n}\right)^2 \frac{b}{n} = \frac{b^3}{n^3} \frac{(n-1)n(2n-1)}{6} = \frac{b^3}{6} \left(2 - \frac{3}{n} + \frac{1}{n^2}\right)$$
+
+3. **Bounding the Darboux Gap**:
+   $$U(f, P_n) - L(f, P_n) = \frac{b^3}{6} \left(\frac{6}{n}\right) = \frac{b^3}{n}$$
+   For any $\epsilon > 0$, choosing $n > \frac{b^3}{\epsilon}$ guarantees $U(f, P_n) - L(f, P_n) < \epsilon$.
+
+4. **Convergence to the Riemann Integral**:
+   Taking $n \to \infty$:
+   $$\sup_n L(f, P_n) = \frac{b^3}{3} \le \underline{\int_0^b} x^2\,dx \le \overline{\int_0^b} x^2\,dx \le \inf_n U(f, P_n) = \frac{b^3}{3}$$
+   Since the upper and lower integrals coincide at $\frac{b^3}{3}$, $f(x)=x^2$ is rigorously Riemann integrable with $\int_0^b x^2\,dx = \frac{b^3}{3}$.
+
+---
+
+### Counterexample & Failure Mode: Pathological Non-Integrability (Dirichlet's Function)
+
+Does every bounded function have a Riemann integral? Consider Dirichlet's function on $[0, 1]$:
+$$f(x) = \begin{cases} 1 & \text{if } x \in \mathbb{Q} \\ 0 & \text{if } x \notin \mathbb{Q} \end{cases}$$
+
+1. **Failure Mode Analysis**:
+   * Between any two real numbers $x_{i-1} < x_i$, there exists an irrational number (since $\mathbb{R} \setminus \mathbb{Q}$ is dense). Thus $m_i = \inf_{[x_{i-1}, x_i]} f(x) = 0$.
+   * Between any two real numbers $x_{i-1} < x_i$, there also exists a rational number (since $\mathbb{Q}$ is dense). Thus $M_i = \sup_{[x_{i-1}, x_i]} f(x) = 1$.
+
+2. **Darboux Collapse**:
+   For **every** partition $P$ of $[0, 1]$, regardless of refinement:
+   $$L(f, P) = \sum_{i=1}^n 0 \cdot \Delta x_i = 0 \implies \underline{\int_0^1} f(x)\,dx = \sup_{P} L(f, P) = 0$$
+   $$U(f, P) = \sum_{i=1}^n 1 \cdot \Delta x_i = \sum_{i=1}^n \Delta x_i = 1 \implies \overline{\int_0^1} f(x)\,dx = \inf_{P} U(f, P) = 1$$
+
+3. **Conclusion**:
+   Because $\underline{\int_0^1} f(x)\,dx = 0 \neq 1 = \overline{\int_0^1} f(x)\,dx$, the Darboux gap never closes ($U - L = 1$). Riemann integration completely fails for functions whose discontinuities are everywhere dense.
+
+---
+
 ## Integrability of Continuous Functions
 
-Not all bounded functions are integrable (e.g., the Dirichlet function is not). However, continuity is a sufficient condition for integrability.
+Not all bounded functions are integrable (as Dirichlet's function demonstrates). However, continuity is a sufficient condition for integrability.
 
 <MathStatement id="continuous-integrable" kind="theorem" title="Integrability of Continuous Functions" number="1">
 
@@ -187,10 +248,19 @@ $$f(c) = \frac{1}{b - a} \int_a^b f(x) \, dx \implies \int_a^b f(x) \, dx = f(c)
   explanation="The midpoint of subinterval i (from i*dx to (i+1)*dx) is (i + 0.5)*dx."
 />
 
+## Deliberate Omissions & Course Scope Boundaries
+
+> **Remark.** A bounded function $f: [a, b] \to \mathbb{R}$ is Riemann integrable if and only if its set of discontinuities has Lebesgue measure zero (Lebesgue's integrability criterion). Continuous functions and monotone functions with finitely or countably many jump discontinuities satisfy this criterion automatically, whereas Dirichlet's function fails because its discontinuity set is all of $[0, 1]$ (measure $1$).
+
+* **Lebesgue Measure & Null Sets**: Lebesgue's criterion for Riemann integrability (that a bounded function is Riemann integrable if and only if its set of discontinuities has Lebesgue measure zero) is formulated without proof here; the formal construction of outer measure and $\sigma$-algebras is deferred to Real Analysis.
+* **Riemann-Stieltjes Integrals**: Integrators with respect to arbitrary functions $\alpha(x)$ of bounded variation ($\int_a^b f\,d\alpha$) are omitted in favor of the standard uniform differential $dx$.
+* **Improper Integrals on Unbounded Domains**: Integration over $[a, \infty)$ or with singularities $\lim_{x\to c} f(x) = \infty$ is addressed in the subsequent applications module.
+
 ---
 
 ## References & Further Reading
-* Apostol, T. M. (1967). *Calculus, Vol. 1* (2nd ed.). John Wiley & Sons.
-* Rudin, W. (1976). *Principles of Mathematical Analysis* (3rd ed.). McGraw-Hill.
-* [Wikipedia: Riemann integral](https://en.wikipedia.org/wiki/Riemann_integral) (CC-BY-SA 3.0)
-* [Wikipedia: Darboux integral](https://en.wikipedia.org/wiki/Darboux_integral) (CC-BY-SA 3.0)
+
+* Spivak, M. (2008). *Calculus* (4th ed.), Chapter 13 ("Integrals"). Publish or Perish.
+* Apostol, T. M. (1967). *Calculus, Volume 1: One-Variable Calculus, with an Introduction to Linear Algebra* (2nd ed.), Chapter 2 & Chapter 3. Wiley.
+* Rudin, W. (1976). *Principles of Mathematical Analysis* (3rd ed.), Chapter 6 ("The Riemann-Stieltjes Integral"). McGraw-Hill.
+

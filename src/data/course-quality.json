@@ -1,10 +1,26 @@
 {
+  "calculus-intro": {
+    "codeBlockCount": 0,
+    "componentCounts": {
+      "CaseStudy": 0,
+      "CodeExercise": 7,
+      "CodeRunner": 6,
+      "Quiz": 14
+    },
+    "courseId": "calculus-intro",
+    "lessonCount": 7,
+    "smokeTest": {
+      "errors": [],
+      "meaning": "No detected broken course structure or supported code syntax.",
+      "status": "passed"
+    }
+  },
   "computer-architecture": {
-    "codeBlockCount": 8,
+    "codeBlockCount": 18,
     "componentCounts": {
       "CaseStudy": 20,
       "CodeExercise": 0,
-      "CodeRunner": 0,
+      "CodeRunner": 1,
       "Quiz": 20
     },
     "courseId": "computer-architecture",
@@ -16,12 +32,12 @@
     }
   },
   "database-systems": {
-    "codeBlockCount": 18,
+    "codeBlockCount": 20,
     "componentCounts": {
-      "CaseStudy": 0,
+      "CaseStudy": 1,
       "CodeExercise": 4,
       "CodeRunner": 0,
-      "Quiz": 0
+      "Quiz": 1
     },
     "courseId": "database-systems",
     "lessonCount": 20,

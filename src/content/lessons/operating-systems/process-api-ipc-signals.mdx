@@ -113,7 +113,7 @@ Parent opens a regular file at offset 0, forks, then parent reads 4 bytes and ch
 The inherited descriptors refer to one open file description. Parent consumes bytes at offsets 0–3 and advances the shared offset to 4; child then consumes offsets 4–7 and advances it to 8. If the child independently calls `open`, it receives a new open file description with its own initial offset, normally 0, so both may read bytes 0–3. A pathname identifies a file for lookup; it is not the runtime open-file object.
 </ExerciseSolution>
 
-## Worked construction: `sort < raw | uniq -c > counts`
+## Worked trace: `sort < raw | uniq -c > counts`
 
 Let pipe ends be `p[0]` (read) and `p[1]` (write). Let `infd` and `outfd` denote opened files. The target post-`exec` descriptors are:
 

@@ -16,6 +16,7 @@ assessment: "Given a prose requirement and sample rows, define relations and con
 ---
 
 import ExerciseSolution from '../../../components/ExerciseSolution.astro';
+import PlantUML from '../../../components/PlantUML.astro';
 
 # Relational model: facts, keys, and constraints
 
@@ -23,7 +24,7 @@ import ExerciseSolution from '../../../components/ExerciseSolution.astro';
 
 > **Definition.** A relation schema names attributes and their domains, such as `Enrollment(student_id, offering_id, status)`. A relation instance is the current collection of tuples permitted by that schema and its constraints. The **grain** states what one tuple represents.
 
-{/* Source tracking: The relational vocabulary and separation of relations from their implementation are synthesized from E. F. Codd, “A Relational Model of Data for Large Shared Data Banks” (1970). */}
+{/* Source tracking: The relational vocabulary and separation of relations from their implementation are synthesized from E. F. Codd, “A Relational Model of Data for Large Shared Data Banks,” *Communications of the ACM* 13(6), pp. 377–387 (1970); key terminology follows Ramakrishnan & Gehrke, *Database Management Systems*, 3rd ed., §3.1. */}
 
 ## Build one small schema carefully
 
@@ -35,7 +36,55 @@ We will model a student enrolling in an offering of a course during a term.
 | `Offering(offering_id, course_code, term, capacity)` | One scheduled offering | `offering_id` | `capacity >= 0` |
 | `Enrollment(student_id, offering_id, status)` | One student's current state in one offering | `(student_id, offering_id)` | Both IDs refer to existing rows; `status` is an allowed value |
 
+The three relations and their identifying keys, with every reference from `Enrollment` to its parents:
+
+<PlantUML
+  code={String.raw`
+class Student {
+  student_id : uuid <<PK>>
+  display_name : text NOT NULL
+}
+class Offering {
+  offering_id : uuid <<PK>>
+  course_code : text
+  term : text
+  capacity : integer CHECK >= 0
+}
+class Enrollment {
+  student_id : uuid <<PK, FK>>
+  offering_id : uuid <<PK, FK>>
+  status : text CHECK in enrolled/waitlisted/dropped
+}
+Student "1" <-- "0..*" Enrollment : student_id
+Offering "1" <-- "0..*" Enrollment : offering_id
+`}
+/>
+
+**Figure 1.** The registration grain: one `Enrollment` tuple asserts one student's current state in one `Offering`. The composite key `(student_id, offering_id)` makes two rows for the same pair illegal regardless of `status`, and the two foreign keys confine each enrollment to existing parent rows.
+
 > **Example.** The tuple `(s17, o3, 'enrolled')` in `Enrollment` says one fact: student `s17` is enrolled in offering `o3`. If a later requirement says that a student may drop and re-enroll multiple times, this relation no longer has the right grain. Add an event identifier or timestamped enrollment-history relation rather than quietly inserting duplicate current rows.
+
+### Worked example: declare the schema, then watch it reject rows
+
+Given `Student = {(s17, 'Ada')}` and `Offering = {(o3, 'DB101', '2026F', 30)}`, declare the schema and attempt four inserts:
+
+```sql
+CREATE TABLE Enrollment (
+  student_id text NOT NULL REFERENCES Student(student_id),
+  offering_id text NOT NULL REFERENCES Offering(offering_id),
+  status text NOT NULL
+    CHECK (status IN ('enrolled', 'waitlisted', 'dropped')),
+  PRIMARY KEY (student_id, offering_id)
+);
+
+-- Input rows, one statement per attempt:
+INSERT INTO Enrollment VALUES ('s17', 'o3', 'enrolled');  -- accepted
+INSERT INTO Enrollment VALUES ('s17', 'o3', 'dropped');  -- rejected: duplicate key (s17, o3)
+INSERT INTO Enrollment VALUES ('s99', 'o3', 'enrolled');  -- rejected: no Student row s99
+INSERT INTO Enrollment VALUES ('s17', 'o9', 'enrolled');  -- rejected: no Offering row o9
+```
+
+The second statement fails with a unique-violation on the composite primary key: changing `status` does not create a new current-enrollment fact, because `status` is not part of the key. The third and fourth fail foreign-key checks because each `NOT NULL` reference must match an existing key value in its parent. Which statement fails *first* for the second row—the key check or a check constraint—is not fixed by the relational model; a constraint set only has to reject the row.
 
 ### Prediction: what is illegal?
 
@@ -56,13 +105,17 @@ The first row can exist. The second conflicts with the same composite primary ke
 
 ## Keys identify, foreign keys connect
 
-> **Definition.** A superkey is a set of attributes that uniquely identifies a tuple in every legal instance. A candidate key is a minimal superkey: remove any one of its attributes and it no longer identifies tuples. A primary key is a chosen candidate key.
+> **Definition.** A superkey is a set of attributes that uniquely identifies a tuple in every legal instance. A candidate key is a minimal superkey: remove any one of its attributes and it no longer identifies tuples. A primary key is a chosen candidate key. (Ramakrishnan & Gehrke, *Database Management Systems*, 3rd ed., §3.2.1.)
 
-For `Enrollment`, `(student_id, offering_id)` is a candidate key under the stated rule. `(student_id, offering_id, status)` is a superkey but not a candidate key because `status` is unnecessary for identity.
+For `Enrollment`, `(student_id, offering_id)` is a candidate key under the stated rule. `(student_id, offering_id, status)` is a superkey but not a candidate key because `status` is unnecessary for identity. `(student_id, status)` is not even a superkey: a student may hold the same status in two different offerings, so it does not uniquely identify a tuple.
 
-> **Invariant.** A non-null child reference must match a referenced key value when the foreign-key constraint is checked. Deferring a constraint changes *when* the database checks it; it must still hold by the required check point, ordinarily commit.
+> **Invariant.** A declared constraint must hold at its check point. By default SQL checks each constraint **immediately**, after every statement that could violate it. A constraint declared `DEFERRABLE INITIALLY DEFERRED` is checked at **commit** instead; the transaction may transiently violate it. Deferring never weakens the constraint—it only changes *when* the database checks it.
 
-> **Counterexample.** `display_name` might look unique in a three-row sample, but two students can share it. An observed sample pattern is not a business rule. Declare a `UNIQUE` constraint only when the domain truly requires uniqueness.
+> **Worked example (deferred check point).** Constraint: “`Offering.term` is referenced by enrollments and each offering keeps a `successor_id` foreign key to the next term's offering.” Swapping two offerings' `successor_id` values with two `UPDATE` statements transiently breaks referential integrity if the constraint is immediate. Declaring it `DEFERRABLE INITIALLY DEFERRED` lets both updates commit only if, **at commit**, every referenced `successor_id` exists. Committing with the violation still fails—deferral moves the check, never removes it.
+
+> **Counterexample (UNIQUE is not "no duplicates" in general).** The SQL standard leaves `UNIQUE` treatment of multiple `NULL`s to the implementation; PostgreSQL's default (`NULLS DISTINCT`) treats `NULL`s as mutually distinct, so `UNIQUE(email)` admits unlimited rows with `email IS NULL`. Only PostgreSQL 15's `UNIQUE NULLS NOT DISTINCT` collapses them. Claiming “`UNIQUE` forbids duplicates” without saying how the vendor treats `NULL` is a falsifiable error a reviewer can check against the vendor's own constraint documentation.
+
+> **Counterexample.** `display_name` might look unique in a three-row sample, but two students can share it. An observed sample pattern is not a business rule. Declare a `UNIQUE` constraint only when the domain truly requires uniqueness, and say which `NULL` treatment you are relying on.
 
 ### Apply the constraint vocabulary
 
@@ -78,7 +131,7 @@ For each rule, choose the narrowest database constraint that directly expresses 
 Use `CHECK (capacity >= 0)`, a primary or unique key on `(student_id, offering_id)`, a foreign key from `Enrollment.offering_id` to `Offering.offering_id`, and a check or controlled status domain. These constraints do not by themselves enforce capacity across many enrollment rows; that is an aggregate rule requiring a transaction-aware design.
 </ExerciseSolution>
 
-{/* Source tracking: Constraint behavior, including primary keys, unique constraints, checks, and foreign keys, is summarized from PostgreSQL’s current constraints documentation. */}
+{/* Source tracking: Constraint behavior (primary keys, unique constraints, checks, foreign keys, deferrable modes) follows PostgreSQL's constraint documentation, in particular the unique, check, foreign-key, and deferrable sections; the NULL treatment of UNIQUE follows the SQL standard's implementation-defined rule. */}
 
 ## Relation semantics versus everyday SQL tables
 
@@ -90,7 +143,7 @@ The mathematical relational model treats a relation as a set of tuples. SQL is d
 | Is there a built-in row order? | No | No order is guaranteed without `ORDER BY` |
 | Can an attribute be missing? | Classical model has a value in its domain | SQL has `NULL`; predicates can evaluate to `UNKNOWN` |
 
-> **Warning.** `NULL` is not an ordinary value. In a `WHERE` condition, only `TRUE` retains a row. `FALSE` and `UNKNOWN` both remove it. Therefore `WHERE advisor_id <> 7` does not retain a row whose `advisor_id` is `NULL`.
+> **Warning.** `NULL` is not an ordinary value. In a `WHERE` condition, only `TRUE` retains a row. `FALSE` and `UNKNOWN` both remove it. Therefore `WHERE advisor_id <> 7` does not retain a row whose `advisor_id` is `NULL`: the comparison is `UNKNOWN`, not `TRUE`.
 
 > **Worked example.** Suppose two enrollment rows project to the same `course_code` after joining with offerings. `SELECT course_code ...` can return the code twice; `SELECT DISTINCT course_code ...` returns it once. Neither query is universally “more relational”—the right one depends on whether the client wants offerings or enrollment occurrences.
 
@@ -129,15 +182,28 @@ Schema review starts by separating facts from presentation.
 
 ### Transfer task
 
-A university now offers the same course code in two sections in the same term, and students may be waitlisted. Sketch a revised `Offering` and `Enrollment` schema. State the grain and candidate key of each relation, then give one row that your constraints must reject.
+**Input.** A university offers the same course code in two sections in the same term (`DB101` in `2026S`, sections 1 and 2), students may be `waitlisted`, and the registry contains these sample facts: students `s1`, `s2`, `s17`; offerings `o1 = (DB101, 2026S, section 1, capacity 30)`, `o2 = (DB101, 2026S, section 2, capacity 25)`.
+
+**Task.** Sketch a revised `Offering` and `Enrollment` schema. State the grain and candidate key of each relation, then give one row that your constraints must reject and one they must accept.
+
+**Falsifiable rubric.** A solution fails if any of these checks fails:
+
+1. `Enrollment` rows named `(s17, o1)` and `(s17, o1)` with different statuses are both *accepted*—the key must reject the duplicate.
+2. A row `(s1, o9)` with no matching offering is accepted—referential integrity must reject it.
+3. `course_code` alone is claimed as a candidate key of `Offering`—two 2026S sections disprove that claim.
+4. A waitlist is represented without an explicit ordering attribute, yet waitlist *order* is asserted.
 
 <ExerciseSolution hint="Course code is no longer enough to identify an offering. Keep the enrollment fact separate from the offering fact.">
 
-One solution is `Offering(offering_id, course_code, term, section, capacity)` with candidate key `offering_id` and perhaps `UNIQUE(course_code, term, section)`, plus `Enrollment(student_id, offering_id, status)` with key `(student_id, offering_id)`. The schema should reject a duplicate enrollment for the same student and offering, an enrollment whose offering does not exist, and an invalid status. Whether two waitlist entries are allowed is a policy question; their ordering needs its own explicit attribute and rule.
+One solution is `Offering(offering_id, course_code, term, section, capacity)` with candidate key `offering_id` and perhaps `UNIQUE(course_code, term, section)`, plus `Enrollment(student_id, offering_id, status)` with key `(student_id, offering_id)`. The schema must reject a duplicate enrollment for the same student and offering (rubric check 1), an enrollment whose offering does not exist (check 2), and must not claim `course_code` as a key (check 3). Whether two waitlist entries are allowed is a policy question; their ordering needs its own explicit attribute and rule (check 4), such as `Enrollment(student_id, offering_id, status, waitlist_rank)` keyed on `(student_id, offering_id)` with a partial uniqueness rule on `(offering_id)` where `status = 'waitlisted'` ordered by `waitlist_rank`.
 </ExerciseSolution>
+
+> **Scope boundary — deliberately omitted.** This lesson models constraints but does not develop functional-dependency inference, closure, or normal-form decomposition (BCNF/3NF proofs); those are prerequisites for the normalization lessons and are omitted here to keep this lesson's grain on schema review. Physical implementations of uniqueness (index structures), multi-row aggregate policies such as “at most capacity enrolled,” and authorization constraints are also out of scope.
 
 ## References
 
-- [E. F. Codd, “A Relational Model of Data for Large Shared Data Banks” (IBM Research, 1970)](https://research.ibm.com/publications/a-relational-model-of-data-for-large-shared-data-banks)
-- [PostgreSQL: Constraints](https://www.postgresql.org/docs/current/ddl-constraints.html)
-- [PostgreSQL: Queries](https://www.postgresql.org/docs/current/queries.html)
+- E. F. Codd, “A Relational Model of Data for Large Shared Data Banks,” *Communications of the ACM* 13(6), pp. 377–387 (1970) — relational vocabulary, relations vs. implementation. [ACM DOI](https://doi.org/10.1145/362384.362685) · [IBM Research page](https://research.ibm.com/publications/a-relational-model-of-data-for-large-shared-data-banks)
+- Ramakrishnan & Gehrke, *Database Management Systems*, 3rd ed. (McGraw-Hill, 2003) — §3.2.1 superkeys and candidate keys; §3.1 relation schema and instance; §3.4 integrity constraints over instances.
+- PostgreSQL, “Constraints,” *Current Documentation* ch. 5 — [unique constraints](https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS) (including the `NULLS DISTINCT` default), [check constraints](https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-CHECK-CONSTRAINTS), [foreign keys](https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-FK), and [deferrable check points](https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-DEFERRABLE).
+- PostgreSQL, “Queries,” *Current Documentation* ch. 7 — [`DISTINCT` duplicate elimination](https://www.postgresql.org/docs/current/queries-select-lists.html#QUERIES-DISTINCT), [sorting rows (`ORDER BY`)](https://www.postgresql.org/docs/current/queries-order.html), and [`LIMIT` without `ORDER BY`](https://www.postgresql.org/docs/current/queries-limit.html).
+- PostgreSQL, “Comparison Functions and Operators” — [`NULL` comparisons and `IS NULL`](https://www.postgresql.org/docs/current/functions-comparison.html).

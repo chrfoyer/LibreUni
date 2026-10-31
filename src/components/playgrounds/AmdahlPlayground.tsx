@@ -2,7 +2,7 @@ import { useState } from 'react';
 import InteractivePlayground from '../InteractivePlayground';
 import { PlotFrame, polyline } from './plot';
 
-const speedup = (parallelFraction: number, processors: number) => 1 / ((1 - parallelFraction) + parallelFraction / processors);
+export const speedup = (parallelFraction: number, processors: number) => 1 / ((1 - parallelFraction) + parallelFraction / processors);
 const x = (processors: number) => 76 + ((processors - 1) / 63) * 600;
 const y = (value: number) => 276 - (Math.min(value, 20) / 20) * 220;
 

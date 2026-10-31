@@ -4,10 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const defaultActiveCourses = ['computer-architecture', 'operating-systems', 'database-systems'];
+const defaultActiveCourses = ['calculus-intro', 'computer-architecture', 'operating-systems', 'database-systems'];
 const stripNonLessonText = (html) => html
   .replace(/<(script|style|pre|code|svg|annotation)\b[\s\S]*?<\/\1>/gi, ' ')
-  .replace(/<[^>]+>/g, ' ')
+  .replace(/<(?:"[^"]*"|'[^']*'|[^>"'])*>/g, ' ')
   .replace(/&(?:lt|gt|amp|quot|#\d+);/g, ' ');
 // A lone dollar before math syntax catches malformed delimiters too, while
 // ordinary currency such as "$100" is allowed.

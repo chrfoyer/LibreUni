@@ -3,7 +3,7 @@ import InteractivePlayground from '../InteractivePlayground';
 
 type Boundary = 'process' | 'container' | 'vm';
 
-const models: Record<Boundary, {
+export const models: Record<Boundary, {
   label: string;
   tenant: string;
   peer: string;
@@ -41,7 +41,7 @@ const models: Record<Boundary, {
   },
 };
 
-function BoundaryView({ boundary, compromise }: { boundary: Boundary; compromise: number }) {
+export function blastRadius(boundary: Boundary, compromise: number) {
   const model = models[boundary];
   const cards = [
     { label: model.tenant, detail: 'selected isolation domain', affected: true, origin: compromise === 0 },
@@ -49,6 +49,12 @@ function BoundaryView({ boundary, compromise }: { boundary: Boundary; compromise
     { label: model.implementation, detail: 'boundary implementation', affected: compromise >= 1, origin: compromise === 1 },
     { label: 'Hardware + firmware', detail: 'lowest trusted substrate', affected: compromise >= 2, origin: compromise === 2 },
   ];
+  return cards;
+}
+
+function BoundaryView({ boundary, compromise }: { boundary: Boundary; compromise: number }) {
+  const model = models[boundary];
+  const cards = blastRadius(boundary, compromise);
   const exposed = cards.filter((card) => card.affected).map((card) => card.label).join(', ');
 
   return (

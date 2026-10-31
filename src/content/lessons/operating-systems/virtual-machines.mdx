@@ -183,6 +183,8 @@ The old vCPU issues a load to GVA `0x4123`; its combined TLB entry bypasses both
 
 ## CPU state, time, and interrupts
 
+> **Warning.** Virtualizing a CPU requires virtualizing time and interrupt delivery together: if a vCPU is descheduled by the host while holding a guest spinlock or waiting for a timer deadline, injecting timer interrupts without accounting for stolen host time can trigger false guest lockup panics or livelock spin-waiters.
+
 A vCPU has more state than general registers: control registers, pending exceptions, virtual interrupt controller state, timers, debug state, and architecture features. The VMM chooses which features to expose and must preserve migration and scheduling invariants for that virtual contract.
 
 Virtual time has at least three meanings:
@@ -236,6 +238,8 @@ The model predicts a 3% reduction under fixed costs. It does not establish real 
 
 ## Isolation is a dependency chain
 
+> **Warning.** Second-stage page tables (G-stage / EPT) isolate guest memory accesses from the host, but the VM isolation boundary is only as strong as the VMM's exit handlers, userspace device emulators, and IOMMU DMA mappings: a single out-of-bounds buffer write in an emulated Virtio or PCI device compromises the VMM process despite hardware page-table enforcement.
+
 A guest-kernel compromise gives the attacker guest-kernel authority. Containment then depends on:
 
 1. CPU virtualization controls and second-stage translation;
@@ -277,6 +281,8 @@ A design that states “use KVM for security and performance” without a device
 </details>
 
 ## Connections and deliberate boundary
+
+> **Remark.** Virtual machines provide a separate guest-kernel fault domain at the cost of a two-stage translation hierarchy and VM-exit mediation, whereas containers (studied in Containers and Resource Control) execute directly on a single shared host kernel using namespaces and cgroups.
 
 Virtual memory supplies the first translation stage; scheduling supplies vCPU time; device I/O supplies exit and completion paths; protection supplies authority over host resources; containers may isolate VMM processes but still share the host kernel; observability supplies event and latency evidence. VM design is the composition of those mechanisms.
 

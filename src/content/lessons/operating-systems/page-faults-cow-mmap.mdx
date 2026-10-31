@@ -270,6 +270,8 @@ The diagnostic gap is conflating a translation exception with one particular bac
 
 ## Fault-handler boundaries that prevent security defects
 
+> **Warning.** Every page-fault handler is an authority gate between untrusted user execution and physical memory: publishing a PTE before zeroing a freshly allocated frame discloses residual kernel/tenant data, and resolving a kernel `copyin`/`copyout` fault without enforcing user-region permissions turns a syscall buffer pointer into an arbitrary kernel write primitive.
+
 ### Zero before exposure
 
 A newly allocated user frame may contain bytes from a previous process or kernel object. Zeroing after PTE publication creates a disclosure interval. The zeroing operation must complete before any user-readable mapping exists.
@@ -352,6 +354,8 @@ Any trace that grants write access to PFN 10 after failed allocation or converts
 </details>
 
 ## Deliberate boundary and source trail
+
+> **Remark.** This lesson establishes the state transitions for demand paging, copy-on-write, and file-backed mappings when free frames are available; policy decisions for choosing an eviction victim when physical memory is exhausted follow in Replacement, Working Sets, and Thrashing.
 
 The fault model excludes replacement and swap, huge pages, NUMA migration, memory-mapped devices, user-space fault handling, and speculative side effects. It assumes a page-oriented file cache and a precise restartable ISA. The COW skeleton establishes state obligations but deliberately omits production lock topology and a complete teaching-kernel patch.
 

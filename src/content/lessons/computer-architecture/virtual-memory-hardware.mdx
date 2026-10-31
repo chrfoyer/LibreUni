@@ -31,6 +31,8 @@ Virtual memory is an address-translation and protection system that gives each p
 
 ## Pages and address decomposition
 
+> **Definition.** For page size $2^p$ bytes, virtual-address translation decomposes $VA = (\mathrm{VPN} \ll p) \mid \mathrm{offset}$ where $\mathrm{offset} = VA \mathbin{\&} (2^p - 1)$ is invariant across translation and the MMU maps $\mathrm{VPN} \mapsto (\mathrm{PFN}, \mathrm{perms})$ to form $PA = (\mathrm{PFN} \ll p) \mid \mathrm{offset}$ when $\mathrm{perms}$ authorize the access.
+
 If the page size is $2^p$ bytes, a virtual address divides into a virtual page number (VPN) and a page offset. The low $p$ bits are the offset and remain unchanged through translation; the upper bits identify the virtual page. A page-table entry maps the VPN to a physical frame number (PFN), so the physical address is
 
 $$
@@ -39,7 +41,7 @@ $$
 
 The page offset is not translated because every page and frame have the same size. This fixed-size mapping permits a process’s virtual pages to occupy noncontiguous physical frames, removes external fragmentation from page allocation, and allows the OS to give different processes different mappings for the same virtual address.
 
-**Worked translation.** For a 32-bit address and 4 KiB pages, $p=12$. Address `0x12345` has offset `0x345` and VPN `0x12`. If the page table maps VPN `0x12` to PFN `0x9AB`, the physical address is `0x9AB345`. Relocating the page changes the PFN and therefore the high physical address bits, but not the offset `0x345`. The same virtual address in another process may map to a different frame or be invalid.
+**Worked trace: virtual-to-physical translation.** For a 32-bit address and 4 KiB pages, $p=12$. Address `0x12345` has offset `0x345` and VPN `0x12`. If the page table maps VPN `0x12` to PFN `0x9AB`, the physical address is `0x9AB345`. Relocating the page changes the PFN and therefore the high physical address bits, but not the offset `0x345`. The same virtual address in another process may map to a different frame or be invalid.
 
 Page size is a trade-off. Larger pages reduce page-table entries and TLB pressure and make sequential transfers more efficient, but increase internal fragmentation, fault granularity, and the amount of data transferred when only one byte is needed. Small pages improve allocation precision and reduce wasted transfer but require more translation metadata. Architectures may support multiple page sizes so applications can choose based on workload.
 
@@ -62,6 +64,8 @@ Page-table entries commonly contain a present/valid bit, read/write and execute 
 
 ## TLBs and translation performance
 
+> **Definition.** A Translation Lookaside Buffer (TLB) caches active $(\mathrm{ASID}, \mathrm{VPN}) \mapsto (\mathrm{PFN}, \mathrm{flags})$ entries; with TLB hit time $t_{\mathrm{TLB}}$, miss rate $m_{\mathrm{TLB}}$, and page-table walk penalty $t_{\mathrm{walk}}$, translation adds $t_{\mathrm{TLB}} + m_{\mathrm{TLB}} t_{\mathrm{walk}}$ to unoverlapped memory accesses.
+
 The translation lookaside buffer (TLB) caches recent VPN-to-PFN translations together with address-space identity and permission metadata. On a TLB hit, the MMU can form the physical address without walking the page table. On a TLB miss, hardware or software performs a page walk; if the PTE is valid, the translation is installed and the instruction retries or continues. A page fault is different: the translation is absent or disallowed and requires the operating system.
 
 TLB reach is the number of bytes covered by cached translations. A TLB with 64 entries and 4 KiB pages covers 256 KiB if all entries are useful and nonoverlapping. A sequential scan over a larger region may have good cache locality but poor TLB locality if it revisits pages after the TLB has evicted their translations. Huge pages increase reach but can waste memory and complicate allocation.
@@ -82,6 +86,8 @@ The explorer uses deliberately small 256-byte pages so the offset is the low eig
 
 ## Page faults and demand paging
 
+> **Warning.** Because a page-fault exception restarts the faulting instruction after the OS repairs the mapping, the processor pipeline must squash the faulting load/store and all younger instructions before any architectural register or memory state is modified.
+
 A page fault is a controlled exception caused by an absent or prohibited translation. The hardware records the faulting virtual address, access type, instruction context, and cause. The operating system examines the PTE and process policy. It may allocate a zero-filled page, load a file-backed page, fetch a swapped-out page, perform copy-on-write, or deliver a segmentation/access error to the process.
 
 The fault handler must be restartable. The faulting instruction generally has not committed its architectural effect; after the mapping is repaired, the instruction is retried. If the instruction performed a partially visible device operation before faulting, ordinary restart assumptions do not apply, which is one reason memory-mapped I/O and access permissions need precise architecture rules.
@@ -90,11 +96,15 @@ Demand paging creates an additional timing regime. A TLB miss may cost tens of c
 
 ## Replacement and dirty state
 
+> **Example.** When the hardware page walker or TLB sets the PTE Accessed (`A = 1`) bit on any read/write and the Dirty (`D = 1`) bit on any store, the OS page reclaimer can discard a clean file-backed frame (`D = 0`) immediately upon eviction, whereas a dirty frame (`D = 1`) must be written back to storage before its physical frame is reallocated.
+
 When physical frames are scarce, the OS chooses a victim page. The accessed/reference bit approximates use; the dirty bit says whether a private or writable page differs from its backing store. A clean file-backed page can be discarded and re-read. A dirty anonymous or file-backed page must be written before reuse. The OS may use clock-like approximations rather than exact LRU because tracking every reference is expensive.
 
 The page-replacement analogy to cache replacement is useful but incomplete. A cache line is normally replaced by hardware in a microsecond-scale critical path; a page is managed by software and may involve storage, process scheduling, and asynchronous write-back. A page fault also changes the process’s mapping and protection state, not just a data copy.
 
 ## Cache and virtual-memory interaction
+
+> **Lemma.** A Virtually Indexed, Physically Tagged (VIPT) cache with line size $2^b$ bytes and $2^s$ sets is free of virtual-address synonyms in hardware if and only if $b + s \le p$ (equivalently, the size of one cache way $2^{b+s}$ does not exceed the page size $2^p$), because all set-index bits then come from the untranslated page offset.
 
 A memory access can require both translation and cache lookup. In a physically indexed, physically tagged (PIPT) cache, translation occurs first, then the physical address selects the cache set and tag. This is simple for synonyms but adds translation latency. A virtually indexed, physically tagged cache can overlap some lookup with translation, but the page offset must contain enough bits for the index or aliases require special handling.
 
@@ -103,6 +113,8 @@ The page offset and cache block offset are related but not identical. If page si
 Address-space identifiers (ASIDs) tag TLB entries with a process identity, reducing full TLB flushes on context switch. Cache lines are usually tagged by physical address in a PIPT design, so a shared physical frame has one coherent cache identity even when mapped at different virtual addresses. The exact implementation may use virtual tags, page coloring, or explicit invalidation; the architectural requirement is that permitted aliases observe a coherent memory value and prohibited aliases cannot bypass permissions.
 
 ## Translation invalidation and concurrency
+
+> **Warning.** Clearing a PTE's valid or writable bit in RAM does not revoke access on cores that still hold the old translation in their private TLBs: the OS must complete local TLB invalidation (`sfence.vma` / `invlpg`) and synchronous remote TLB shootdown IPIs before freeing or repurposing the physical frame.
 
 Changing a page table is a concurrent operation. A CPU may have a stale TLB entry while the OS updates the PTE. An invalidation instruction or interprocessor shootdown ensures that other cores stop using the old translation before the frame is reused or permissions are weakened. The OS must order page-table writes, TLB invalidation, and reuse of physical memory. Otherwise one process may access a frame after it has been reassigned to another.
 

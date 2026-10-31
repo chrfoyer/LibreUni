@@ -9,7 +9,7 @@ type Stage = {
   invariant: string;
 };
 
-const stages: Stage[] = [
+export const stages: Stage[] = [
   {
     actor: 'Application',
     mode: 'user',

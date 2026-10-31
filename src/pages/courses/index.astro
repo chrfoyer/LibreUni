@@ -10,16 +10,21 @@ const draftCourseCount = courses.length - publicCourseCount;
 
 const categoryLabels: Record<string, string> = {
     all: 'All categories',
-    cs: 'Computer Science'
+    cs: 'Computer Science',
+    math: 'Mathematics'
 };
 
 const stripeLabels: Record<string, string> = {
     all: 'General',
     cs: 'CS',
-    other: 'CS'
+    math: 'Math',
+    other: 'General'
 };
 
-const getCategory = (_courseId: string) => 'cs';
+const getCategory = (courseId: string) => {
+    if (courseId.startsWith('calculus') || courseId.includes('math')) return 'math';
+    return 'cs';
+};
 
 ---
 

@@ -96,6 +96,8 @@ Two flip-flops in series are a common clock-domain crossing synchronizer for a s
 
 ## Timing constraints
 
+> **Definition.** Synchronous edge-triggered timing holds if and only if every register-to-register path satisfies both the **setup constraint** $t_{\mathrm{cq,max}} + t_{\mathrm{comb,max}} + t_{\mathrm{setup}} \le T + t_{\mathrm{skew}}$ and the **hold constraint** $t_{\mathrm{cq,min}} + t_{\mathrm{comb,min}} \ge t_{\mathrm{hold}} + t_{\mathrm{skew,hold}}$.
+
 In a single-clock path, a launching register changes after the clock-to-Q delay $t_{cq}$, combinational logic requires $t_{comb}$, and the receiving register requires data to arrive at least $t_{setup}$ before the next edge. With clock period $T$ and skew $t_{skew}$, a simplified setup constraint is
 
 $$
@@ -116,6 +118,8 @@ Clock gating and enables add another layer of correctness. A register with enabl
 
 ## Finite-state-machine design flow
 
+> **Example.** In a ready/valid handshake controller, a transfer occurs on a rising clock edge if and only if $\mathrm{valid} \land \mathrm{ready} = 1$; once the sender asserts $\mathrm{valid} = 1$, it is forbidden to deassert $\mathrm{valid}$ or mutate the payload until the clock edge where $\mathrm{ready} = 1$ completes the transfer.
+
 A robust design flow begins with an interface contract rather than an encoding. First define events, inputs, outputs, safety properties, liveness assumptions, reset behavior, and simultaneous-event priority. Next identify the smallest state that distinguishes futures: two histories may share a state only if every possible future input produces equivalent outputs and transitions. Then write a state-transition table or graph, choose an encoding, derive next-state logic, and verify the implementation against the transition relation.
 
 State minimization is a behavioral question. If two states produce different outputs for the same input, they cannot be merged. If their outputs match, they can be merged only when their successor states are themselves equivalent under every input. This is the same idea as distinguishing prefixes in automata theory, now applied to a clocked controller. One-hot encoding uses a separate bit for each state, binary encoding uses roughly $\lceil\log_2|S|\rceil$ bits, and gray-like encodings can reduce simultaneous bit changes. Encoding affects physical timing and fault detection but not the abstract machine.
@@ -123,6 +127,8 @@ State minimization is a behavioral question. If two states produce different out
 **Worked example: a ready/valid interface.** Suppose a producer presents `valid` and data, and a consumer presents `ready`. A transfer occurs on a clock edge exactly when `valid && ready`. If the producer is allowed to keep data stable while waiting, the controller needs `EMPTY` and `FULL` states: `EMPTY` may accept a new item, `FULL` holds an item until transfer. If simultaneous dequeue and enqueue are permitted, `FULL` with both signals high may remain `FULL` while replacing the data; if not, the enqueue must be rejected. The choice changes throughput and must be stated. A common bug is to clear `valid` as soon as it is asserted rather than when the handshake condition is true, losing data when the consumer is not ready.
 
 ## Counters, timers, and derived state
+
+> **Warning.** Off-by-one timeout bugs arise when a countdown register is loaded with $N$ at acceptance edge $t_0$ without specifying whether expiration is tested on the pre-decrement state ($q_t = 0$, expiring after $N+1$ edges) or the post-decrement state ($q_{t+1} = 0$, expiring after $N$ edges).
 
 A counter is a register plus an increment, decrement, hold, or load function. For a $w$-bit modulo counter, $q_{t+1}=(q_t+1)\bmod2^w$. A timer that must represent a duration of $N$ cycles needs a clear convention: does zero mean “expired now,” does it count the current edge, and can reload occur on the expiration edge? Off-by-one errors are semantic errors in $\delta$, not merely coding mistakes.
 
@@ -132,6 +138,8 @@ Derived state should be minimized when it can be recomputed without ambiguity. S
 
 ## Reset and initialization
 
+> **Warning.** Releasing an asynchronous reset without synchronizing its deassertion edge to the local clock domain can violate reset-recovery timing on a subset of state flip-flops, throwing a multi-bit FSM or one-hot controller into an unreachable illegal state on the very first active clock edge.
+
 Reset establishes an initial state but does not automatically initialize every physical bit in every technology. A synchronous reset is sampled by the clock; an asynchronous reset can affect state between edges but introduces deassertion timing concerns. A common safe pattern asserts reset asynchronously for rapid containment and deasserts it synchronously per clock domain.
 
 Reset values should be chosen for safety, not convenience. A bus arbiter should not grant multiple owners after reset; a valid/data queue should begin empty; a privilege controller should begin in the least-authority state. If the state encoding has illegal patterns, reset should enter a legal recovery state and the transition logic should route illegal encodings there as well.
@@ -139,6 +147,8 @@ Reset values should be chosen for safety, not convenience. A bus arbiter should 
 Reset is also a protocol event. Downstream logic must know when outputs are meaningful, and cross-domain consumers must not observe one domain leaving reset while another remains held. A design that “works after reset” in simulation may fail in hardware if deassertion violates recovery/removal timing or if memories and registers initialize differently.
 
 ## Verification and invariants
+
+> **Remark.** Inductive invariant verification proves $I(s_0)$ at reset and $\forall s, i.\; I(s) \Rightarrow I(\delta(s, i))$ across all $2^{|I|}$ input combinations—including simultaneous events such as `enqueue && dequeue` or `completion && timeout`.
 
 The strongest FSM tests are derived from properties. Safety properties say something bad never occurs: never grant two mutually exclusive resources, never dequeue an empty queue, never assert `done` without a prior accepted request. Liveness properties say something good eventually occurs under assumptions: every accepted request eventually completes or faults, a waiting arbiter eventually grants a continuously requesting client, and a nonempty queue eventually dequeues when the consumer remains ready.
 

@@ -110,7 +110,7 @@ A hostile process has already obtained arbitrary code execution in the **host ke
 
 <IsolationBoundaryPlayground client:load />
 
-For the stated compromise, none of those user-process controls remains a sound boundary: the code executes inside the mechanism that implements them. The interaction is a trust-dependency model, not an exploitability score. Its four boxes represent the selected tenant, a peer tenant, their shared implementation, and hardware/firmware; red should be read as “this selected layer or a relied-on lower layer is no longer trustworthy,” not as a measured probability or a complete attack graph.
+For the stated compromise, none of those user-process controls remains a sound boundary: the code executes inside the mechanism that implements them. This shared-kernel failure mode is a concrete counterexample to treating a container as a hardware-isolated virtual machine. The interaction is a trust-dependency model, not an exploitability score. Its four boxes represent the selected tenant, a peer tenant, their shared implementation, and hardware/firmware; red should be read as “this selected layer or a relied-on lower layer is no longer trustworthy,” not as a measured probability or a complete attack graph.
 
 ### Transfer after changing the boundary
 
@@ -217,6 +217,8 @@ It reduces the parser's reachable syscall interface to the allowed set under the
 
 ## Containers are not resource guarantees by default
 
+> **Warning.** Because all containers on a host execute as tasks inside a single shared kernel, namespace visibility, cgroup accounting, and syscall filtering are orthogonal controls: omitting any one leaves an unmediated resource or authority surface, and a vulnerability in any reachable kernel path compromises the host and every co-tenant container.
+
 Common non-examples expose category errors:
 
 - `chroot` changes pathname root but supplies no PID, network, user, or resource isolation.
@@ -257,6 +259,8 @@ Automatic configuration validation can check declared settings and tests. It can
 </details>
 
 ## Connections and deliberate boundary
+
+> **Remark.** Container isolation composes three orthogonal Linux kernel mechanisms—namespaces (identifier translation), cgroups v2 (resource accounting and throttling), and credential/seccomp mediation (authority reduction)—within a single host kernel; workloads requiring a separate kernel fault domain must cross the virtual-machine boundary studied in Virtual Machines.
 
 Process semantics explain descriptor inheritance and PID 1 behavior. Filesystems explain mount views and shared kernel parsers. Protection explains namespaced credentials, authority, and syscall mediation. Scheduling and memory management explain controller interactions. Virtual machines supply a distinct guest-kernel boundary when the shared-kernel risk is unacceptable. Multicore observability is required to measure residual co-tenant interference.
 

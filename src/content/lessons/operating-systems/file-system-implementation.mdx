@@ -337,6 +337,8 @@ A patch that returns the expected bytes but cannot explain its partial-allocatio
 
 ## Connections and deliberate boundary
 
+> **Remark.** Although production filesystems replace xv6's fixed direct/indirect block array and linear directory scans with extent trees (e.g., ext4, XFS) and B-tree/HTree directories, they must preserve the exact same structural invariants between namespace edges, link counts, open-inode references, and allocation bitmaps.
+
 Path interfaces determine the graph this implementation must preserve. Recovery mechanisms constrain when changed blocks may become authoritative. Protection mechanisms constrain every path edge and open operation. Multicore design determines whether cache identity and allocation locks remain correct and scalable. These connections are causal; replacing an inode map with an extent tree does not remove them.
 
 The compact model omits extents, indexed directories, delayed allocation, page-cache/writeback integration, checksums, RAID interactions, reflinks, online resize, and flash translation layers. It is complete for deriving the named invariants and traces, not a compressed survey of those omitted mechanisms.
