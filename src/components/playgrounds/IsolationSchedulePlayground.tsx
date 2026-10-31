@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import InteractivePlayground from '../InteractivePlayground';
+import SteppedSlider from '../SteppedSlider';
 import { lostUpdateState } from './databaseModels.mjs';
 
 const events = ['T₁ reads x=0', 'T₂ reads x=0', 'T₁ computes x+1', 'T₂ computes x+1', 'T₁ writes x=1', 'T₂ writes x=1'];
@@ -30,7 +31,20 @@ export default function IsolationSchedulePlayground() {
     staticCaption="A schedule is the evidence: two successful transactions can still violate the intended increment invariant."
     staticContent={<Schedule step={6} />}
   >
-    <label className="interactive-playground-controls grid gap-2 text-sm font-semibold">Schedule step = {step}<input aria-label="Schedule step" type="range" min="0" max={events.length} value={step} onChange={(event) => setStep(Number(event.target.value))} /></label>
+    <div className="interactive-playground-controls mb-5">
+      <div className="mb-2 flex items-center justify-between text-sm font-semibold">
+        <span>Schedule step: {step} of {events.length}</span>
+      </div>
+      <SteppedSlider
+        ariaLabel="Schedule step"
+        min={0}
+        max={events.length}
+        step={1}
+        value={step}
+        onChange={setStep}
+        labels={['0', '1', '2', '3', '4', '5', '6']}
+      />
+    </div>
     <Schedule step={step} />
     <p className="text-sm">The final value alone cannot explain the anomaly. The read-from relation and write order show why both commits are individually valid but the pair is not equivalent to serial execution.</p>
   </InteractivePlayground>;

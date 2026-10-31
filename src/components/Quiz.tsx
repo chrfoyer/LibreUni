@@ -162,111 +162,113 @@ export default function Quiz({
         <MathText>{currentQuestion.question}</MathText>
       </h3>
 
-      {phase === 'retrieve' && (
-        <div className="grid gap-4">
-          <label className="grid gap-2 text-sm font-semibold text-light-text dark:text-dark-text">
-            Commit your criterion or answer before seeing the claims
-            <textarea
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              rows={3}
-              className="input-field resize-y font-normal"
-              placeholder="State the decisive condition, result, or counterexample."
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => setPhase('evaluate')}
-            disabled={draft.trim().length < 8}
-            className="assessment-action-primary sm:w-fit"
-          >
-            Evaluate the claims <ArrowRight size={15} />
-          </button>
-        </div>
-      )}
-
-      {phase === 'evaluate' && currentClaim && (
-        <div className="grid gap-4">
-          <div className="rounded-lg border border-light-border bg-light-bg/70 p-3 text-sm dark:border-dark-border dark:bg-dark-bg/40">
-            <span className="font-bold text-light-text dark:text-dark-text">Your retrieval:</span>{' '}
-            <span className="text-light-muted dark:text-dark-muted">{draft}</span>
+      <div className="quiz-phase-container min-h-[220px]">
+        {phase === 'retrieve' && (
+          <div className="grid gap-4">
+            <label className="grid gap-2 text-sm font-semibold text-light-text dark:text-dark-text">
+              Commit your criterion or answer before seeing the claims
+              <textarea
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                rows={3}
+                className="input-field resize-y font-normal"
+                placeholder="State the decisive condition, result, or counterexample."
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => setPhase('evaluate')}
+              disabled={draft.trim().length < 8}
+              className="assessment-action-primary sm:w-fit"
+            >
+              Evaluate the claims <ArrowRight size={15} />
+            </button>
           </div>
+        )}
 
-          <div className="rounded-xl border border-primary/25 bg-primary/5 p-5">
-            <div className="mb-3 text-xs font-black uppercase tracking-[0.12em] text-primary">
-              Claim {claimIndex + 1} of {orderedOptions.length}
+        {phase === 'evaluate' && currentClaim && (
+          <div className="grid gap-4">
+            <div className="rounded-lg border border-light-border bg-light-bg/70 p-3 text-sm dark:border-dark-border dark:bg-dark-bg/40">
+              <span className="font-bold text-light-text dark:text-dark-text">Your retrieval:</span>{' '}
+              <span className="text-light-muted dark:text-dark-muted">{draft}</span>
             </div>
-            <p className="m-0 text-base font-semibold leading-relaxed text-light-text dark:text-dark-text">
-              <MathText>{currentClaim.text}</MathText>
-            </p>
-          </div>
 
-          <div className="grid gap-2 sm:grid-cols-2">
-            <button type="button" onClick={() => judgeClaim(true)} className="assessment-action-primary justify-center">
-              Supported answer
-            </button>
-            <button type="button" onClick={() => judgeClaim(false)} className="assessment-action-secondary w-full justify-center">
-              Not supported
-            </button>
-          </div>
-        </div>
-      )}
+            <div className="rounded-xl border border-primary/25 bg-primary/5 p-5">
+              <div className="mb-3 text-xs font-black uppercase tracking-[0.12em] text-primary">
+                Claim {claimIndex + 1} of {orderedOptions.length}
+              </div>
+              <p className="m-0 text-base font-semibold leading-relaxed text-light-text dark:text-dark-text">
+                <MathText>{currentClaim.text}</MathText>
+              </p>
+            </div>
 
-      {phase === 'review' && (
-        <div className="grid gap-4">
-          <div className={completeReasoning ? 'feedback-success' : 'feedback-diagnostic'}>
-            {completeReasoning ? (
-              <><strong>Criterion applied consistently.</strong> You identified every supported answer and rejected every unsupported claim.</>
-            ) : acceptedCount === 0 && missedSupported.length > 0 ? (
-              <><strong>No supported answer was identified.</strong> Rejecting distractors is not enough; reconstruct the criterion and find the claim it entails.</>
-            ) : (
-              <><strong>Reasoning needs revision.</strong> You missed {missedSupported.length} supported claim{missedSupported.length === 1 ? '' : 's'} and accepted {acceptedUnsupported.length} unsupported claim{acceptedUnsupported.length === 1 ? '' : 's'}.</>
-            )}
-            {!completeReasoning && <span className="mt-1 block text-xs">Classification trace: {correctCount} of {orderedOptions.length}. This is diagnostic detail, not a passing score.</span>}
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button type="button" onClick={() => judgeClaim(true)} className="assessment-action-primary justify-center">
+                Supported answer
+              </button>
+              <button type="button" onClick={() => judgeClaim(false)} className="assessment-action-secondary w-full justify-center">
+                Not supported
+              </button>
+            </div>
           </div>
+        )}
 
-          <div className="grid gap-2">
-            {orderedOptions.map((option) => {
-              const learnerAccepted = judgements[option.id];
-              const correct = learnerAccepted === option.isCorrect;
-              return (
-                <div key={option.id} className={`rounded-lg border p-3 ${correct ? 'border-emerald-500/25 bg-emerald-500/5' : 'border-rose-500/25 bg-rose-500/5'}`}>
-                  <div className="flex items-start gap-2 text-sm leading-relaxed text-light-text dark:text-dark-text">
-                    {correct
-                      ? <Check className="mt-0.5 shrink-0 text-emerald-600" size={16} />
-                      : <X className="mt-0.5 shrink-0 text-rose-600" size={16} />}
-                    <div>
-                      <MathText>{option.text}</MathText>
-                      <div className="mt-1 text-xs font-semibold text-light-muted dark:text-dark-muted">
-                        {option.isCorrect ? 'This is a supported answer.' : 'This claim is not supported.'}
+        {phase === 'review' && (
+          <div className="grid gap-4">
+            <div className={completeReasoning ? 'feedback-success' : 'feedback-diagnostic'}>
+              {completeReasoning ? (
+                <><strong>Criterion applied consistently.</strong> You identified every supported answer and rejected every unsupported claim.</>
+              ) : acceptedCount === 0 && missedSupported.length > 0 ? (
+                <><strong>No supported answer was identified.</strong> Rejecting distractors is not enough; reconstruct the criterion and find the claim it entails.</>
+              ) : (
+                <><strong>Reasoning needs revision.</strong> You missed {missedSupported.length} supported claim{missedSupported.length === 1 ? '' : 's'} and accepted {acceptedUnsupported.length} unsupported claim{acceptedUnsupported.length === 1 ? '' : 's'}.</>
+              )}
+              {!completeReasoning && <span className="mt-1 block text-xs">Classification trace: {correctCount} of {orderedOptions.length}. This is diagnostic detail, not a passing score.</span>}
+            </div>
+
+            <div className="grid gap-2">
+              {orderedOptions.map((option) => {
+                const learnerAccepted = judgements[option.id];
+                const correct = learnerAccepted === option.isCorrect;
+                return (
+                  <div key={option.id} className={`rounded-lg border p-3 ${correct ? 'border-emerald-500/25 bg-emerald-500/5' : 'border-rose-500/25 bg-rose-500/5'}`}>
+                    <div className="flex items-start gap-2 text-sm leading-relaxed text-light-text dark:text-dark-text">
+                      {correct
+                        ? <Check className="mt-0.5 shrink-0 text-emerald-600" size={16} />
+                        : <X className="mt-0.5 shrink-0 text-rose-600" size={16} />}
+                      <div>
+                        <MathText>{option.text}</MathText>
+                        <div className="mt-1 text-xs font-semibold text-light-muted dark:text-dark-muted">
+                          {option.isCorrect ? 'This is a supported answer.' : 'This claim is not supported.'}
+                        </div>
+                        {option.feedback && <p className="mb-0 mt-1 text-xs"><MathText>{option.feedback}</MathText></p>}
                       </div>
-                      {option.feedback && <p className="mb-0 mt-1 text-xs"><MathText>{option.feedback}</MathText></p>}
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {currentQuestion.explanation && (
-            <div className="feedback-info text-sm leading-relaxed text-light-text dark:text-dark-text">
-              <strong>Reasoning:</strong>{' '}<MathText>{currentQuestion.explanation}</MathText>
+                );
+              })}
             </div>
-          )}
 
-          <div className="flex flex-wrap gap-3">
-            {currentQuestionIndex < quizQuestions.length - 1 && completeReasoning ? (
-              <button type="button" onClick={nextQuestion} className="assessment-action-primary">
-                Next question <ArrowRight size={15} />
-              </button>
-            ) : (
-              <button type="button" onClick={resetQuestion} className="assessment-action-secondary">
-                <RefreshCw size={14} /> Reconstruct the answer
-              </button>
+            {currentQuestion.explanation && (
+              <div className="feedback-info text-sm leading-relaxed text-light-text dark:text-dark-text">
+                <strong>Reasoning:</strong>{' '}<MathText>{currentQuestion.explanation}</MathText>
+              </div>
             )}
+
+            <div className="flex flex-wrap gap-3">
+              {currentQuestionIndex < quizQuestions.length - 1 && completeReasoning ? (
+                <button type="button" onClick={nextQuestion} className="assessment-action-primary">
+                  Next question <ArrowRight size={15} />
+                </button>
+              ) : (
+                <button type="button" onClick={resetQuestion} className="assessment-action-secondary">
+                  <RefreshCw size={14} /> Reconstruct the answer
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }

@@ -84,68 +84,70 @@ export default function CaseStudy(props: CaseStudyProps) {
         </h3>
       )}
 
-      {!revealed ? (
-        <div className="grid gap-4">
-          <label className="grid gap-2 text-sm font-semibold text-light-text dark:text-dark-text">
-            Record a decision and the constraint that controls it
-            <textarea
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              rows={4}
-              className="input-field resize-y font-normal"
-              placeholder="State the decision, then justify it from the scenario evidence."
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => setRevealed(true)}
-            disabled={draft.trim().length < 20}
-            className="assessment-action-primary sm:w-fit"
-          >
-            <Eye size={15} /> Compare with the reference analysis
-          </button>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          <div className="rounded-lg border border-light-border bg-light-bg/70 p-4 text-sm dark:border-dark-border dark:bg-dark-bg/40">
-            <div className="mb-1 font-bold text-light-text dark:text-dark-text">Your decision</div>
-            <p className="m-0 whitespace-pre-wrap leading-relaxed text-light-muted dark:text-dark-muted">{draft}</p>
+      <div className="case-study-phase-container min-h-[200px]">
+        {!revealed ? (
+          <div className="grid gap-4">
+            <label className="grid gap-2 text-sm font-semibold text-light-text dark:text-dark-text">
+              Record a decision and the constraint that controls it
+              <textarea
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                rows={4}
+                className="input-field resize-y font-normal"
+                placeholder="State the decision, then justify it from the scenario evidence."
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => setRevealed(true)}
+              disabled={draft.trim().length < 20}
+              className="assessment-action-primary sm:w-fit"
+            >
+              <Eye size={15} /> Compare with the reference analysis
+            </button>
           </div>
-
-          {referenceDecision && (
-            <div className="rounded-lg border border-primary/25 bg-primary/5 p-4">
-              <div className="mb-1 text-xs font-black uppercase tracking-[0.12em] text-primary">Reference decision</div>
-              <p className="m-0 text-sm font-semibold leading-relaxed text-light-text dark:text-dark-text">
-                <MathText>{referenceDecision.text}</MathText>
-              </p>
+        ) : (
+          <div className="grid gap-4">
+            <div className="rounded-lg border border-light-border bg-light-bg/70 p-4 text-sm dark:border-dark-border dark:bg-dark-bg/40">
+              <div className="mb-1 font-bold text-light-text dark:text-dark-text">Your decision</div>
+              <p className="m-0 whitespace-pre-wrap leading-relaxed text-light-muted dark:text-dark-muted">{draft}</p>
             </div>
-          )}
 
-          {explanation && (
-            <div className="feedback-info text-sm leading-relaxed text-light-text dark:text-dark-text">
-              <strong>Analysis:</strong>{' '}<MathText>{explanation}</MathText>
-            </div>
-          )}
+            {referenceDecision && (
+              <div className="rounded-lg border border-primary/25 bg-primary/5 p-4">
+                <div className="mb-1 text-xs font-black uppercase tracking-[0.12em] text-primary">Reference decision</div>
+                <p className="m-0 text-sm font-semibold leading-relaxed text-light-text dark:text-dark-text">
+                  <MathText>{referenceDecision.text}</MathText>
+                </p>
+              </div>
+            )}
 
-          {normalizedOptions.length > 1 && (
-            <details className="rounded-lg border border-light-border p-3 dark:border-dark-border">
-              <summary className="min-h-11 cursor-pointer text-sm font-bold text-light-text dark:text-dark-text">Compare the alternatives</summary>
-              <ul className="mb-0 mt-2 grid gap-2 pl-5 text-sm leading-relaxed text-light-muted dark:text-dark-muted">
-                {normalizedOptions.map((option) => (
-                  <li key={option.id}>
-                    <MathText>{option.text}</MathText>
-                    {option.feedback && <span> — <MathText>{option.feedback}</MathText></span>}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
+            {explanation && (
+              <div className="feedback-info text-sm leading-relaxed text-light-text dark:text-dark-text">
+                <strong>Analysis:</strong>{' '}<MathText>{explanation}</MathText>
+              </div>
+            )}
 
-          <button type="button" onClick={() => setRevealed(false)} className="assessment-action-secondary">
-            <RefreshCw size={14} /> Revise the decision
-          </button>
-        </div>
-      )}
+            {normalizedOptions.length > 1 && (
+              <details className="rounded-lg border border-light-border p-3 dark:border-dark-border">
+                <summary className="min-h-11 cursor-pointer text-sm font-bold text-light-text dark:text-dark-text">Compare the alternatives</summary>
+                <ul className="mb-0 mt-2 grid gap-2 pl-5 text-sm leading-relaxed text-light-muted dark:text-dark-muted">
+                  {normalizedOptions.map((option) => (
+                    <li key={option.id}>
+                      <MathText>{option.text}</MathText>
+                      {option.feedback && <span> — <MathText>{option.feedback}</MathText></span>}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+
+            <button type="button" onClick={() => setRevealed(false)} className="assessment-action-secondary">
+              <RefreshCw size={14} /> Revise the decision
+            </button>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

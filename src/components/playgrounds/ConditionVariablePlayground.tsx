@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import InteractivePlayground from '../InteractivePlayground';
+import SteppedSlider from '../SteppedSlider';
 
 type ThreadState = 'running' | 'ready' | 'blocked' | 'sleeping' | 'done';
 type Snapshot = {
@@ -59,12 +60,12 @@ function SnapshotView({ traceKey, step }: { traceKey: string; step: number }) {
   return (
     <div>
       <div className={`grid gap-3 ${snapshot.consumerB ? 'md:grid-cols-[1fr_1fr_1fr_1.2fr]' : 'md:grid-cols-[1fr_1fr_1.2fr]'}`}>
-        <section className={`rounded-xl border p-4 ${stateStyle[snapshot.producer]}`}><div className="text-xs font-black uppercase tracking-wide">Producer</div><div className="mt-2 text-lg font-bold">{snapshot.producer}</div></section>
-        <section className={`rounded-xl border p-4 ${stateStyle[snapshot.consumerA]}`}><div className="text-xs font-black uppercase tracking-wide">Consumer A</div><div className="mt-2 text-lg font-bold">{snapshot.consumerA}</div></section>
-        {snapshot.consumerB && <section className={`rounded-xl border p-4 ${stateStyle[snapshot.consumerB]}`}><div className="text-xs font-black uppercase tracking-wide">Consumer B</div><div className="mt-2 text-lg font-bold">{snapshot.consumerB}</div></section>}
-        <section className="rounded-xl border border-primary/30 bg-primary/5 p-4"><div className="flex items-center justify-between gap-3"><span className="text-xs font-black uppercase tracking-wide">Bounded buffer</span><span className="font-mono text-xs">mutex: {snapshot.mutex}</span></div><div className="mt-3 flex min-h-12 gap-2">{snapshot.buffer.length ? snapshot.buffer.map((item, index) => <span key={`${item}-${index}`} className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary font-mono font-black text-white">{item}</span>) : <span className="text-sm text-light-muted dark:text-dark-muted">empty</span>}</div></section>
+        <section className={`min-h-[5.5rem] rounded-xl border p-4 ${stateStyle[snapshot.producer]}`}><div className="text-xs font-black uppercase tracking-wide">Producer</div><div className="mt-2 text-lg font-bold">{snapshot.producer}</div></section>
+        <section className={`min-h-[5.5rem] rounded-xl border p-4 ${stateStyle[snapshot.consumerA]}`}><div className="text-xs font-black uppercase tracking-wide">Consumer A</div><div className="mt-2 text-lg font-bold">{snapshot.consumerA}</div></section>
+        {snapshot.consumerB && <section className={`min-h-[5.5rem] rounded-xl border p-4 ${stateStyle[snapshot.consumerB]}`}><div className="text-xs font-black uppercase tracking-wide">Consumer B</div><div className="mt-2 text-lg font-bold">{snapshot.consumerB}</div></section>}
+        <section className="min-h-[5.5rem] rounded-xl border border-primary/30 bg-primary/5 p-4"><div className="flex items-center justify-between gap-3"><span className="text-xs font-black uppercase tracking-wide">Bounded buffer</span><span className="font-mono text-xs">mutex: {snapshot.mutex}</span></div><div className="mt-3 flex min-h-12 gap-2">{snapshot.buffer.length ? snapshot.buffer.map((item, index) => <span key={`${item}-${index}`} className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary font-mono font-black text-white">{item}</span>) : <span className="text-sm text-light-muted dark:text-dark-muted">empty</span>}</div></section>
       </div>
-      <div className="mt-4 rounded-xl border border-light-border p-4 dark:border-dark-border">
+      <div className="mt-4 min-h-[7.5rem] rounded-xl border border-light-border p-4 dark:border-dark-border">
         <div className="text-xs font-black uppercase tracking-wide text-primary">{snapshot.event}</div>
         <p className="mb-0 mt-2 text-sm leading-relaxed">{snapshot.verdict}</p>
         <p className="mb-0 mt-2 font-mono text-xs text-light-muted dark:text-dark-muted">wakeup state: {snapshot.wakeup}</p>
@@ -98,9 +99,18 @@ export default function ConditionVariablePlayground() {
             {Object.entries(traces).map(([key, value]) => <option key={key} value={key}>{value.label}</option>)}
           </select>
         </label>
-        <label className="grid gap-2 text-sm font-semibold">Trace event = {step + 1}
-          <input aria-label="Condition variable trace event" type="range" min="0" max={trace.states.length - 1} value={step} onChange={(event) => setStep(Number(event.target.value))} />
-        </label>
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-semibold">Trace event: {step + 1} of {trace.states.length}</span>
+          <SteppedSlider
+            ariaLabel="Condition variable trace event"
+            min={0}
+            max={trace.states.length - 1}
+            step={1}
+            value={step}
+            onChange={setStep}
+            labels={trace.states.map((_, i) => `${i + 1}`)}
+          />
+        </div>
       </div>
       <SnapshotView traceKey={traceKey} step={step} />
     </InteractivePlayground>

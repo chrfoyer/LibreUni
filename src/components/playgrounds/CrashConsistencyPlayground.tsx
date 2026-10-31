@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import InteractivePlayground from '../InteractivePlayground';
+import SteppedSlider from '../SteppedSlider';
 
 type Protocol = 'unsafe' | 'ordered' | 'journal' | 'cow';
 type DiskState = { data: boolean; allocated: boolean; referenced: boolean; committed: boolean; root: boolean };
@@ -68,7 +69,7 @@ function CrashView({ protocol, step }: { protocol: Protocol; step: number }) {
         <StateDiagram title="On disk when power fails" state={disk} />
         <StateDiagram title="Visible after recovery" state={recovered.state} />
       </div>
-      <div className={`mt-4 rounded-xl border p-4 text-sm ${verdictStyle}`}><strong>Recovery result:</strong> {recovered.verdict}</div>
+      <div className={`mt-4 min-h-[4.25rem] rounded-xl border p-4 text-sm ${verdictStyle}`}><strong>Recovery result:</strong> {recovered.verdict}</div>
     </div>
   );
 }
@@ -99,9 +100,18 @@ export default function CrashConsistencyPlayground() {
             {Object.entries(protocols).map(([key, value]) => <option key={key} value={key}>{value.label}</option>)}
           </select>
         </label>
-        <label className="grid gap-2 text-sm font-semibold">Crash point = {step} of {selected.events.length}
-          <input aria-label="File system crash point" type="range" min="0" max={selected.events.length} value={step} onChange={(event) => setStep(Number(event.target.value))} />
-        </label>
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-semibold">Crash point: {step} of {selected.events.length}</span>
+          <SteppedSlider
+            ariaLabel="File system crash point"
+            min={0}
+            max={selected.events.length}
+            step={1}
+            value={step}
+            onChange={setStep}
+            labels={Array.from({ length: selected.events.length + 1 }, (_, i) => `${i}`)}
+          />
+        </div>
       </div>
       <ol className="mb-5 grid gap-2 pl-0 sm:grid-cols-2 lg:grid-cols-3">
         {selected.events.map((item, index) => <li key={item} className={`list-none rounded-lg border p-3 text-xs ${index < step ? 'border-primary/35 bg-primary/5' : 'border-light-border text-light-muted dark:border-dark-border dark:text-dark-muted'}`}><strong>{index + 1}.</strong> {item}</li>)}

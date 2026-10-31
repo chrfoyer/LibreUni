@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import InteractivePlayground from '../InteractivePlayground';
+import SteppedSlider from '../SteppedSlider';
 
 type Stage = {
   actor: string;
@@ -74,20 +75,49 @@ const modeStyle: Record<Stage['mode'], string> = {
   kernel: 'border-violet-500 bg-violet-500/10 text-violet-800 dark:text-violet-200',
 };
 
-function Path({ step }: { step: number }) {
+function Path({ step, onSelectStep }: { step: number; onSelectStep?: (index: number) => void }) {
+  const isInteractive = typeof onSelectStep === 'function';
   return (
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8" role="group" aria-label={`System-call path at stage ${step + 1} of ${stages.length}`}>
-      {stages.map((stage, index) => (
-        <div
-          key={stage.actor}
-          className={`relative min-h-24 rounded-xl border p-3 transition-all ${index === step ? `${modeStyle[stage.mode]} ring-2 ring-current ring-offset-2 ring-offset-light-surface dark:ring-offset-dark-surface` : 'border-light-border bg-light-bg/60 text-light-muted opacity-65 dark:border-dark-border dark:bg-dark-bg/40 dark:text-dark-muted'}`}
-          aria-current={index === step ? 'step' : undefined}
-        >
-          <div className="text-[10px] font-black uppercase tracking-[0.12em]">{stage.mode}</div>
-          <div className="mt-2 text-sm font-bold leading-tight">{stage.actor}</div>
-          {index < stages.length - 1 && <span className="absolute -right-2 top-10 z-10 hidden text-lg xl:block" aria-hidden="true">→</span>}
-        </div>
-      ))}
+      {stages.map((stage, index) => {
+        const isActive = index === step;
+        const CardTag = isInteractive ? 'button' : 'div';
+        return (
+          <CardTag
+            key={stage.actor}
+            {...(isInteractive ? { type: 'button', onClick: () => onSelectStep(index) } : {})}
+            className={`relative min-h-24 text-left rounded-xl border p-3 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              isInteractive ? 'cursor-pointer hover:border-primary/50 hover:shadow-sm' : ''
+            } ${
+              isActive
+                ? `${modeStyle[stage.mode]} ring-2 ring-current ring-offset-2 ring-offset-light-surface dark:ring-offset-dark-surface shadow-md`
+                : 'border-light-border bg-light-surface/60 text-light-muted hover:text-light-text dark:border-dark-border dark:bg-dark-surface/40 dark:text-dark-muted dark:hover:text-dark-text'
+            }`}
+            aria-current={isActive ? 'step' : undefined}
+          >
+            <div className="flex items-center justify-between gap-1">
+              <span className={`text-[10px] font-black uppercase tracking-[0.12em] ${isActive ? 'text-current' : 'text-light-muted dark:text-dark-muted'}`}>
+                {stage.mode}
+              </span>
+              <span
+                className={`text-[11px] font-extrabold px-1.5 py-0.5 rounded tabular-nums ${
+                  isActive
+                    ? 'bg-current/20 text-current'
+                    : 'bg-slate-200/80 dark:bg-slate-700/80 text-light-text dark:text-dark-text'
+                }`}
+              >
+                #{index + 1}
+              </span>
+            </div>
+            <div className={`mt-2 text-sm font-bold leading-tight ${isActive ? 'text-current' : 'text-light-text dark:text-dark-text'}`}>
+              {stage.actor}
+            </div>
+            {index < stages.length - 1 && (
+              <span className="absolute -right-2 top-10 z-10 hidden text-lg xl:block opacity-40 pointer-events-none" aria-hidden="true">→</span>
+            )}
+          </CardTag>
+        );
+      })}
     </div>
   );
 }
@@ -105,27 +135,53 @@ export default function SystemCallPathPlayground() {
       staticContent={<Path step={4} />}
       staticCaption="At kernel dispatch, the call number, descriptor, byte count, and user address are validated before the kernel acts on the request."
     >
-      <label className="interactive-playground-controls mb-5 grid gap-2 text-sm font-semibold">
-        Execution stage: {step + 1} — {stage.actor}
-        <input
-          aria-label="System call execution stage"
-          type="range"
-          min="0"
+      <div className="interactive-playground-controls mb-5">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm font-semibold">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex size-6 items-center justify-center rounded-full bg-primary text-xs font-black text-white">
+              {step + 1}
+            </span>
+            <span>{stage.actor}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={step === 0}
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              className="rounded-lg border border-light-border px-2.5 py-1 text-xs font-bold text-light-muted transition-all hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-30 dark:border-dark-border dark:text-dark-muted"
+            >
+              ← Prev Stage
+            </button>
+            <button
+              type="button"
+              disabled={step === stages.length - 1}
+              onClick={() => setStep((s) => Math.min(stages.length - 1, s + 1))}
+              className="rounded-lg border border-light-border px-2.5 py-1 text-xs font-bold text-light-muted transition-all hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-30 dark:border-dark-border dark:text-dark-muted"
+            >
+              Next Stage →
+            </button>
+          </div>
+        </div>
+        <SteppedSlider
+          ariaLabel="System call execution stage"
+          min={0}
           max={stages.length - 1}
+          step={1}
           value={step}
-          onChange={(event) => setStep(Number(event.target.value))}
+          onChange={setStep}
+          labels={stages.map((_, i) => `${i + 1}`)}
         />
-      </label>
+      </div>
 
-      <Path step={step} />
+      <Path step={step} onSelectStep={setStep} />
 
       <div className="mt-5 grid gap-3 md:grid-cols-2">
-        <section className="rounded-xl border border-light-border bg-light-bg/70 p-4 dark:border-dark-border dark:bg-dark-bg/40">
+        <section className="min-h-[10.5rem] rounded-xl border border-light-border bg-light-bg/70 p-4 dark:border-dark-border dark:bg-dark-bg/40">
           <h4 className="m-0 text-xs font-black uppercase tracking-[0.12em] text-primary">Transition</h4>
           <p className="mb-0 mt-2 text-sm leading-relaxed">{stage.action}</p>
           <p className="mb-0 mt-2 font-mono text-xs leading-relaxed text-light-muted dark:text-dark-muted">{stage.state}</p>
         </section>
-        <section className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+        <section className="min-h-[10.5rem] rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
           <h4 className="m-0 text-xs font-black uppercase tracking-[0.12em] text-emerald-700 dark:text-emerald-300">Invariant to check</h4>
           <p className="mb-0 mt-2 text-sm leading-relaxed">{stage.invariant}</p>
         </section>

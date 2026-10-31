@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import InteractivePlayground from '../InteractivePlayground';
+import SteppedSlider from '../SteppedSlider';
 
 type Boundary = 'process' | 'container' | 'vm';
 
@@ -73,8 +74,8 @@ function BoundaryView({ boundary, compromise }: { boundary: Boundary; compromise
         ))}
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <p className="m-0 rounded-xl border border-light-border p-4 text-sm leading-relaxed dark:border-dark-border"><strong>Boundary location:</strong> {model.boundary}. {model.distinction}</p>
-        <p className="m-0 rounded-xl border border-rose-500/30 bg-rose-500/5 p-4 text-sm leading-relaxed"><strong>Modeled blast radius:</strong> {exposed}.</p>
+        <p className="m-0 min-h-[5.5rem] rounded-xl border border-light-border p-4 text-sm leading-relaxed dark:border-dark-border"><strong>Boundary location:</strong> {model.boundary}. {model.distinction}</p>
+        <p className="m-0 min-h-[5.5rem] rounded-xl border border-rose-500/30 bg-rose-500/5 p-4 text-sm leading-relaxed"><strong>Modeled blast radius:</strong> {exposed}.</p>
       </div>
     </div>
   );
@@ -100,9 +101,18 @@ export default function IsolationBoundaryPlayground() {
             <option value="process">Process address space</option><option value="container">Container</option><option value="vm">Virtual machine</option>
           </select>
         </label>
-        <label className="grid gap-2 text-sm font-semibold">Deepest compromised layer = {model.stages[compromise]}
-          <input aria-label="Deepest compromised isolation layer" type="range" min="0" max="2" value={compromise} onChange={(event) => setCompromise(Number(event.target.value))} />
-        </label>
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-semibold">Deepest compromised layer = {model.stages[compromise]}</span>
+          <SteppedSlider
+            ariaLabel="Deepest compromised isolation layer"
+            min={0}
+            max={2}
+            step={1}
+            value={compromise}
+            onChange={setCompromise}
+            labels={model.stages}
+          />
+        </div>
       </div>
       <BoundaryView boundary={boundary} compromise={compromise} />
       <p className="mb-0 mt-4 text-xs leading-relaxed text-light-muted dark:text-dark-muted">Scope: a logical trust boundary, not an exploitability score. Sandboxes, seccomp filters, mandatory access control, nested virtualization, device assignment, firmware, denial of service, and side channels alter the real boundary and require separate evidence.</p>

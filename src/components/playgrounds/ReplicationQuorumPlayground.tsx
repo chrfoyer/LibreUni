@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import InteractivePlayground from '../InteractivePlayground';
+import SteppedSlider from '../SteppedSlider';
 import { quorumState } from './databaseModels.mjs';
 
 function Replica({ index, failed }: { index: number; failed: boolean }) {
@@ -27,7 +28,47 @@ export default function ReplicationQuorumPlayground() {
     staticCaption="Static state: a three-replica, R=2/W=2 configuration provides quorum intersection and tolerates one unavailable replica for both operations."
     onReset={() => { setReplicas(3); setReadQuorum(2); setWriteQuorum(2); setFailed(0); }}
   >
-    <div className="interactive-playground-controls mb-5 grid gap-4 rounded-xl border border-light-border bg-light-bg/60 p-4 dark:border-dark-border dark:bg-dark-bg/40 md:grid-cols-2"><label className="grid gap-1 text-sm font-semibold">Replica count N<select aria-label="Replica count" className="input-field" value={replicas} onChange={(event) => chooseReplicas(Number(event.target.value))}><option value={3}>3 replicas</option><option value={5}>5 replicas</option></select></label><label className="grid gap-2 text-sm font-semibold">Read quorum R = {readQuorum}<input aria-label="Read quorum" type="range" min="1" max={replicas} value={readQuorum} onChange={(event) => setReadQuorum(Number(event.target.value))} /></label><label className="grid gap-2 text-sm font-semibold">Write quorum W = {writeQuorum}<input aria-label="Write quorum" type="range" min="1" max={replicas} value={writeQuorum} onChange={(event) => setWriteQuorum(Number(event.target.value))} /></label><label className="grid gap-2 text-sm font-semibold">Unavailable replicas = {failed}<input aria-label="Unavailable replicas" type="range" min="0" max={replicas} value={failed} onChange={(event) => setFailed(Number(event.target.value))} /></label></div>
+    <div className="interactive-playground-controls mb-5 grid gap-4 rounded-xl border border-light-border bg-light-bg/60 p-4 dark:border-dark-border dark:bg-dark-bg/40 md:grid-cols-2">
+      <label className="grid gap-1 text-sm font-semibold">Replica count N
+        <select aria-label="Replica count" className="input-field" value={replicas} onChange={(event) => chooseReplicas(Number(event.target.value))}>
+          <option value={3}>3 replicas</option>
+          <option value={5}>5 replicas</option>
+        </select>
+      </label>
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-semibold">Read quorum R = {readQuorum}</span>
+        <SteppedSlider
+          ariaLabel="Read quorum"
+          min={1}
+          max={replicas}
+          step={1}
+          value={readQuorum}
+          onChange={setReadQuorum}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-semibold">Write quorum W = {writeQuorum}</span>
+        <SteppedSlider
+          ariaLabel="Write quorum"
+          min={1}
+          max={replicas}
+          step={1}
+          value={writeQuorum}
+          onChange={setWriteQuorum}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-semibold">Unavailable replicas = {failed}</span>
+        <SteppedSlider
+          ariaLabel="Unavailable replicas"
+          min={0}
+          max={replicas}
+          step={1}
+          value={failed}
+          onChange={setFailed}
+        />
+      </div>
+    </div>
     <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">{Array.from({ length: replicas }, (_, index) => <Replica key={index} index={index} failed={index >= reachable} />)}</div>
     <div className="mt-4 grid gap-3 md:grid-cols-3"><div className={`rounded-xl border p-4 text-sm ${intersects ? 'border-emerald-500/35 bg-emerald-500/5' : 'border-rose-500/35 bg-rose-500/5'}`}><strong>Intersection</strong><br />R + W = {readQuorum + writeQuorum} {intersects ? '>' : '≤'} N = {replicas}</div><div className={`rounded-xl border p-4 text-sm ${readAvailable ? 'border-primary/35 bg-primary/5' : 'border-rose-500/35 bg-rose-500/5'}`}><strong>Read availability</strong><br />{reachable} reachable, need {readQuorum}</div><div className={`rounded-xl border p-4 text-sm ${writeAvailable ? 'border-primary/35 bg-primary/5' : 'border-rose-500/35 bg-rose-500/5'}`}><strong>Write availability</strong><br />{reachable} reachable, need {writeQuorum}</div></div>
     <p className="mb-0 mt-4 text-xs leading-relaxed text-light-muted dark:text-dark-muted">Model scope: replicas are non-Byzantine, quorums are chosen from one fixed membership, an acknowledged write reaches W replicas, and a read consults R replicas with version reconciliation. Intersection alone does not solve concurrent writes, leader fencing, stale membership, clock uncertainty, anti-entropy, or application-level conflict resolution.</p>

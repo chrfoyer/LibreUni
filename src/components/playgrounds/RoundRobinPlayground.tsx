@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import InteractivePlayground from '../InteractivePlayground';
+import SteppedSlider from '../SteppedSlider';
 
 const bursts = [6, 4, 2];
 
@@ -41,7 +42,20 @@ export default function RoundRobinPlayground() {
     staticCaption="Round-robin scheduling trades response latency against context-switch overhead and completion time."
     staticContent={<Timeline quantum={2} />}
   >
-    <label className="interactive-playground-controls grid gap-2 text-sm font-semibold">Time quantum = {quantum}<input aria-label="Round robin time quantum" type="range" min="1" max="6" value={quantum} onChange={(event) => setQuantum(Number(event.target.value))} /></label>
+    <div className="interactive-playground-controls mb-4">
+      <div className="mb-2 flex items-center justify-between text-sm font-semibold">
+        <span>Time quantum = {quantum}</span>
+      </div>
+      <SteppedSlider
+        ariaLabel="Round robin time quantum"
+        min={1}
+        max={6}
+        step={1}
+        value={quantum}
+        onChange={setQuantum}
+        labels={['1', '2', '3', '4', '5', '6']}
+      />
+    </div>
     <Timeline quantum={quantum} />
     <p className="text-sm">Completion times: {schedule.finish.map((value, index) => `P${index + 1}=${value}`).join(', ')}. Mean turnaround: <strong>{schedule.meanTurnaround.toFixed(1)}</strong> time units. This model omits switch cost; a real comparison must add it.</p>
   </InteractivePlayground>;

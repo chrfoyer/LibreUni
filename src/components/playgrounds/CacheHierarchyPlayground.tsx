@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import InteractivePlayground from '../InteractivePlayground';
+import SteppedSlider from '../SteppedSlider';
 import { simulate } from './cacheModel.mjs';
 
 type Access = { block: number; hit: boolean; set: number; evicted: number | null; resident: number[] };
 
 function Trace({ accesses }: { accesses: Access[] }) {
-  return <div className="overflow-x-auto" tabIndex={0} aria-label="Cache access trace">
+  return <div className="overflow-x-auto min-h-[220px]" tabIndex={0} aria-label="Cache access trace">
     <table className="w-full text-left text-xs"><thead><tr className="border-b border-light-border dark:border-dark-border"><th scope="col" className="p-2">Block</th><th scope="col" className="p-2">Set</th><th scope="col" className="p-2">Result</th><th scope="col" className="p-2">Resident: MRU → LRU</th></tr></thead>
-      <tbody>{accesses.map((access, index) => <tr key={`${index}-${access.block}`} className="border-b border-light-border/60 dark:border-dark-border/60"><td className="p-2 font-mono">B{access.block}</td><td className="p-2">{access.set}</td><td className="p-2 font-semibold">{access.hit ? 'hit' : 'miss'}{access.evicted !== null && <span className="block font-normal">evict B{access.evicted}</span>}</td><td className="p-2 font-mono">{access.resident.map(block => `B${block}`).join(' → ')}</td></tr>)}</tbody>
+      <tbody>{accesses.map((access, index) => <tr key={`${index}-${access.block}`} className="border-b border-light-border/60 dark:border-dark-border/60"><td className="p-2 font-mono">B{access.block}</td><td className="p-2">{access.set}</td><td className="p-2 font-semibold"><div className="min-h-[2.2rem] flex flex-col justify-center">{access.hit ? 'hit' : 'miss'}{access.evicted !== null ? <span className="block font-normal">evict B{access.evicted}</span> : <span className="block font-normal opacity-0 select-none" aria-hidden="true">&nbsp;</span>}</div></td><td className="p-2 font-mono">{access.resident.map(block => `B${block}`).join(' → ')}</td></tr>)}</tbody>
     </table>
   </div>;
 }
@@ -27,9 +28,18 @@ export default function CacheHierarchyPlayground() {
     staticCaption="Static state: blocks 0 and 4 alternate in a 2-way, two-set cache. Both map to set 0, but both fit, so only compulsory misses remain."
   >
     <div className="interactive-playground-controls mb-4 grid gap-4 rounded-xl border border-light-border bg-light-bg/60 p-4 dark:border-dark-border dark:bg-dark-bg/40 md:grid-cols-2">
-      <label className="grid gap-1 text-sm font-semibold">Associativity = {ways}-way
-        <input aria-label="Cache associativity" type="range" min="1" max="4" value={ways} onChange={(event) => setWays(Number(event.target.value))} />
-      </label>
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-semibold">Associativity = {ways}-way</span>
+        <SteppedSlider
+          ariaLabel="Cache associativity"
+          min={1}
+          max={4}
+          step={1}
+          value={ways}
+          onChange={setWays}
+          labels={['1', '2', '3', '4']}
+        />
+      </div>
       <label className="grid gap-1 text-sm font-semibold">Trace
         <select aria-label="Cache block trace" className="input-field" value={pattern} onChange={(event) => setPattern(event.target.value as typeof pattern)}><option value="alternating">Two competitors: 0, 4</option><option value="three">Three competitors: 0, 4, 8</option></select>
       </label>

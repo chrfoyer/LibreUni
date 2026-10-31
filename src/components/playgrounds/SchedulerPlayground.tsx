@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import InteractivePlayground from '../InteractivePlayground';
+import SteppedSlider from '../SteppedSlider';
 
 type Algorithm = 'FCFS' | 'SJF' | 'RR';
 type Job = { id: string; arrival: number; burst: number };
@@ -174,12 +175,31 @@ export default function SchedulerPlayground() {
             <option value="staggered">Staggered: CPU sometimes waits</option>
           </select>
         </label>
-        <label className={`grid gap-2 text-sm font-semibold ${algorithm !== 'RR' ? 'opacity-45' : ''}`}>Quantum = {quantum}
-          <input aria-label="Round robin quantum" type="range" min="1" max="8" value={quantum} disabled={algorithm !== 'RR'} onChange={(event) => setQuantum(Number(event.target.value))} />
-        </label>
-        <label className="grid gap-2 text-sm font-semibold">Context-switch cost = {switchCost}
-          <input aria-label="Context switch cost" type="range" min="0" max="2" step="0.5" value={switchCost} onChange={(event) => setSwitchCost(Number(event.target.value))} />
-        </label>
+        <div className={`flex flex-col gap-1 ${algorithm !== 'RR' ? 'opacity-45' : ''}`}>
+          <span className="text-sm font-semibold">Quantum = {quantum}</span>
+          <SteppedSlider
+            ariaLabel="Round robin quantum"
+            min={1}
+            max={8}
+            step={1}
+            value={quantum}
+            disabled={algorithm !== 'RR'}
+            onChange={setQuantum}
+            labels={['1', '2', '3', '4', '5', '6', '7', '8']}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-semibold">Context-switch cost = {switchCost}</span>
+          <SteppedSlider
+            ariaLabel="Context switch cost"
+            min={0}
+            max={2}
+            step={0.5}
+            value={switchCost}
+            onChange={setSwitchCost}
+            labels={['0', '0.5', '1', '1.5', '2']}
+          />
+        </div>
       </div>
 
       <Timeline result={result} />
