@@ -24,17 +24,19 @@ export function placeChild(parentVruntime, schedulerFloor) {
   return Math.max(parentVruntime, schedulerFloor);
 }
 
+// States and events follow the per-head lifecycle in device-driver-lab.
 const transitions = {
-  FREE: { POST: 'POSTED' },
-  POSTED: { ACCEPT: 'INFLIGHT' },
-  INFLIGHT: { COMPLETE: 'COMPLETE', FAIL: 'COMPLETE' },
-  COMPLETE: { REAP: 'REAPED' },
-  REAPED: {}
+  FREE: { RESERVE: 'RESERVED' },
+  RESERVED: { BUILD: 'BUILT', ROLLBACK: 'FREE' },
+  BUILT: { PUBLISH: 'PUBLISHED', ROLLBACK: 'FREE' },
+  PUBLISHED: { COMPLETE: 'COMPLETED', FAIL: 'COMPLETED' },
+  COMPLETED: { REAP: 'REAPED' },
+  REAPED: { CLEAR: 'FREE' }
 };
 
 export function requestTransition(request, event) {
-  if (!request || !transitions[request.state]) return { ok: false, reason: 'invalid-state' };
-  const next = transitions[request.state][event];
+  if (!request || !Object.hasOwn(transitions, request.state)) return { ok: false, reason: 'invalid-state' };
+  const next = Object.hasOwn(transitions[request.state], event) ? transitions[request.state][event] : undefined;
   if (!next) return { ok: false, reason: 'invalid-transition' };
   if (event === 'COMPLETE' || event === 'FAIL') {
     if (!Number.isInteger(request.id) || request.id < 0) return { ok: false, reason: 'invalid-id' };
