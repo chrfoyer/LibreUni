@@ -29,18 +29,46 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate-content
     timeout-minutes: 20
+    env:
+      LIBREUNI_PLANTUML_JAR: ${{ github.workspace }}/tools/plantuml.jar
     steps:
       - uses: actions/checkout@v4
-      - name: Install Python scientific libraries
+      - name: Install system build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            python3-numpy python3-pandas python3-matplotlib
+            python3-numpy python3-pandas python3-matplotlib \
+            graphviz \
+            texlive-latex-base texlive-latex-extra texlive-pictures texlive-fonts-recommended \
+            dvisvgm ghostscript
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
       - uses: actions/setup-node@v4
         with:
           node-version: 26
           cache: npm
       - run: npm ci
+      - name: Cache PlantUML jar
+        id: cache-plantuml
+        uses: actions/cache@v4
+        with:
+          path: tools/plantuml.jar
+          key: plantuml-1.2026.1
+      - name: Set up PlantUML jar
+        run: node tools/download-plantuml.mjs
+      - name: Cache diagram renders
+        uses: actions/cache@v4
+        with:
+          path: |
+            src/puml-cache
+            src/tikz-cache
+            src/python-diagram-cache
+          key: diagram-cache-${{ hashFiles('src/content/lessons/**', 'src/components/PlantUML.astro', 'src/components/TikZ.astro', 'src/components/PythonDiagram.astro') }}
+          restore-keys: |
+            diagram-cache-
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: Build static site

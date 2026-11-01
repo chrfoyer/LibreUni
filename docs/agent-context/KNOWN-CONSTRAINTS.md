@@ -8,4 +8,4 @@
 ## Content and rendering
 
 - **Verified 2026-07-19:** Course smoke checks and strict integrity checks are distinct signals; neither certifies pedagogy. Source: [`docs/agent-rules/COURSE_INTEGRITY.md`](../agent-rules/COURSE_INTEGRITY.md).
-- **Verified 2026-07-19:** PlantUML renders locally by default; remote rendering is opt-in with `LIBREUNI_PLANTUML_REMOTE=1`. Source: [`docs/agent-rules/PLANTUML.md`](../agent-rules/PLANTUML.md).
+- **Verified 2026-11-01:** PlantUML renders locally by default; remote rendering is opt-in with `LIBREUNI_PLANTUML_REMOTE=1`. Local rendering searches `LIBREUNI_PLANTUML_JAR`, `tools/plantuml.jar`, or standard system paths; CI pins and caches the PlantUML jar, diagram renders, and system dependencies (Java, Graphviz, LaTeX/dvisvgm). Sources: [`.github/workflows/quality.yml`](../../.github/workflows/quality.yml), [`src/components/PlantUML.astro`](../../src/components/PlantUML.astro), [`docs/agent-rules/PLANTUML.md`](../agent-rules/PLANTUML.md).

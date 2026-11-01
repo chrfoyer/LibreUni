@@ -2,7 +2,7 @@
 
 Quick reference for fixing PlantUML diagrams. Update this file when new error patterns are discovered.
 
-PlantUML is rendered headlessly and locally during the Astro build. Remote rendering is opt-in with `LIBREUNI_PLANTUML_REMOTE=1`; normal builds do not make remote requests. Set `LIBREUNI_PLANTUML_JAR` when the jar lives elsewhere, such as in a container. The build path uses the CLI with Java headless mode and must not open diagram viewers or desktop windows.
+PlantUML is rendered headlessly and locally during the Astro build. Remote rendering is opt-in with `LIBREUNI_PLANTUML_REMOTE=1`; normal builds do not make remote requests. The renderer resolves `LIBREUNI_PLANTUML_JAR`, `tools/plantuml.jar`, or standard system locations (`node tools/download-plantuml.mjs` downloads and verifies the pinned jar). Set `LIBREUNI_PLANTUML_JAR` when the jar lives elsewhere, such as in a container. The build path uses the CLI with Java headless mode and must not open diagram viewers or desktop windows.
 
 ## Common Errors
 

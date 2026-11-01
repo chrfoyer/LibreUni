@@ -51,7 +51,20 @@ if (!fs.existsSync(CACHE_DIR)) {
 }
 
 const ERROR_LOG = path.resolve('./puml-errors.log');
-const plantUmlJar = process.env.LIBREUNI_PLANTUML_JAR || '/home/edf/puml.jar';
+const resolvePlantUmlJar = () => {
+  if (process.env.LIBREUNI_PLANTUML_JAR) {
+    return process.env.LIBREUNI_PLANTUML_JAR;
+  }
+  const candidatePaths = [
+    path.resolve('./tools/plantuml.jar'),
+    path.resolve('./.cache/plantuml/plantuml.jar'),
+    '/usr/share/plantuml/plantuml.jar',
+    '/home/edf/puml.jar',
+  ];
+  return candidatePaths.find((candidate) => fs.existsSync(candidate)) || path.resolve('./tools/plantuml.jar');
+};
+
+const plantUmlJar = resolvePlantUmlJar();
 
 const hash = crypto.createHash('md5').update(processedCode + (theme || '')).digest('hex');
 const cacheFile = path.join(CACHE_DIR, `${hash}.svg`);
@@ -140,6 +153,11 @@ if (fs.existsSync(cacheFile)) {
   if (!remoteSucceeded) {
     console.log(`[PlantUML] Generating diagram locally: ${hash.substring(0, 8)}...`);
     try {
+      if (!fs.existsSync(plantUmlJar)) {
+        throw new Error(
+          `PlantUML jar not found at "${plantUmlJar}". Set LIBREUNI_PLANTUML_JAR or run "node tools/download-plantuml.mjs"`
+        );
+      }
       // Build-time rendering must stay headless: never launch a desktop
       // PlantUML viewer while an agent or CI job is generating lessons.
       svgContent = execSync(`java -Djava.awt.headless=true -jar ${plantUmlJar} -pipe -tsvg`, {

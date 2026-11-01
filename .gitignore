@@ -9,6 +9,8 @@ node_modules/
 puml-cache/
 tikz-cache/
 python-diagram-cache/
+*.jar
+tools/*.jar
 
 # Temp files
 .temp/
