@@ -13,7 +13,7 @@ jobs:
   validate-content:
     name: Validate content
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,6 +23,24 @@ jobs:
       - run: npm ci
       - name: Required content gate
         run: npm run check:content
+      # Run even if the content gate failed, so wrong DOIs are always reported
+      - name: Restore Crossref cache
+        if: ${{ !cancelled() }}
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/crossref.json
+          key: crossref-${{ github.run_id }}
+          restore-keys: crossref-
+      - name: Reference DOI check
+        if: ${{ !cancelled() }}
+        run: npm run check:references
+      # actions/cache only saves on job success; save explicitly so a failing check keeps its lookups
+      - name: Save Crossref cache
+        if: ${{ !cancelled() }}
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/crossref.json
+          key: crossref-${{ github.run_id }}
 
   build-and-test:
     name: Build and test
