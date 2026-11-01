@@ -30,7 +30,7 @@ export const traces: Record<string, { label: string; states: Snapshot[] }> = {
     label: 'Broken check-then-sleep',
     states: [
       { event: 'Initial state', buffer: [], mutex: 'free', producer: 'ready', consumerA: 'ready', wakeup: 'none', verdict: 'The predicate is false.' },
-      { event: 'Consumer checks empty without holding the mutex', buffer: [], mutex: 'free', producer: 'ready', consumerA: 'running', wakeup: 'not armed', verdict: 'The consumer intends to sleep, but has not made that intention visible.' },
+      { event: 'Consumer checks empty, then releases the mutex before sleeping', buffer: [], mutex: 'free', producer: 'ready', consumerA: 'running', wakeup: 'not armed', verdict: 'The consumer intends to sleep, but has not made that intention visible.' },
       { event: 'Producer enqueues X and signals', buffer: ['X'], mutex: 'producer', producer: 'running', consumerA: 'ready', wakeup: 'lost', verdict: 'No waiter was registered when the signal occurred.' },
       { event: 'Producer unlocks and finishes', buffer: ['X'], mutex: 'free', producer: 'done', consumerA: 'ready', wakeup: 'lost', verdict: 'Work exists, but no future event is required to signal again.' },
       { event: 'Consumer finally sleeps', buffer: ['X'], mutex: 'free', producer: 'done', consumerA: 'sleeping', wakeup: 'lost', verdict: 'Liveness fails: the consumer can sleep forever beside available work.' },

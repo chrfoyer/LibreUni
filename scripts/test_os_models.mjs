@@ -79,6 +79,10 @@ try {
   assert.equal(cvTraces.correct.states.at(-1).buffer.length, 0);
   assert.equal(cvTraces.lost.states.at(-1).consumerA, 'sleeping');
   assert.deepEqual(cvTraces.lost.states.at(-1).buffer, ['X']);
+  const lostCheck = cvTraces.lost.states.find((state) => state.consumerA === 'running');
+  assert.match(lostCheck.event, /releases the mutex before sleeping/, 'lesson: the consumer checks, then releases the mutex before sleeping');
+  assert.doesNotMatch(lostCheck.event, /without holding/, 'the check is not described as unlocked');
+  assert.equal(lostCheck.mutex, 'free', 'the mutex is already released in the gap');
   assert.equal(cvTraces.ifcheck.states.at(-1).consumerB, 'running');
   assert.equal(cvTraces.ifcheck.states.at(-1).buffer.length, 0);
 
@@ -123,13 +127,32 @@ try {
   assert.ok(scanPath.includes(199));
   assert.equal(diskDistance(scanPath), 331);
 
-  // System call path: starts in user mode, crosses hardware trap into kernel,
-  // and returns via hardware sret.
-  const syscallStages = modules.SystemCallPathPlayground.stages;
-  assert.equal(syscallStages[0].mode, 'user');
-  assert.equal(syscallStages[2].mode, 'hardware');
-  assert.equal(syscallStages[4].mode, 'kernel');
-  assert.equal(syscallStages.at(-1).mode, 'hardware');
+  // System-call path contract: the lesson's eight-stage xv6 read path. Trap
+  // hardware switches privilege but not stack, page table, or registers;
+  // validation, the first possible block, and result commit come in that
+  // order, and the return resumes after the ecall.
+  const { stages } = modules.SystemCallPathPlayground;
+  const at = (pattern) => stages.findIndex((stage) => pattern.test(stage.actor));
+  assert.equal(stages.length, 8, 'eight-stage model');
+  const order = [/^Application$/, /Library wrapper/, /RISC-V trap hardware/, /trampoline entry/, /Dispatcher and read handler/, /VFS and device path/, /Kernel completion/, /Trampoline.*sret/];
+  assert.deepEqual(order.map(at), [0, 1, 2, 3, 4, 5, 6, 7], 'stages follow the ecall-to-sret sequence');
+  assert.deepEqual(stages.slice(0, 2).map((stage) => stage.mode), ['user', 'user'], 'the library wrapper is not the privilege boundary');
+  assert.equal(stages[2].mode, 'hardware');
+  assert.match(stages[2].state, /not switched by hardware/, 'hardware does not select stack, page table, or save registers');
+  assert.doesNotMatch(stages[2].action, /stack|satp|saves/i, 'the trap-hardware action claims no stack, satp, or register switch');
+  assert.match(stages[3].action, /Saves user registers.*kernel stack and page table/, 'trampoline software performs the switch');
+  assert.ok(stages.slice(3, 7).every((stage) => stage.mode === 'kernel'), 'kernel software runs between entry and return');
+  assert.equal(stages.at(-1).mode, 'kernel', 'trampoline assembly restores registers; hardware does not restore them from the trapframe');
+  assert.equal(stages.filter((stage) => stage.mode === 'hardware').length, 1, 'only the ecall trap is a hardware stage');
+  assert.match(stages.at(-1).action, /sret/, 'the return stage still ends in sret');
+  const firstValidation = stages.findIndex((stage) => /validat/i.test(stage.action));
+  assert.equal(firstValidation, at(/Dispatcher and read handler/), 'descriptor, count, and buffer are first checked in the handler stage');
+  assert.ok(stages.slice(0, firstValidation).every((stage) => !/validat/i.test(stage.action)), 'trap entry is not proof of legality');
+  assert.equal(stages.findIndex((stage) => /block/i.test(stage.action)), at(/VFS and device path/), 'VFS/device path is the first stage that may block');
+  assert.match(stages[6].action, /Copies completed bytes.*trapframe/, 'data and result are committed before return');
+  assert.match(stages[6].state, /committed before user registers or privilege are restored/, 'commit precedes the restore');
+  assert.match(stages.at(-1).state, /a0 contains/, 'the result returns in a0');
+  assert.match(stages.at(-1).state, /resumes after the ecall/, 'ecall return advances past the trapping instruction');
 
   // Allocation failure ownership: direct assignment leaks on failure, while
   // temporary-pointer pattern keeps original block reachable.
@@ -152,15 +175,76 @@ try {
   assert.equal(placeChild(12, 20), 20);
   assert.notEqual(placeChild(12, 20), 0); // kills zero-initialized-child mutant
 
-  // Driver lab contract: completions are identity-checked and cannot be
+  // Driver lab contract: the per-head lifecycle in device-driver-lab, with its
+  // state names and event types. Completions are identity-checked and cannot be
   // applied twice or reaped before completion.
   let request = { id: 4, state: 'FREE', completed: false };
-  request = requestTransition(request, 'POST').request;
-  request = requestTransition(request, 'ACCEPT').request;
+  for (const [event, state] of [['RESERVE', 'RESERVED'], ['BUILD', 'BUILT'], ['PUBLISH', 'PUBLISHED']]) {
+    request = requestTransition(request, event).request;
+    assert.equal(request.state, state, `${event} reaches ${state}`);
+  }
   assert.equal(requestTransition({ ...request, completionId: 5 }, 'COMPLETE').reason, 'wrong-id');
   request = requestTransition({ ...request, completionId: 4 }, 'COMPLETE').request;
+  assert.equal(request.state, 'COMPLETED');
   assert.equal(requestTransition(request, 'COMPLETE').reason, 'invalid-transition');
-  assert.equal(requestTransition(request, 'REAP').request.state, 'REAPED');
+  request = requestTransition(request, 'REAP').request;
+  assert.equal(request.state, 'REAPED');
+  // Clearing the descriptor returns the head to FREE, ready for a fresh request.
+  request = requestTransition(request, 'CLEAR').request;
+  assert.deepEqual([request.state, request.completed], ['FREE', false]);
+  // Rollback only before publication; once published, the device owns the head (I9).
+  for (const state of ['RESERVED', 'BUILT']) {
+    assert.equal(requestTransition({ id: 4, state, completed: false }, 'ROLLBACK').request.state, 'FREE', `ROLLBACK from ${state}`);
+  }
+  assert.equal(requestTransition({ id: 4, state: 'PUBLISHED', completed: false }, 'ROLLBACK').reason, 'invalid-transition');
+  // Completion requires a published request.
+  assert.equal(requestTransition({ id: 4, state: 'BUILT', completed: false }, 'COMPLETE').reason, 'invalid-transition');
+  // The table is closed: the diagram's eight edges (FAIL shares PUBLISHED -> COMPLETED,
+  // the error-status path) are the only legal moves; every other pair is rejected.
+  // Events outside the diagram are walked too: a timeout may not move a head to FREE
+  // (the lesson: "it may not transition directly to `FREE`"), and neither may the model's former events or an unknown one.
+  const lessonEdges = {
+    'FREE RESERVE': 'RESERVED', 'RESERVED BUILD': 'BUILT', 'BUILT PUBLISH': 'PUBLISHED',
+    'PUBLISHED COMPLETE': 'COMPLETED', 'PUBLISHED FAIL': 'COMPLETED', 'COMPLETED REAP': 'REAPED',
+    'REAPED CLEAR': 'FREE', 'RESERVED ROLLBACK': 'FREE', 'BUILT ROLLBACK': 'FREE'
+  };
+  for (const state of ['FREE', 'RESERVED', 'BUILT', 'PUBLISHED', 'COMPLETED', 'REAPED']) {
+    for (const event of ['RESERVE', 'BUILD', 'PUBLISH', 'COMPLETE', 'FAIL', 'REAP', 'ROLLBACK', 'CLEAR', 'TIMEOUT', 'POST', 'ACCEPT', 'BOGUS']) {
+      const result = requestTransition({ id: 4, state, completed: false }, event);
+      const target = lessonEdges[`${state} ${event}`];
+      if (target) assert.equal(result.request?.state, target, `${state} --${event}--> ${target}`);
+      else assert.equal(result.reason, 'invalid-transition', `${state} --${event}--> rejected`);
+    }
+  }
+  const inflight = { id: 4, state: 'PUBLISHED', completed: false };
+  // Modelling choice: an error status ends the request exactly once, like a normal completion (the diagram's
+  // "validated used entry + status" edge); it is never left in flight.
+  const errored = requestTransition(inflight, 'FAIL');
+  assert.deepEqual([errored.ok, errored.request.state, errored.request.completed], [true, 'COMPLETED', true]);
+  assert.equal(requestTransition({ ...inflight, completed: true }, 'COMPLETE').reason, 'duplicate-completion');
+  assert.equal(requestTransition({ ...inflight, completed: true }, 'FAIL').reason, 'duplicate-completion');
+  // I6: the used-ring ID is checked before anything is indexed by it.
+  for (const id of [-1, 1.5]) {
+    for (const event of ['COMPLETE', 'FAIL']) {
+      assert.equal(requestTransition({ ...inflight, id }, event).reason, 'invalid-id', `${event} with id ${id}`);
+    }
+  }
+  assert.equal(requestTransition({ ...inflight, id: -1, completed: true }, 'COMPLETE').reason, 'invalid-id', 'ID check precedes the duplicate check');
+  assert.equal(requestTransition({ ...inflight, id: 0 }, 'COMPLETE').ok, true, 'id 0 is in bounds');
+  assert.equal(requestTransition(null, 'RESERVE').reason, 'invalid-state');
+  // States outside the lesson's lifecycle, including the names the model used before it followed the device-driver-lab state diagram.
+  for (const state of ['BOGUS', 'POSTED', 'INFLIGHT', 'COMPLETE']) {
+    assert.equal(requestTransition({ id: 4, state }, 'COMPLETE').reason, 'invalid-state', `state ${state}`);
+  }
+  // Table lookups use own keys only: names inherited from Object.prototype are not states or events.
+  for (const name of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
+    assert.equal(requestTransition({ id: 4, state: 'FREE', completed: false }, name).reason, 'invalid-transition', `event ${name}`);
+    assert.equal(requestTransition({ id: 4, state: name, completed: false }, 'RESERVE').reason, 'invalid-state', `state ${name}`);
+  }
+  // Reap only consumes a completed result.
+  for (const state of ['RESERVED', 'BUILT', 'PUBLISHED']) {
+    assert.equal(requestTransition({ id: 4, state, completed: false }, 'REAP').reason, 'invalid-transition', `REAP from ${state}`);
+  }
 
   // Filesystem lab contract: same-inode replacement is a no-op and ENOSPC
   // preserves the complete namespace, killing clear-first mutants.
