@@ -27,7 +27,7 @@ import ReplicationQuorumPlayground from '../../../components/playgrounds/Replica
 
 A client sends “transfer $100” and times out. The service cannot infer failure: the request may have reached a leader, committed on a quorum, committed locally but not replicated, or never left the client. Distribution adds uncertain communication to already difficult transaction boundaries. Start with the fact that must remain true and the failures the system promises to handle.
 
-{/* Source tracking: Consensus/leader-replication terminology is synthesized from the Raft paper; quorum-intersection framing and distributed transaction trade-offs are synthesized from CMU 15-445/645 materials. The examples and decision framework are original. */}
+{/* Source tracking: Consensus/leader-replication terminology is synthesized from the Raft paper; the read/write quorum condition r + w > N is cross-checked against Gifford (1979); the write/write condition 2W > N is plain arithmetic, not taken from that paper; distributed transaction trade-offs are synthesized from CMU 15-445/645 materials. The examples and decision framework are original. */}
 
 ## A consistency claim must name its observer and failure
 
@@ -53,7 +53,7 @@ A payment request with idempotency key K times out. Which reply is safer: “fai
 ## Quorum arithmetic proves only intersection
 
 <MathStatement id="quorum-intersection" kind="proposition" title="Read/write quorum intersection">
-For N replicas, a read quorum R and write quorum W intersect when $R + W > N$. Two write quorums intersect when $2W > N$. These inequalities establish shared replica membership; they do not alone establish leader fencing, version ordering, durability of a particular implementation, or linearizability.
+For N replicas, a read quorum R and write quorum W intersect when $R + W > N$, the condition Gifford's weighted voting scheme places on read and write quorums (with one vote per replica). Two write quorums intersect when $2W > N$. These inequalities establish shared replica membership; they do not alone establish leader fencing, version ordering, durability of a particular implementation, or linearizability.
 </MathStatement>
 
 <ReplicationQuorumPlayground client:load />
@@ -108,5 +108,6 @@ Use a durable outbox/state machine: record a pending reservation with the ledger
 ## References & Further Reading
 
 * [In Search of an Understandable Consensus Algorithm (Raft)](https://raft.github.io/raft.pdf)
+* [Weighted Voting for Replicated Data (Gifford, SOSP 1979)](https://doi.org/10.1145/800215.806583)
 * [CMU 15-445/645 Database Systems](https://15445.courses.cs.cmu.edu/spring2026/)
 * [PostgreSQL: Synchronous Replication](https://www.postgresql.org/docs/current/warm-standby.html#SYNCHRONOUS-REPLICATION)
