@@ -25,7 +25,7 @@ import ExerciseSolution from '../../../components/ExerciseSolution.astro';
 
 A replica that is one minute behind can be an excellent reporting target and a dangerous authorization target. A partitioned table can make retention cheap and still leave a tenant-hotspot unsolved. Replication and partitioning change where data lives and when it becomes visible; neither silently preserves every single-node guarantee.
 
-{/* Source tracking: Replication behavior and partitioning concepts are synthesized from PostgreSQL documentation; leadership/fencing terminology is cross-checked against the Raft paper. Workload matrices and migration traces are original. */}
+{/* Source tracking: Replication behavior and partitioning concepts are synthesized from PostgreSQL documentation; stale-term rejection is cross-checked against the Raft paper (section 5.1), and fencing tokens (sequencers with a lock generation number) and lock-delay against the Chubby paper (section 2.4). Workload matrices and migration traces are original. */}
 
 ## Replication changes the meaning of acknowledgement
 
@@ -67,7 +67,7 @@ permit two write authorities.
 end note
 @enduml`} />
 
-Failover is not finished when a process starts accepting traffic. Fencing prevents an isolated former primary from continuing to accept writes that later conflict with the new authority. The precise technique may be leases, terms, a strongly consistent configuration store, or a database-specific mechanism; the required property is refusal of stale authority.
+Failover is not finished when a process starts accepting traffic. Fencing prevents an isolated former primary from continuing to accept writes that later conflict with the new authority. The precise technique may be leases, terms, a strongly consistent configuration store, or a database-specific mechanism; the required property is refusal of stale authority. In Chubby, a lock holder can request a sequencer naming the lock, its mode and a lock generation number; a server that receives a request with a sequencer that is no longer valid is expected to reject it, which is a fencing token in practice.
 
 ### Application — read your own write
 
@@ -136,3 +136,4 @@ A final row count alone is insufficient: it misses mismatched values, duplicate 
 * [PostgreSQL: High Availability, Load Balancing, and Replication](https://www.postgresql.org/docs/current/high-availability.html)
 * [PostgreSQL: Table Partitioning](https://www.postgresql.org/docs/current/ddl-partitioning.html)
 * [In Search of an Understandable Consensus Algorithm (Raft)](https://raft.github.io/raft.pdf)
+* [The Chubby lock service for loosely-coupled distributed systems (Burrows, OSDI 2006)](https://static.googleusercontent.com/media/research.google.com/en//archive/chubby-osdi06.pdf)
