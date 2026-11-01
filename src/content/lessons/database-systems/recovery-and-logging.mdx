@@ -26,7 +26,7 @@ import RecoveryLogPlayground from '../../../components/playgrounds/RecoveryLogPl
 
 A commit response is a promise about a failure boundary. If a power loss follows an acknowledged order but precedes the page write, the order must still be recoverable. If a data page reaches storage before the log record explaining it, recovery loses its evidence. Logging is therefore a protocol for reconstructing a legal state, not an audit trail added after the fact.
 
-{/* Source tracking: WAL ordering, redo information, backup/recovery concepts, and point-in-time recovery are synthesized from PostgreSQL documentation and CMU 15-445/645 materials. The compact log traces and exercises are original. */}
+{/* Source tracking: WAL ordering, STEAL and NO-FORCE, page LSNs, and the redo skip rule are cross-checked against the CMU 15-445/645 logging and crash recovery lecture notes; backup, archiving, and point-in-time recovery are synthesized from PostgreSQL documentation. The compact log traces and exercises are original. */}
 
 ## A durable log prefix orders safe writes
 
@@ -133,4 +133,5 @@ Preserve the primary, replica, backup, and WAL evidence; restore the backup plus
 * [PostgreSQL: Write-Ahead Logging](https://www.postgresql.org/docs/current/wal-intro.html)
 * [PostgreSQL: Continuous Archiving and Point-in-Time Recovery](https://www.postgresql.org/docs/current/continuous-archiving.html)
 * [PostgreSQL: Backup and Restore](https://www.postgresql.org/docs/current/backup.html)
-* [CMU 15-445/645 Database Systems](https://15445.courses.cs.cmu.edu/spring2026/)
+* [CMU 15-445/645: Database Logging (lecture notes)](https://15445.courses.cs.cmu.edu/spring2026/notes/22-logging.pdf)
+* [CMU 15-445/645: Database Crash Recovery (lecture notes)](https://15445.courses.cs.cmu.edu/spring2026/notes/23-recovery.pdf)
